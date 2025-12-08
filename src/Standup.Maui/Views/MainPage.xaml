@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Standup.Maui.ViewModels"
+             x:Class="Standup.Maui.Views.MainPage"
+             x:DataType="vm:MainViewModel"
+             Title="Standup">
+
+    <Shell.TitleView>
+        <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+            <Label Text="Standup" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" />
+            <Label Text="{Binding CurrentProject.Name}" FontSize="14" TextColor="Gray" VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Shell.TitleView>
+
+    <Grid Padding="20">
+        <VerticalStackLayout Spacing="20" VerticalOptions="Center" HorizontalOptions="Center">
+            <Image Source="appicon.png" HeightRequest="120" WidthRequest="120" />
+
+            <Label Text="Welcome to Standup" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" />
+
+            <Label Text="Automate your daily standup reports" FontSize="16" TextColor="Gray" HorizontalOptions="Center" />
+
+            <Frame BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2D2D2D}" Padding="20" CornerRadius="10">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="{Binding CurrentProject.Name, StringFormat='Current Project: {0}'}" FontSize="16" />
+                    <Label Text="{Binding CurrentProject.TenantName, StringFormat='Tenant: {0}'}" FontSize="14" TextColor="Gray" />
+
+                    <Button Text="Generate Standup"
+                            Command="{Binding LoadCommand}"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White" />
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

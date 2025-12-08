@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Standup.Maui.ViewModels"
+             x:Class="Standup.Maui.Views.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             Title="Settings">
+
+    <ScrollView Padding="20">
+        <VerticalStackLayout Spacing="20">
+            <Label Text="Project Settings" FontSize="24" FontAttributes="Bold" />
+            <Label Text="{Binding CurrentProject.Name, StringFormat='Editing: {0}'}" FontSize="14" TextColor="Gray" />
+
+            <Frame Padding="15" CornerRadius="8" BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="API Configuration" FontAttributes="Bold" />
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="API Endpoint" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding ApiEndpoint}" Placeholder="https://your-api.azurewebsites.net" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="User ID (from Entra ID)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding UserId}" Placeholder="Your Entra Object ID" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Tenant ID (from Entra ID)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding TenantId}" Placeholder="Your Entra Tenant ID" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="Green" HorizontalOptions="Center" />
+
+            <Button Text="Save Settings"
+                   Command="{Binding SaveCommand}"
+                   BackgroundColor="{StaticResource Primary}"
+                   TextColor="White"
+                   HorizontalOptions="Center"
+                   WidthRequest="200" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
