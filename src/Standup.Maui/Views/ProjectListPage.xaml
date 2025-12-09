@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Standup.Maui.ViewModels"
+             xmlns:models="clr-namespace:Standup.Maui.Models"
+             x:Class="Standup.Maui.Views.ProjectListPage"
+             x:DataType="vm:ProjectListViewModel"
+             Title="Projects">
+
+    <Grid Padding="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Text="Your Projects" FontSize="24" FontAttributes="Bold" Margin="0,0,0,10" />
+
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Projects}" SelectionMode="Single"
+                       SelectedItem="{Binding SelectedProject}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:ProjectInstance">
+                    <Frame Margin="0,5" Padding="15" CornerRadius="8"
+                           BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ProjectListViewModel}}, Path=SelectProjectCommand}"
+                                                 CommandParameter="{Binding .}" />
+                        </Frame.GestureRecognizers>
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0">
+                                <HorizontalStackLayout Spacing="10">
+                                    <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
+                                    <Label Text="(Default)" FontSize="12" TextColor="Green"
+                                          IsVisible="{Binding IsDefault}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding TenantName}" FontSize="14" TextColor="Gray" />
+                                <Label Text="{Binding ApiEndpoint}" FontSize="12" TextColor="DimGray" />
+                            </VerticalStackLayout>
+
+                            <ImageButton Grid.Column="1" Source="delete.png" WidthRequest="24" HeightRequest="24"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ProjectListViewModel}}, Path=DeleteProjectCommand}"
+                                        CommandParameter="{Binding .}" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Add Project Form -->
+        <Frame Grid.Row="2" IsVisible="{Binding IsAddingProject}" Padding="15" CornerRadius="8"
+               BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Add New Project" FontAttributes="Bold" FontSize="16" />
+
+                <Entry Placeholder="Project Name" Text="{Binding NewProjectName}" />
+                <Entry Placeholder="Tenant Name (e.g., JourneyTeam)" Text="{Binding NewTenantName}" />
+                <Entry Placeholder="API Endpoint URL" Text="{Binding NewApiEndpoint}" />
+
+                <HorizontalStackLayout Spacing="10" HorizontalOptions="End">
+                    <Button Text="Cancel" Command="{Binding CancelAddProjectCommand}"
+                           BackgroundColor="Gray" TextColor="White" />
+                    <Button Text="Add" Command="{Binding AddProjectCommand}"
+                           BackgroundColor="{StaticResource Primary}" TextColor="White" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </Frame>
+
+        <Button Grid.Row="2" Text="+ Add Project" Command="{Binding ShowAddProjectCommand}"
+               IsVisible="{Binding IsAddingProject, Converter={StaticResource InvertedBoolConverter}}"
+               HorizontalOptions="End" />
+
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center" VerticalOptions="Center" Grid.RowSpan="3" />
+    </Grid>
+</ContentPage>

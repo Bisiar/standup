@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:Standup.Maui.Views"
+       x:Class="Standup.Maui.AppShell"
+       Title="Standup"
+       FlyoutBehavior="Flyout">
+
+    <FlyoutItem Title="Projects" Icon="folder.png">
+        <ShellContent ContentTemplate="{DataTemplate views:ProjectListPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Standup" Icon="clipboard.png">
+        <ShellContent ContentTemplate="{DataTemplate views:StandupPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Repositories" Icon="git.png">
+        <ShellContent ContentTemplate="{DataTemplate views:RepositoryConfigPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Documents" Icon="docs.png">
+        <ShellContent ContentTemplate="{DataTemplate views:DocumentsPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Settings" Icon="settings.png">
+        <ShellContent ContentTemplate="{DataTemplate views:SettingsPage}" />
+    </FlyoutItem>
+
+</Shell>

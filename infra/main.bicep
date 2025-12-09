@@ -71,6 +71,21 @@ param vNetName string = ''
 @description('Id of the user identity to be used for testing and debugging. This is not required in production. Leave empty if not needed.')
 param principalId string = ''
 
+@description('Enable Cosmos DB for data persistence')
+param cosmosEnabled bool = true
+
+@description('Enable AI Foundry for summarization')
+param aiFoundryEnabled bool = true
+
+@description('AI model deployment name')
+param aiDeploymentName string = 'gpt-4o'
+
+@description('Cosmos DB account name')
+param cosmosAccountName string = ''
+
+@description('AI Foundry account name')
+param aiFoundryAccountName string = ''
+
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
@@ -265,6 +280,31 @@ module monitoring 'br/public:avm/res/insights/component:0.4.1' = {
   }
 }
 
+// Cosmos DB for data persistence
+module cosmos 'app/cosmos.bicep' = if (cosmosEnabled) {
+  name: 'cosmosDb'
+  scope: rg
+  params: {
+    accountName: !empty(cosmosAccountName) ? cosmosAccountName : '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
+    location: location
+    tags: tags
+    managedIdentityPrincipalId: mcpUserAssignedIdentity.outputs.principalId
+  }
+}
+
+// AI Foundry for standup summarization
+module aiFoundry 'app/ai-foundry.bicep' = if (aiFoundryEnabled) {
+  name: 'aiFoundry'
+  scope: rg
+  params: {
+    accountName: !empty(aiFoundryAccountName) ? aiFoundryAccountName : '${abbrs.cognitiveServicesAccounts}${resourceToken}'
+    location: location
+    tags: tags
+    managedIdentityPrincipalId: mcpUserAssignedIdentity.outputs.principalId
+    deploymentName: aiDeploymentName
+  }
+}
+
 // App outputs
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.connectionString
 output AZURE_LOCATION string = location
@@ -289,3 +329,11 @@ output PRE_AUTHORIZED_CLIENT_IDS string = preAuthorizedClientIds
 // Entra App redirect URI outputs (using predictable hostname)
 output CONFIGURED_REDIRECT_URIS array = entraApp.outputs.configuredRedirectUris
 output AUTH_REDIRECT_URI string = entraApp.outputs.authRedirectUri
+
+// Cosmos DB outputs
+output COSMOS_ENDPOINT string = cosmosEnabled ? cosmos.outputs.endpoint : ''
+output COSMOS_DATABASE_NAME string = cosmosEnabled ? cosmos.outputs.databaseName : ''
+
+// AI Foundry outputs
+output AI_FOUNDRY_ENDPOINT string = aiFoundryEnabled ? aiFoundry.outputs.endpoint : ''
+output AI_FOUNDRY_DEPLOYMENT_NAME string = aiFoundryEnabled ? aiFoundry.outputs.deploymentName : ''
