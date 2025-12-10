@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: standup-automation
+metadata:
+  template: standup-automation@1.0.0
+services:
+  api:
+    project: src/Standup.Api
+    language: csharp
+    host: function
+  teams:
+    project: src/Standup.Teams
+    language: csharp
+    host: appservice
