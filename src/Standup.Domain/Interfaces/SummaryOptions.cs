@@ -1,3 +1,5 @@
+using Standup.Domain.Enums;
+
 namespace Standup.Domain.Interfaces;
 
 public record SummaryOptions(

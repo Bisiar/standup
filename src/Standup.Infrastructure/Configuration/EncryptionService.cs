@@ -1,5 +1,3 @@
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using Microsoft.Extensions.Options;
 using Standup.Application.Interfaces;
 using System.Security.Cryptography;

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Standup.Domain.Enums;
 using Standup.Infrastructure.SourceProviders;
+using Xunit;
 
 namespace Standup.Infrastructure.Tests.SourceProviders;
 

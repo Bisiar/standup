@@ -1,8 +1,8 @@
 using Microsoft.Graph;
-using Microsoft.Graph.Models;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
+using Graph = Microsoft.Graph.Models;
 
 namespace Standup.Infrastructure.Notifications;
 
@@ -42,11 +42,11 @@ public class TeamsChannelNotificationService : INotificationService
     {
         try
         {
-            var message = new ChatMessage
+            var message = new Graph.ChatMessage
             {
-                Body = new ItemBody
+                Body = new Graph.ItemBody
                 {
-                    ContentType = BodyType.Html,
+                    ContentType = Graph.BodyType.Html,
                     Content = FormatAsChannelPost(report)
                 }
             };

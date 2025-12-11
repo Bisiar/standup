@@ -111,14 +111,15 @@ resource repositoriesContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabas
   }
 }
 
-// RBAC: Cosmos DB Data Contributor for Managed Identity
-resource cosmosDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+// RBAC: Cosmos DB Built-in Data Contributor for Managed Identity
+// Cosmos DB uses its own built-in role definitions, not Azure RBAC
+resource cosmosDataContributor 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = {
+  parent: cosmosAccount
   name: guid(cosmosAccount.id, managedIdentityPrincipalId, '00000000-0000-0000-0000-000000000002')
-  scope: cosmosAccount
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00000000-0000-0000-0000-000000000002')
+    roleDefinitionId: '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
     principalId: managedIdentityPrincipalId
-    principalType: 'ServicePrincipal'
+    scope: cosmosAccount.id
   }
 }
 

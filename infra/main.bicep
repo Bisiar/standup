@@ -151,6 +151,7 @@ module mcp './app/mcp.bicep' = {
   scope: rg
   params: {
     name: functionAppName
+    serviceName: 'api' // Must match azure.yaml service name
     location: location
     tags: tags
     applicationInsightsName: monitoring.outputs.name

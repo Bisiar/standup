@@ -1,8 +1,8 @@
 using Microsoft.Graph;
-using Microsoft.Graph.Models;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
+using Graph = Microsoft.Graph.Models;
 
 namespace Standup.Infrastructure.Notifications;
 
@@ -31,11 +31,11 @@ public class TeamsNotificationService : INotificationService
             if (chat == null)
                 return false;
 
-            var message = new ChatMessage
+            var message = new Graph.ChatMessage
             {
-                Body = new ItemBody
+                Body = new Graph.ItemBody
                 {
-                    ContentType = BodyType.Html,
+                    ContentType = Graph.BodyType.Html,
                     Content = FormatAsHtml(report)
                 }
             };
@@ -56,11 +56,11 @@ public class TeamsNotificationService : INotificationService
     {
         try
         {
-            var message = new ChatMessage
+            var message = new Graph.ChatMessage
             {
-                Body = new ItemBody
+                Body = new Graph.ItemBody
                 {
-                    ContentType = BodyType.Html,
+                    ContentType = Graph.BodyType.Html,
                     Content = FormatAsHtml(report)
                 }
             };
@@ -79,7 +79,7 @@ public class TeamsNotificationService : INotificationService
         }
     }
 
-    private async Task<Chat?> GetOrCreateChatAsync(string teamsUserId, CancellationToken cancellationToken)
+    private async Task<Graph.Chat?> GetOrCreateChatAsync(string teamsUserId, CancellationToken cancellationToken)
     {
         try
         {
@@ -94,12 +94,12 @@ public class TeamsNotificationService : INotificationService
             if (existingChat != null)
                 return existingChat;
 
-            var newChat = new Chat
+            var newChat = new Graph.Chat
             {
-                ChatType = ChatType.OneOnOne,
-                Members = new List<ConversationMember>
+                ChatType = Graph.ChatType.OneOnOne,
+                Members = new List<Graph.ConversationMember>
                 {
-                    new AadUserConversationMember
+                    new Graph.AadUserConversationMember
                     {
                         Roles = new List<string> { "owner" },
                         AdditionalData = new Dictionary<string, object>

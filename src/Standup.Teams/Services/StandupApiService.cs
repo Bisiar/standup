@@ -26,7 +26,7 @@ public sealed class StandupApiService : IStandupApiService
     public async Task SubscribeAsync(string userId, string conversationId, CancellationToken cancellationToken = default)
     {
         var request = new SubscriptionRequest(userId, conversationId, "teams");
-        var response = await _httpClient.PostAsJsonAsync("/api/subscriptions", request, cancellationToken);
+        var response = await HttpClientJsonExtensions.PostAsJsonAsync(_httpClient, "/api/subscriptions", request, cancellationToken: cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -39,7 +39,7 @@ public sealed class StandupApiService : IStandupApiService
     public async Task ShareStandupToChannelAsync(string userId, string channelId, CancellationToken cancellationToken = default)
     {
         var request = new ShareRequest(userId, channelId);
-        var response = await _httpClient.PostAsJsonAsync("/api/standup/share", request, cancellationToken);
+        var response = await HttpClientJsonExtensions.PostAsJsonAsync(_httpClient, "/api/standup/share", request, cancellationToken: cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 }

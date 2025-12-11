@@ -109,7 +109,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
                 CreatedAt: pr.CreationDate,
                 Description: pr.Description,
                 IsDraft: pr.IsDraft ?? false,
-                ReviewerCount: pr.Reviewers?.Count ?? 0));
+                ReviewerCount: pr.Reviewers?.Count() ?? 0));
     }
 
     public async Task<IEnumerable<PullRequestInfo>> GetMergedPullRequestsAsync(
@@ -153,7 +153,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
                 CreatedAt: pr.CreationDate,
                 Description: pr.Description,
                 IsDraft: false,
-                ReviewerCount: pr.Reviewers?.Count ?? 0));
+                ReviewerCount: pr.Reviewers?.Count() ?? 0));
     }
 
     public async Task<IEnumerable<WorkItemInfo>> GetInProgressWorkItemsAsync(
