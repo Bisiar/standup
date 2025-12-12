@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:Standup.Maui.Converters"
              x:Class="Standup.Maui.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -8,6 +9,12 @@
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Local converters (avoiding CommunityToolkit which causes crash on macOS 26) -->
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+            <converters:IsNullConverter x:Key="IsNullConverter" />
+            <converters:IsNotNullConverter x:Key="IsNotNullConverter" />
+            <converters:BoolToStatusConverter x:Key="BoolToStatusConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- Platform-specific targeting: Windows builds Windows, Mac builds Mac -->
@@ -13,7 +13,7 @@
     <Nullable>enable</Nullable>
 
     <!-- Display name -->
-    <ApplicationTitle>Standup</ApplicationTitle>
+    <ApplicationTitle>Standup.Maui</ApplicationTitle>
     <ApplicationId>com.journeyteam.standup</ApplicationId>
     <ApplicationIdGuid>A1B2C3D4-E5F6-7890-ABCD-EF1234567890</ApplicationIdGuid>
 
@@ -22,7 +22,11 @@
     <ApplicationVersion>1</ApplicationVersion>
 
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
-    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+
+    <!-- Workaround for Xcode version mismatch - use Link Framework SDKs Only -->
+    <MtouchLink Condition="$(TargetFramework.Contains('maccatalyst'))">SdkOnly</MtouchLink>
+    <ValidateXcodeVersion Condition="$(TargetFramework.Contains('maccatalyst'))">false</ValidateXcodeVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,16 +41,20 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" />
     <PackageReference Include="Microsoft.Maui.Controls.Compatibility" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" />
-    <PackageReference Include="CommunityToolkit.Maui" />
+    <!-- <PackageReference Include="CommunityToolkit.Maui" /> temporarily disabled to test crash -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.Http" />
-    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Formatting.Compact" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Standup.Application\Standup.Application.csproj" />
-    <ProjectReference Include="..\Standup.Infrastructure\Standup.Infrastructure.csproj" />
+    <!-- Infrastructure excluded for mobile platforms - it brings ASP.NET Core via TeamsFx -->
+    <ProjectReference Include="..\Standup.Infrastructure\Standup.Infrastructure.csproj" Condition="!$(TargetFramework.Contains('maccatalyst')) and !$(TargetFramework.Contains('ios')) and !$(TargetFramework.Contains('android'))" />
   </ItemGroup>
 
   <!-- Copy wiki documentation to Resources/Documents at build time -->
