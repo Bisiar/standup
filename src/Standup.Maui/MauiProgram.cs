@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 using Standup.Application.Interfaces;
+using Standup.Application.Services;
+using Standup.Maui.Repositories;
 using Standup.Maui.Services;
 using Standup.Maui.ViewModels;
 using Standup.Maui.Views;
@@ -58,6 +60,15 @@ public static class MauiProgram
             builder.Services.AddSingleton<IDocumentService, DocumentService>();
             builder.Services.AddSingleton<IEncryptionService, MauiEncryptionService>();
             builder.Services.AddSingleton<ILocalStandupService, LocalStandupService>();
+
+            // Repository Groups - Repositories (MAUI-specific Preferences-based persistence)
+            builder.Services.AddSingleton<IGroupRepository, PreferencesGroupRepository>();
+            builder.Services.AddSingleton<ICredentialRepository, PreferencesCredentialRepository>();
+            builder.Services.AddSingleton<IReportHistoryRepository, PreferencesReportHistoryRepository>();
+
+            // Repository Groups - Application Services
+            builder.Services.AddSingleton<GroupService>();
+            builder.Services.AddSingleton<CredentialService>();
 
             // HTTP Client
             builder.Services.AddHttpClient<IStandupApiClient, StandupApiClient>(client =>

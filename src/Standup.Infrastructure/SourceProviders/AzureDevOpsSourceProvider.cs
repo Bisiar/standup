@@ -34,17 +34,19 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         if (repo == null)
             return Enumerable.Empty<CommitInfo>();
 
+        // Only filter by author if specified, no date range - get most recent commits
         var searchCriteria = new GitQueryCommitsCriteria
         {
-            Author = repository.AuthorIdentifier,
-            FromDate = since.ToString("o"),
-            ToDate = until.ToString("o")
+            Author = string.IsNullOrEmpty(repository.AuthorIdentifier) ? null : repository.AuthorIdentifier
         };
 
+        // Get the 20 most recent commits (no date filtering needed for standup)
         var commits = await gitClient.GetCommitsAsync(
             repository.Project,
             repo.Id,
             searchCriteria,
+            skip: null,
+            top: 20,
             cancellationToken: cancellationToken);
 
         var results = new List<CommitInfo>();

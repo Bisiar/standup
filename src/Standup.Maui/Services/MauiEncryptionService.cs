@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Serilog;
 using Standup.Application.Interfaces;
 
 namespace Standup.Maui.Services;
@@ -9,8 +10,20 @@ public sealed class MauiEncryptionService : IEncryptionService
     private const string EncryptionKeyStorageKey = "standup_encryption_key";
     private byte[]? _key;
 
+    // Use Preferences instead of SecureStorage for development (no provisioning profile needed)
+    private static string? GetPreference(string key)
+    {
+        return Preferences.Default.Get<string?>(key, null);
+    }
+
+    private static void SetPreference(string key, string value)
+    {
+        Preferences.Default.Set(key, value);
+    }
+
     public string Encrypt(string plainText)
     {
+        Log.Debug("MauiEncryptionService.Encrypt called");
         var key = GetOrCreateKey();
 
         using var aes = Aes.Create();
@@ -25,6 +38,7 @@ public sealed class MauiEncryptionService : IEncryptionService
         aes.IV.CopyTo(result, 0);
         cipherBytes.CopyTo(result, aes.IV.Length);
 
+        Log.Debug("Encryption completed successfully");
         return Convert.ToBase64String(result);
     }
 
@@ -32,6 +46,7 @@ public sealed class MauiEncryptionService : IEncryptionService
 
     public Task<string> DecryptAsync(string cipherText)
     {
+        Log.Debug("MauiEncryptionService.DecryptAsync called");
         var key = GetOrCreateKey();
         var fullCipher = Convert.FromBase64String(cipherText);
 
@@ -49,24 +64,32 @@ public sealed class MauiEncryptionService : IEncryptionService
         using var decryptor = aes.CreateDecryptor();
         var plainBytes = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
 
+        Log.Debug("Decryption completed successfully");
         return Task.FromResult(Encoding.UTF8.GetString(plainBytes));
     }
 
     private byte[] GetOrCreateKey()
     {
         if (_key != null)
+        {
+            Log.Debug("Returning cached encryption key");
             return _key;
+        }
 
-        var storedKey = SecureStorage.Default.GetAsync(EncryptionKeyStorageKey).GetAwaiter().GetResult();
+        Log.Debug("Attempting to read encryption key from Preferences");
+        var storedKey = GetPreference(EncryptionKeyStorageKey);
 
         if (!string.IsNullOrEmpty(storedKey))
         {
+            Log.Debug("Found existing encryption key in Preferences");
             _key = Convert.FromBase64String(storedKey);
             return _key;
         }
 
+        Log.Information("Generating new encryption key");
         _key = GenerateKey();
-        SecureStorage.Default.SetAsync(EncryptionKeyStorageKey, Convert.ToBase64String(_key)).GetAwaiter().GetResult();
+        SetPreference(EncryptionKeyStorageKey, Convert.ToBase64String(_key));
+        Log.Information("New encryption key saved to Preferences");
 
         return _key;
     }

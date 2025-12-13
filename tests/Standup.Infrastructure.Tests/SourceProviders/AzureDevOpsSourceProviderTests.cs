@@ -9,8 +9,8 @@ namespace Standup.Infrastructure.Tests.SourceProviders;
 
 public class AzureDevOpsSourceProviderTests
 {
-    // PAT for UPREHS Azure DevOps organization
-    private const string Pat = "AZURE_DEVOPS_PAT_PLACEHOLDER";
+    // PAT should be set via environment variable AZURE_DEVOPS_PAT for integration tests
+    private static readonly string Pat = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT") ?? "";
     private const string Organization = "UPREHS";
 
     private readonly AzureDevOpsSourceProvider _provider;
