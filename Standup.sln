@@ -26,6 +26,17 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E1E2E3E4-0000-0000-0000-000000000002}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "wiki", "wiki", "{E1E2E3E4-0000-0000-0000-000000000003}"
+	ProjectSection(SolutionItems) = preProject
+		wiki\Troubleshooting.md = wiki\Troubleshooting.md
+		wiki\API-Reference.md = wiki\API-Reference.md
+		wiki\Architecture.md = wiki\Architecture.md
+		wiki\Configuration.md = wiki\Configuration.md
+		wiki\Deployment.md = wiki\Deployment.md
+		wiki\Getting-Started.md = wiki\Getting-Started.md
+		wiki\Home.md = wiki\Home.md
+		wiki\MAUI-App.md = wiki\MAUI-App.md
+		wiki\Teams-Integration.md = wiki\Teams-Integration.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
