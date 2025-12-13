@@ -16,7 +16,7 @@ public class EncryptionService : IEncryptionService
         _key = DeriveKey(_options.EncryptionKey);
     }
 
-    public Task<string> EncryptAsync(string plainText)
+    public string Encrypt(string plainText)
     {
         using var aes = Aes.Create();
         aes.Key = _key;
@@ -30,8 +30,10 @@ public class EncryptionService : IEncryptionService
         aes.IV.CopyTo(result, 0);
         cipherBytes.CopyTo(result, aes.IV.Length);
 
-        return Task.FromResult(Convert.ToBase64String(result));
+        return Convert.ToBase64String(result);
     }
+
+    public Task<string> EncryptAsync(string plainText) => Task.FromResult(Encrypt(plainText));
 
     public Task<string> DecryptAsync(string cipherText)
     {
