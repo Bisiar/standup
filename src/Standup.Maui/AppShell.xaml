@@ -3,27 +3,15 @@
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:views="clr-namespace:Standup.Maui.Views"
        x:Class="Standup.Maui.AppShell"
-       Title="Standup"
-       FlyoutBehavior="Flyout">
+       Title="Standup">
 
-    <FlyoutItem Title="Projects" Icon="folder.png">
-        <ShellContent ContentTemplate="{DataTemplate views:ProjectListPage}" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="Standup" Icon="clipboard.png">
-        <ShellContent ContentTemplate="{DataTemplate views:StandupPage}" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="Repositories" Icon="git.png">
-        <ShellContent ContentTemplate="{DataTemplate views:RepositoryConfigPage}" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="Documents" Icon="docs.png">
-        <ShellContent ContentTemplate="{DataTemplate views:DocumentsPage}" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="Settings" Icon="settings.png">
-        <ShellContent ContentTemplate="{DataTemplate views:SettingsPage}" />
-    </FlyoutItem>
+    <!-- Using TabBar instead of FlyoutBehavior="Flyout" to avoid Swift Observation crash on macOS 26 Tahoe -->
+    <TabBar>
+        <ShellContent Title="Projects" ContentTemplate="{DataTemplate views:ProjectListPage}" Route="ProjectListPage" />
+        <ShellContent Title="Standup" ContentTemplate="{DataTemplate views:StandupPage}" Route="StandupPage" />
+        <ShellContent Title="Repos" ContentTemplate="{DataTemplate views:RepositoryConfigPage}" Route="RepositoryConfigPage" />
+        <ShellContent Title="Docs" ContentTemplate="{DataTemplate views:DocumentsPage}" Route="DocumentsPage" />
+        <ShellContent Title="Settings" ContentTemplate="{DataTemplate views:SettingsPage}" Route="SettingsPage" />
+    </TabBar>
 
 </Shell>

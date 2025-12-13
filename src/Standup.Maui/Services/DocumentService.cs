@@ -22,7 +22,8 @@ public class DocumentService : IDocumentService
                 };
             })
             .OrderBy(d => d.Category)
-            .ThenBy(d => d.Title);
+            .ThenBy(d => d.Title)
+            .AsEnumerable();
 
         return Task.FromResult(resources);
     }
