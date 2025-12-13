@@ -152,6 +152,10 @@ The API exposes MCP tools for AI agents:
 - **Octokit** - GitHub integration
 - **Azure DevOps SDK** - Azure DevOps integration
 
+## AI Tools
+
+See [AMPLIFIER_TOOLS.md](./AMPLIFIER_TOOLS.md) for available AI-powered CLI tools.
+
 ## License
 
 See [LICENSE.md](LICENSE.md)
