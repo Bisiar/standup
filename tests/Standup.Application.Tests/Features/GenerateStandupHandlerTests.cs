@@ -5,6 +5,7 @@ using Standup.Application.Services;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
+using Xunit;
 
 namespace Standup.Application.Tests.Features;
 
@@ -23,7 +24,7 @@ public sealed class GenerateStandupHandlerTests
         _aggregatorService = Substitute.For<IStandupAggregatorService>();
         _summaryService = Substitute.For<IAISummaryService>();
         _teamsNotificationService = Substitute.For<INotificationService>();
-        _teamsNotificationService.Channel.Returns(NotificationChannel.Teams);
+        _teamsNotificationService.Channel.Returns(NotificationChannel.TeamsDirectMessage);
         _reportRepository = Substitute.For<IRepository<StandupReport>>();
 
         _handler = new GenerateStandupHandler(
@@ -40,7 +41,7 @@ public sealed class GenerateStandupHandlerTests
         // Arrange
         var user = CreateTestUser();
         var standupData = new StandupData(
-            new List<CommitInfo> { new("sha1", "feat: add feature", "john", DateTimeOffset.UtcNow, "repo") },
+            new List<CommitInfo> { new("sha1", "feat: add feature", "repo", SourceType.GitHub, DateTimeOffset.UtcNow) },
             new List<PullRequestInfo>(),
             new List<WorkItemInfo>());
 
@@ -205,7 +206,7 @@ public sealed class GenerateStandupHandlerTests
         var command = new GenerateStandupCommand(
             "user-123",
             "tenant-456",
-            SendTo: new List<NotificationChannel> { NotificationChannel.Teams });
+            SendTo: new List<NotificationChannel> { NotificationChannel.TeamsDirectMessage });
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -215,7 +216,7 @@ public sealed class GenerateStandupHandlerTests
             Arg.Any<User>(),
             Arg.Any<StandupReport>(),
             Arg.Any<CancellationToken>());
-        result.SentTo.Should().Contain(NotificationChannel.Teams);
+        result.SentTo.Should().Contain(NotificationChannel.TeamsDirectMessage);
     }
 
     [Fact]
@@ -317,7 +318,7 @@ public sealed class GenerateStandupHandlerTests
             {
                 TimeZone = "America/Denver",
                 SkipWeekends = true,
-                NotificationChannels = new List<NotificationChannel> { NotificationChannel.Teams }
+                NotificationChannels = new List<NotificationChannel> { NotificationChannel.TeamsDirectMessage }
             }
         };
     }

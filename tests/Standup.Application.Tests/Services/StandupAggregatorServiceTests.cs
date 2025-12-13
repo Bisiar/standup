@@ -5,6 +5,7 @@ using Standup.Application.Services;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
+using Xunit;
 
 namespace Standup.Application.Tests.Services;
 
@@ -55,17 +56,17 @@ public sealed class StandupAggregatorServiceTests
 
         var commits = new List<CommitInfo>
         {
-            new("sha1", "feat: add feature", "john", since.AddHours(2), "test-repo")
+            new("sha1", "feat: add feature", "test-repo", SourceType.GitHub, since.AddHours(2))
         };
 
         var pullRequests = new List<PullRequestInfo>
         {
-            new(1, "Add feature", "open", "john", since.AddHours(1), "test-repo", "https://github.com/test-org/test-repo/pull/1")
+            new("1", "Add feature", "test-repo", SourceType.GitHub, "open", "https://github.com/test-org/test-repo/pull/1", since.AddHours(1))
         };
 
         var workItems = new List<WorkItemInfo>
         {
-            new(123, "Bug fix", "Bug", WorkItemStatus.InProgress, null, null)
+            new("123", "Bug fix", "Bug", WorkItemStatus.InProgress, SourceType.GitHub, "https://dev.azure.com/work-item/123")
         };
 
         _mockProvider.GetCommitsAsync(repository, since, until, Arg.Any<CancellationToken>())
@@ -99,7 +100,7 @@ public sealed class StandupAggregatorServiceTests
         _mockProvider.GetCommitsAsync(Arg.Any<SourceRepository>(), since, until, Arg.Any<CancellationToken>())
             .Returns(new List<CommitInfo>
             {
-                new("sha1", "commit 1", "john", since.AddHours(1), "repo")
+                new("sha1", "commit 1", "repo", SourceType.GitHub, since.AddHours(1))
             });
 
         _mockProvider.GetOpenPullRequestsAsync(Arg.Any<SourceRepository>(), Arg.Any<CancellationToken>())
@@ -129,9 +130,9 @@ public sealed class StandupAggregatorServiceTests
 
         var commits = new List<CommitInfo>
         {
-            new("sha1", "oldest", "john", since.AddHours(1), "test-repo"),
-            new("sha3", "newest", "john", since.AddHours(5), "test-repo"),
-            new("sha2", "middle", "john", since.AddHours(3), "test-repo")
+            new("sha1", "oldest", "test-repo", SourceType.GitHub, since.AddHours(1)),
+            new("sha3", "newest", "test-repo", SourceType.GitHub, since.AddHours(5)),
+            new("sha2", "middle", "test-repo", SourceType.GitHub, since.AddHours(3))
         };
 
         _mockProvider.GetCommitsAsync(repository, since, until, Arg.Any<CancellationToken>())
@@ -164,13 +165,13 @@ public sealed class StandupAggregatorServiceTests
 
         var inProgressItems = new List<WorkItemInfo>
         {
-            new(123, "Item 1", "Bug", WorkItemStatus.InProgress, null, null)
+            new("123", "Item 1", "Bug", WorkItemStatus.InProgress, SourceType.GitHub, "https://work-item/123")
         };
 
         var completedItems = new List<WorkItemInfo>
         {
-            new(123, "Item 1", "Bug", WorkItemStatus.Closed, null, null),
-            new(456, "Item 2", "Task", WorkItemStatus.Closed, null, null)
+            new("123", "Item 1", "Bug", WorkItemStatus.Closed, SourceType.GitHub, "https://work-item/123"),
+            new("456", "Item 2", "Task", WorkItemStatus.Closed, SourceType.GitHub, "https://work-item/456")
         };
 
         _mockProvider.GetCommitsAsync(repository, since, until, Arg.Any<CancellationToken>())
@@ -187,7 +188,7 @@ public sealed class StandupAggregatorServiceTests
 
         // Assert
         result.WorkItems.Should().HaveCount(2);
-        result.WorkItems.Select(w => w.Id).Should().BeEquivalentTo(new[] { 123, 456 });
+        result.WorkItems.Select(w => w.Id).Should().BeEquivalentTo(new[] { "123", "456" });
     }
 
     [Fact]

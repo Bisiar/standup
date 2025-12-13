@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
+using Xunit;
 
 namespace Standup.Domain.Tests.Entities;
 
@@ -54,12 +55,12 @@ public sealed class StandupReportTests
         var report = new StandupReport();
 
         // Act
-        report.SentTo.Add(NotificationChannel.Teams);
+        report.SentTo.Add(NotificationChannel.TeamsDirectMessage);
         report.SentTo.Add(NotificationChannel.Email);
 
         // Assert
         report.SentTo.Should().HaveCount(2);
-        report.SentTo.Should().Contain(NotificationChannel.Teams);
+        report.SentTo.Should().Contain(NotificationChannel.TeamsDirectMessage);
         report.SentTo.Should().Contain(NotificationChannel.Email);
     }
 
@@ -85,13 +86,13 @@ public sealed class StandupReportTests
         // Arrange
         var commits = new List<CommitInfo>
         {
-            new("sha1", "feat: add feature", "john", DateTimeOffset.UtcNow, "repo1"),
-            new("sha2", "fix: fix bug", "john", DateTimeOffset.UtcNow, "repo1")
+            new("sha1", "feat: add feature", "repo1", SourceType.GitHub, DateTimeOffset.UtcNow),
+            new("sha2", "fix: fix bug", "repo1", SourceType.GitHub, DateTimeOffset.UtcNow)
         };
 
         var pullRequests = new List<PullRequestInfo>
         {
-            new(1, "Add feature", "merged", "john", DateTimeOffset.UtcNow, "repo1", "https://github.com/org/repo/pull/1")
+            new("1", "Add feature", "repo1", SourceType.GitHub, "merged", "https://github.com/org/repo/pull/1", DateTimeOffset.UtcNow)
         };
 
         var rawData = new StandupData(commits, pullRequests, new List<WorkItemInfo>());

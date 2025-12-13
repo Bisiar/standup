@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Standup.Domain.Entities;
+using Xunit;
 
 namespace Standup.Domain.Tests.Entities;
 
@@ -84,7 +85,7 @@ public sealed class UserTests
     {
         // Arrange
         var user = new User { DisplayName = "John Doe" };
-        var repo = new SourceRepository { Name = "my-repo" };
+        var repo = new SourceRepository { Repository = "my-repo" };
 
         // Act
         user.SourceRepositories.Add(repo);
@@ -114,7 +115,7 @@ public sealed class UserTests
     {
         // Arrange
         var user = new User { DisplayName = "John Doe" };
-        var subscription = new TeamSubscription { ConversationId = "conv-123" };
+        var subscription = new TeamSubscription { ChannelId = "conv-123" };
 
         // Act
         user.Subscriptions.Add(subscription);
