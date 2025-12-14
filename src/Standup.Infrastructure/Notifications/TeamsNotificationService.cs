@@ -23,13 +23,17 @@ public class TeamsNotificationService : INotificationService
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(user.TeamsUserId))
+        {
             return false;
+        }
 
         try
         {
             var chat = await GetOrCreateChatAsync(user.TeamsUserId, cancellationToken);
             if (chat == null)
+            {
                 return false;
+            }
 
             var message = new Graph.ChatMessage
             {
@@ -83,16 +87,20 @@ public class TeamsNotificationService : INotificationService
     {
         try
         {
-            var chats = await _graphClient.Me.Chats.GetAsync(requestConfiguration =>
-            {
-                requestConfiguration.QueryParameters.Filter = $"chatType eq 'oneOnOne'";
-            }, cancellationToken: cancellationToken);
+            var chats = await _graphClient.Me.Chats.GetAsync(
+                requestConfiguration =>
+                {
+                    requestConfiguration.QueryParameters.Filter = $"chatType eq 'oneOnOne'";
+                },
+                cancellationToken: cancellationToken);
 
             var existingChat = chats?.Value?.FirstOrDefault(c =>
                 c.Members?.Any(m => m.Id == teamsUserId) == true);
 
             if (existingChat != null)
+            {
                 return existingChat;
+            }
 
             var newChat = new Graph.Chat
             {
