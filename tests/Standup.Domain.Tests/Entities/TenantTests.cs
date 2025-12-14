@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Standup.Domain.Entities;
+using Xunit;
 
 namespace Standup.Domain.Tests.Entities;
 

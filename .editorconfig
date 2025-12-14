@@ -1,0 +1,39 @@
+# EditorConfig - https://editorconfig.org
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.{csproj,props,targets}]
+indent_size = 2
+
+[*.cs]
+# StyleCop Rules
+
+# SA1402: File may only contain a single type - ERROR (build fails)
+dotnet_diagnostic.SA1402.severity = error
+
+# SA1649: File name should match first type name - ERROR
+dotnet_diagnostic.SA1649.severity = error
+
+# Disable some overly strict StyleCop rules
+dotnet_diagnostic.SA1101.severity = none  # Prefix local calls with this
+dotnet_diagnostic.SA1200.severity = none  # Using directives placement
+dotnet_diagnostic.SA1309.severity = none  # Field names should not begin with underscore
+dotnet_diagnostic.SA1633.severity = none  # File should have header
+dotnet_diagnostic.SA1600.severity = none  # Elements should be documented
+dotnet_diagnostic.SA1601.severity = none  # Partial elements should be documented
+dotnet_diagnostic.SA1602.severity = none  # Enumeration items should be documented
+dotnet_diagnostic.SA0001.severity = none  # XML comment analysis disabled
+dotnet_diagnostic.SA1028.severity = none  # Code should not contain trailing whitespace
+dotnet_diagnostic.SA1516.severity = none  # Elements should be separated by blank line (conflicts with records)
+dotnet_diagnostic.SA1413.severity = none  # Use trailing comma in multi-line initializers
+dotnet_diagnostic.SA1201.severity = none  # Property should not follow method (conflicts with records)

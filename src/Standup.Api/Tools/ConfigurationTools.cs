@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Text.Json;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using ModelContextProtocol;
@@ -5,8 +7,6 @@ using ModelContextProtocol.Server;
 using Standup.Application.DTOs;
 using Standup.Application.Features.ConfigureRepository;
 using Standup.Domain.Enums;
-using System.ComponentModel;
-using System.Text.Json;
 
 namespace Standup.Api.Tools;
 
@@ -22,7 +22,8 @@ public sealed class ConfigurationTools
         _httpContextAccessor = httpContextAccessor;
     }
 
-    [McpServerTool, Description("List all configured repositories for the current user")]
+    [McpServerTool]
+    [Description("List all configured repositories for the current user")]
     public async Task<string> ListRepositories()
     {
         var userId = GetCurrentUserId();
@@ -38,7 +39,8 @@ public sealed class ConfigurationTools
         return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
     }
 
-    [McpServerTool, Description("Add a new GitHub repository to track for standup reports")]
+    [McpServerTool]
+    [Description("Add a new GitHub repository to track for standup reports")]
     public async Task<string> AddGitHubRepository(
         [Description("GitHub organization or username")] string organization,
         [Description("Repository name")] string repository,
@@ -70,7 +72,8 @@ public sealed class ConfigurationTools
         return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
     }
 
-    [McpServerTool, Description("Add a new Azure DevOps repository to track for standup reports")]
+    [McpServerTool]
+    [Description("Add a new Azure DevOps repository to track for standup reports")]
     public async Task<string> AddAzureDevOpsRepository(
         [Description("Azure DevOps organization name")] string organization,
         [Description("Project name")] string project,

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:vm="clr-namespace:Standup.Maui.ViewModels"
-             xmlns:models="clr-namespace:Standup.Maui.Models"
+             xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             xmlns:models="clr-namespace:Standup.Application.Models;assembly=Standup.Application"
              x:Class="Standup.Maui.Views.DocumentsPage"
-             x:DataType="vm:DocumentsViewModel"
+             x:DataType="viewModels:DocumentsViewModel"
              Title="Documentation">
 
     <Grid>
@@ -14,31 +15,32 @@
         </Grid.ColumnDefinitions>
 
         <!-- Document List -->
-        <Frame Grid.Column="0" Padding="10" CornerRadius="0"
-               BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1E1E1E}">
+        <Border Grid.Column="0" Padding="10"
+                BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1E1E1E}">
             <VerticalStackLayout>
                 <Label Text="Documents" FontSize="18" FontAttributes="Bold" Margin="10" />
 
                 <CollectionView ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}" SelectionMode="Single">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:DocumentItem">
-                            <Frame Margin="5" Padding="10" CornerRadius="5"
-                                   BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2D2D2D}">
-                                <Frame.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DocumentsViewModel}}, Path=SelectDocumentCommand}"
+                            <Border Margin="5" Padding="10"
+                                    StrokeShape="RoundRectangle 5"
+                                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2D2D2D}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:DocumentsViewModel}}, Path=SelectDocumentCommand}"
                                                          CommandParameter="{Binding .}" />
-                                </Frame.GestureRecognizers>
+                                </Border.GestureRecognizers>
 
                                 <VerticalStackLayout>
                                     <Label Text="{Binding Title}" FontAttributes="Bold" />
                                     <Label Text="{Binding Category}" FontSize="11" TextColor="Gray" />
                                 </VerticalStackLayout>
-                            </Frame>
+                            </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
             </VerticalStackLayout>
-        </Frame>
+        </Border>
 
         <!-- Document Content -->
         <ScrollView Grid.Column="1" Padding="20">
@@ -49,6 +51,6 @@
         </ScrollView>
 
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
-                          HorizontalOptions="Center" VerticalOptions="Center" Grid.ColumnSpan="2" />
+                          HorizontalOptions="Center" VerticalOptions="Center" Grid.ColumnSpan="2" Grid.Column="0" />
     </Grid>
 </ContentPage>

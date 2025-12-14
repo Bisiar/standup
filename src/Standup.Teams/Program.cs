@@ -1,6 +1,7 @@
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
+using Standup.Teams;
 using Standup.Teams.Bots;
 using Standup.Teams.Services;
 

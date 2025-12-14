@@ -1,8 +1,8 @@
 using Microsoft.Graph;
-using Microsoft.Graph.Models;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
+using Graph = Microsoft.Graph.Models;
 
 namespace Standup.Infrastructure.Notifications;
 
@@ -23,19 +23,23 @@ public class TeamsNotificationService : INotificationService
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(user.TeamsUserId))
+        {
             return false;
+        }
 
         try
         {
             var chat = await GetOrCreateChatAsync(user.TeamsUserId, cancellationToken);
             if (chat == null)
-                return false;
-
-            var message = new ChatMessage
             {
-                Body = new ItemBody
+                return false;
+            }
+
+            var message = new Graph.ChatMessage
+            {
+                Body = new Graph.ItemBody
                 {
-                    ContentType = BodyType.Html,
+                    ContentType = Graph.BodyType.Html,
                     Content = FormatAsHtml(report)
                 }
             };
@@ -56,11 +60,11 @@ public class TeamsNotificationService : INotificationService
     {
         try
         {
-            var message = new ChatMessage
+            var message = new Graph.ChatMessage
             {
-                Body = new ItemBody
+                Body = new Graph.ItemBody
                 {
-                    ContentType = BodyType.Html,
+                    ContentType = Graph.BodyType.Html,
                     Content = FormatAsHtml(report)
                 }
             };
@@ -79,27 +83,48 @@ public class TeamsNotificationService : INotificationService
         }
     }
 
-    private async Task<Chat?> GetOrCreateChatAsync(string teamsUserId, CancellationToken cancellationToken)
+    private static string FormatAsHtml(StandupReport report)
+    {
+        var period = $"{report.PeriodStart:MMM dd} - {report.PeriodEnd:MMM dd, yyyy}";
+
+        return $@"
+<div style='font-family: Segoe UI, sans-serif;'>
+    <h3>📋 Standup Update - {period}</h3>
+    <div style='white-space: pre-wrap;'>{report.Summary}</div>
+    <hr/>
+    <small style='color: #666;'>
+        📊 {report.RawData.Commits.Count} commits |
+        🔀 {report.RawData.PullRequests.Count} PRs |
+        📝 {report.RawData.WorkItems.Count} work items
+    </small>
+</div>";
+    }
+
+    private async Task<Graph.Chat?> GetOrCreateChatAsync(string teamsUserId, CancellationToken cancellationToken)
     {
         try
         {
-            var chats = await _graphClient.Me.Chats.GetAsync(requestConfiguration =>
-            {
-                requestConfiguration.QueryParameters.Filter = $"chatType eq 'oneOnOne'";
-            }, cancellationToken: cancellationToken);
+            var chats = await _graphClient.Me.Chats.GetAsync(
+                requestConfiguration =>
+                {
+                    requestConfiguration.QueryParameters.Filter = $"chatType eq 'oneOnOne'";
+                },
+                cancellationToken: cancellationToken);
 
             var existingChat = chats?.Value?.FirstOrDefault(c =>
                 c.Members?.Any(m => m.Id == teamsUserId) == true);
 
             if (existingChat != null)
-                return existingChat;
-
-            var newChat = new Chat
             {
-                ChatType = ChatType.OneOnOne,
-                Members = new List<ConversationMember>
+                return existingChat;
+            }
+
+            var newChat = new Graph.Chat
+            {
+                ChatType = Graph.ChatType.OneOnOne,
+                Members = new List<Graph.ConversationMember>
                 {
-                    new AadUserConversationMember
+                    new Graph.AadUserConversationMember
                     {
                         Roles = new List<string> { "owner" },
                         AdditionalData = new Dictionary<string, object>
@@ -116,22 +141,5 @@ public class TeamsNotificationService : INotificationService
         {
             return null;
         }
-    }
-
-    private static string FormatAsHtml(StandupReport report)
-    {
-        var period = $"{report.PeriodStart:MMM dd} - {report.PeriodEnd:MMM dd, yyyy}";
-
-        return $@"
-<div style='font-family: Segoe UI, sans-serif;'>
-    <h3>📋 Standup Update - {period}</h3>
-    <div style='white-space: pre-wrap;'>{report.Summary}</div>
-    <hr/>
-    <small style='color: #666;'>
-        📊 {report.RawData.Commits.Count} commits |
-        🔀 {report.RawData.PullRequests.Count} PRs |
-        📝 {report.RawData.WorkItems.Count} work items
-    </small>
-</div>";
     }
 }

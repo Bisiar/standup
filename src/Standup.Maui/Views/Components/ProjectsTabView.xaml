@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             xmlns:models="clr-namespace:Standup.Application.Models;assembly=Standup.Application"
+             x:Class="Standup.Maui.Views.Components.ProjectsTabView"
+             x:DataType="viewModels:ProjectListViewModel">
+
+    <Grid Padding="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Text="Your Projects" FontSize="24" FontAttributes="Bold" Margin="0,0,0,10" />
+
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Projects}" SelectionMode="Single"
+                       SelectedItem="{Binding SelectedProject}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:ProjectInstance">
+                    <Border Margin="0,5" Padding="15" StrokeShape="RoundRectangle 8"
+                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=SelectProjectCommand}"
+                                                 CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <VerticalStackLayout Grid.Column="0">
+                                <HorizontalStackLayout Spacing="10">
+                                    <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
+                                    <Label Text="(Default)" FontSize="12" TextColor="Green"
+                                          IsVisible="{Binding IsDefault}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding TenantName}" FontSize="14" TextColor="Gray" />
+                                <Label FontSize="12" TextColor="DimGray">
+                                    <Label.Text>
+                                        <MultiBinding StringFormat="Source: {0} / {1} / {2}">
+                                            <Binding Path="SourceOrganization" />
+                                            <Binding Path="SourceProject" />
+                                            <Binding Path="SourceRepository" />
+                                        </MultiBinding>
+                                    </Label.Text>
+                                </Label>
+                                <Label Text="✓ PAT Configured" FontSize="11" TextColor="Green"
+                                       IsVisible="{Binding SourcePat, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+                                <Label Text="⚠ No PAT - Click Edit" FontSize="11" TextColor="Orange"
+                                       IsVisible="{Binding SourcePat, Converter={StaticResource IsNullOrEmptyConverter}}" />
+                            </VerticalStackLayout>
+
+                            <Button Grid.Column="1" Text="Edit" FontSize="12" Padding="10,5"
+                                    BackgroundColor="#3B82F6" TextColor="White"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=EditProjectCommand}"
+                                    CommandParameter="{Binding .}" Margin="0,0,10,0" />
+
+                            <Button Grid.Column="2" Text="✕" FontSize="14"
+                                    BackgroundColor="Transparent" TextColor="Gray"
+                                    WidthRequest="30" HeightRequest="30" Padding="0"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=DeleteProjectCommand}"
+                                    CommandParameter="{Binding .}" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Edit Project Form -->
+        <Border Grid.Row="2" IsVisible="{Binding IsEditingProject}" Padding="15" StrokeShape="RoundRectangle 8"
+                BackgroundColor="{AppThemeBinding Light=#FFF8E1, Dark=#3D3D1D}" Margin="0,0,0,10">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Edit Project" FontAttributes="Bold" FontSize="16" />
+
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Project Name" FontSize="12" TextColor="Gray" />
+                    <Entry Text="{Binding EditProjectName}" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Tenant Name" FontSize="12" TextColor="Gray" />
+                    <Entry Text="{Binding EditTenantName}" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Personal Access Token (PAT)" FontSize="12" TextColor="Gray" />
+                    <Entry Text="{Binding EditSourcePat}" IsPassword="True" Placeholder="Enter PAT for Azure DevOps/GitHub" />
+                    <Label Text="Required for fetching commits, PRs, and work items from remote" FontSize="10" TextColor="DimGray" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Author Identifier (optional)" FontSize="12" TextColor="Gray" />
+                    <Entry Text="{Binding EditAuthorIdentifier}" Placeholder="Email or username to filter commits" />
+                </VerticalStackLayout>
+
+                <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,10,0,0">
+                    <Button Text="Cancel" Command="{Binding CancelEditProjectCommand}"
+                           BackgroundColor="Gray" TextColor="White" />
+                    <Button Text="Save" Command="{Binding SaveEditProjectCommand}"
+                           BackgroundColor="#3B82F6" TextColor="White" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Add Project Form -->
+        <Border Grid.Row="2" IsVisible="{Binding IsAddingProject}" Padding="15" StrokeShape="RoundRectangle 8"
+                BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Add New Project" FontAttributes="Bold" FontSize="16" />
+
+                <Entry Placeholder="Project Name" Text="{Binding NewProjectName}" />
+                <Entry Placeholder="Tenant Name (e.g., JourneyTeam)" Text="{Binding NewTenantName}" />
+                <Entry Placeholder="API Endpoint URL" Text="{Binding NewApiEndpoint}" />
+
+                <HorizontalStackLayout Spacing="10" HorizontalOptions="End">
+                    <Button Text="Cancel" Command="{Binding CancelAddProjectCommand}"
+                           BackgroundColor="Gray" TextColor="White" />
+                    <Button Text="Add" Command="{Binding AddProjectCommand}"
+                           BackgroundColor="#3B82F6" TextColor="White" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+
+        <Button Grid.Row="2" Text="+ Add Project" Command="{Binding ShowAddProjectCommand}"
+               IsVisible="{Binding IsAddingProject, Converter={StaticResource InvertedBoolConverter}}"
+               HorizontalOptions="End" />
+
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center" VerticalOptions="Center" Grid.RowSpan="3" />
+    </Grid>
+</ContentView>

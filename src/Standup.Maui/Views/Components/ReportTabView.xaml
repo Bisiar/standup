@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             x:Class="Standup.Maui.Views.Components.ReportTabView"
+             x:DataType="viewModels:ReportViewModel">
+
+    <ScrollView>
+        <Grid Padding="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <VerticalStackLayout Grid.Row="0" Spacing="5">
+                <Label Text="{Binding ReportTitle}" FontSize="24" FontAttributes="Bold" />
+                <Label Text="{Binding ReportPeriod}" FontSize="14" TextColor="DimGray" />
+            </VerticalStackLayout>
+
+            <!-- Stats Grid -->
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Margin="0,15">
+                <Border Grid.Column="0" Padding="10" StrokeShape="RoundRectangle 5" BackgroundColor="#3B82F6">
+                    <VerticalStackLayout HorizontalOptions="Center">
+                        <Label Text="{Binding TotalCommits}" FontSize="24" TextColor="White" HorizontalOptions="Center" />
+                        <Label Text="Commits" FontSize="12" TextColor="White" HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="1" Padding="10" StrokeShape="RoundRectangle 5" BackgroundColor="#10B981">
+                    <VerticalStackLayout HorizontalOptions="Center">
+                        <Label Text="{Binding TotalPRs}" FontSize="24" TextColor="White" HorizontalOptions="Center" />
+                        <Label Text="PRs" FontSize="12" TextColor="White" HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="2" Padding="10" StrokeShape="RoundRectangle 5" BackgroundColor="#8B5CF6">
+                    <VerticalStackLayout HorizontalOptions="Center">
+                        <Label Text="{Binding TotalWorkItems}" FontSize="24" TextColor="White" HorizontalOptions="Center" />
+                        <Label Text="Tasks" FontSize="12" TextColor="White" HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- Report Sections -->
+            <VerticalStackLayout Grid.Row="2" Spacing="15">
+
+                <!-- Main Executive Summary -->
+                <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#2D2D2D}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Team Standup Summary" FontSize="16" FontAttributes="Bold" TextColor="#10B981" />
+                        <Label Text="{Binding ExecutiveSummary}"
+                               FontSize="13"
+                               FontFamily="Menlo"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Technical Details - Collapsible -->
+                <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#252525}">
+                    <VerticalStackLayout Spacing="10">
+                        <!-- Toggle Header -->
+                        <Grid>
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ToggleTechnicalCommand}" />
+                            </Grid.GestureRecognizers>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <HorizontalStackLayout Grid.Column="0" Spacing="10">
+                                <Label Text="{Binding IsTechnicalExpanded, Converter={StaticResource BoolToTextConverter}, ConverterParameter='▼|▶'}"
+                                       FontSize="12" VerticalOptions="Center" />
+                                <Label Text="Technical Details" FontSize="16" FontAttributes="Bold" TextColor="#3B82F6" />
+                            </HorizontalStackLayout>
+
+                            <Label Grid.Column="1"
+                                   Text="{Binding HasTechnicalGenerated, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Generated|Click to generate'}"
+                                   FontSize="12"
+                                   TextColor="DimGray"
+                                   VerticalOptions="Center" />
+                        </Grid>
+
+                        <!-- Loading indicator -->
+                        <HorizontalStackLayout Spacing="10"
+                                               IsVisible="{Binding IsGeneratingTechnical}"
+                                               HorizontalOptions="Center">
+                            <ActivityIndicator IsRunning="{Binding IsGeneratingTechnical}"
+                                               HeightRequest="20" WidthRequest="20" />
+                            <Label Text="Generating technical analysis..." FontSize="12" TextColor="Gray" />
+                        </HorizontalStackLayout>
+
+                        <!-- Content (visible when expanded and generated) -->
+                        <Label Text="{Binding TechnicalDetails}"
+                               FontSize="13"
+                               FontFamily="Menlo"
+                               LineBreakMode="WordWrap"
+                               IsVisible="{Binding IsTechnicalExpanded}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding HasTechnicalGenerated}" Value="False">
+                                    <Setter Property="IsVisible" Value="False" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Code Review - Collapsible -->
+                <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#252525}">
+                    <VerticalStackLayout Spacing="10">
+                        <!-- Toggle Header -->
+                        <Grid>
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ToggleCodeReviewCommand}" />
+                            </Grid.GestureRecognizers>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <HorizontalStackLayout Grid.Column="0" Spacing="10">
+                                <Label Text="{Binding IsCodeReviewExpanded, Converter={StaticResource BoolToTextConverter}, ConverterParameter='▼|▶'}"
+                                       FontSize="12" VerticalOptions="Center" />
+                                <Label Text="Code Review" FontSize="16" FontAttributes="Bold" TextColor="#F59E0B" />
+                            </HorizontalStackLayout>
+
+                            <Label Grid.Column="1"
+                                   Text="{Binding HasCodeReviewGenerated, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Generated|Click to generate'}"
+                                   FontSize="12"
+                                   TextColor="DimGray"
+                                   VerticalOptions="Center" />
+                        </Grid>
+
+                        <!-- Loading indicator -->
+                        <HorizontalStackLayout Spacing="10"
+                                               IsVisible="{Binding IsGeneratingCodeReview}"
+                                               HorizontalOptions="Center">
+                            <ActivityIndicator IsRunning="{Binding IsGeneratingCodeReview}"
+                                               HeightRequest="20" WidthRequest="20" />
+                            <Label Text="Generating code review..." FontSize="12" TextColor="Gray" />
+                        </HorizontalStackLayout>
+
+                        <!-- Content (visible when expanded and generated) -->
+                        <Label Text="{Binding CodeReviewDetails}"
+                               FontSize="13"
+                               FontFamily="Menlo"
+                               LineBreakMode="WordWrap"
+                               IsVisible="{Binding IsCodeReviewExpanded}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding HasCodeReviewGenerated}" Value="False">
+                                    <Setter Property="IsVisible" Value="False" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- Actions -->
+            <VerticalStackLayout Grid.Row="3" Spacing="10" Margin="0,15,0,0">
+                <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="Gray" HorizontalOptions="Center" />
+
+                <HorizontalStackLayout Spacing="15" HorizontalOptions="Center">
+                    <Button Text="Copy Summary"
+                            Command="{Binding CopyExecutiveSummaryCommand}"
+                            BackgroundColor="#3B82F6"
+                            TextColor="White"
+                            WidthRequest="150" />
+
+                    <Button Text="Copy All"
+                            Command="{Binding CopyAllCommand}"
+                            BackgroundColor="Gray"
+                            TextColor="White"
+                            WidthRequest="100" />
+
+                    <Button Text="Save"
+                            Command="{Binding SaveReportCommand}"
+                            BackgroundColor="#10B981"
+                            TextColor="White"
+                            WidthRequest="100" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
+</ContentView>

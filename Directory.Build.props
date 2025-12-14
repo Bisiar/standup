@@ -1,0 +1,64 @@
+<Project>
+  <PropertyGroup>
+    <!-- Treat analyzer warnings as errors in CI/Release builds -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- StyleCop Analyzers for all projects -->
+  <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Line Limit Check -->
+  <PropertyGroup>
+    <MaxLinesPerFile>750</MaxLinesPerFile>
+  </PropertyGroup>
+
+  <Target Name="CheckFileLengths" BeforeTargets="BeforeCompile">
+    <ItemGroup>
+      <CSharpFilesToCheck Include="%(Compile.FullPath)" />
+    </ItemGroup>
+
+    <CheckFileLength
+      Files="@(CSharpFilesToCheck)"
+      MaxLines="$(MaxLinesPerFile)" />
+  </Target>
+
+  <UsingTask TaskName="CheckFileLength" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <MaxLines ParameterType="System.Int32" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+          var violations = new System.Collections.Generic.List<string>();
+          foreach (var file in Files)
+          {
+            var path = file.ItemSpec;
+            if (!File.Exists(path)) continue;
+
+            var lineCount = File.ReadLines(path).Count();
+            if (lineCount > MaxLines)
+            {
+              violations.Add($"{Path.GetFileName(path)} has {lineCount} lines (max: {MaxLines})");
+            }
+          }
+
+          if (violations.Count > 0)
+          {
+            Log.LogError("Files exceed maximum line count of " + MaxLines + ":");
+            foreach (var v in violations)
+            {
+              Log.LogError("  - " + v);
+            }
+            return false;
+          }
+          return true;
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+</Project>

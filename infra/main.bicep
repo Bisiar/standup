@@ -151,6 +151,7 @@ module mcp './app/mcp.bicep' = {
   scope: rg
   params: {
     name: functionAppName
+    serviceName: 'api' // Must match azure.yaml service name
     location: location
     tags: tags
     applicationInsightsName: monitoring.outputs.name
@@ -301,6 +302,8 @@ module aiFoundry 'app/ai-foundry.bicep' = if (aiFoundryEnabled) {
     location: location
     tags: tags
     managedIdentityPrincipalId: mcpUserAssignedIdentity.outputs.principalId
+    userIdentityPrincipalId: principalId
+    allowUserIdentityPrincipal: storageEndpointConfig.allowUserIdentityPrincipal
     deploymentName: aiDeploymentName
   }
 }

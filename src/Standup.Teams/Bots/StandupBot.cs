@@ -72,6 +72,28 @@ public sealed class StandupBot : TeamsActivityHandler
         return await base.OnInvokeActivityAsync(turnContext, cancellationToken);
     }
 
+    private static string RemoveBotMention(IMessageActivity activity, string text)
+    {
+        if (activity.Entities == null)
+        {
+            return text;
+        }
+
+        foreach (var entity in activity.Entities)
+        {
+            if (entity.Type == "mention")
+            {
+                var mention = entity.GetAs<Mention>();
+                if (mention?.Text != null)
+                {
+                    text = text.Replace(mention.Text.ToLowerInvariant(), string.Empty).Trim();
+                }
+            }
+        }
+
+        return text;
+    }
+
     private async Task<IActivity> HandleStandupRequestAsync(
         ITurnContext turnContext,
         CancellationToken cancellationToken)
@@ -221,24 +243,5 @@ public sealed class StandupBot : TeamsActivityHandler
             _logger.LogError(ex, "Failed to share standup to channel");
             return new InvokeResponse { Status = 500 };
         }
-    }
-
-    private static string RemoveBotMention(IMessageActivity activity, string text)
-    {
-        if (activity.Entities == null) return text;
-
-        foreach (var entity in activity.Entities)
-        {
-            if (entity.Type == "mention")
-            {
-                var mention = entity.GetAs<Mention>();
-                if (mention?.Text != null)
-                {
-                    text = text.Replace(mention.Text.ToLowerInvariant(), string.Empty).Trim();
-                }
-            }
-        }
-
-        return text;
     }
 }

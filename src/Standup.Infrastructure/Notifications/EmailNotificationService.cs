@@ -1,9 +1,9 @@
 using Microsoft.Graph;
 using Microsoft.Graph.Me.SendMail;
-using Microsoft.Graph.Models;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
+using Graph = Microsoft.Graph.Models;
 
 namespace Standup.Infrastructure.Notifications;
 
@@ -28,19 +28,19 @@ public class EmailNotificationService : INotificationService
 
         try
         {
-            var message = new Message
+            var message = new Graph.Message
             {
                 Subject = $"Standup Update - {report.PeriodEnd:MMMM dd, yyyy}",
-                Body = new ItemBody
+                Body = new Graph.ItemBody
                 {
-                    ContentType = BodyType.Html,
+                    ContentType = Graph.BodyType.Html,
                     Content = FormatAsEmail(report)
                 },
-                ToRecipients = new List<Recipient>
+                ToRecipients = new List<Graph.Recipient>
                 {
-                    new Recipient
+                    new Graph.Recipient
                     {
-                        EmailAddress = new EmailAddress
+                        EmailAddress = new Graph.EmailAddress
                         {
                             Address = user.Email,
                             Name = user.DisplayName

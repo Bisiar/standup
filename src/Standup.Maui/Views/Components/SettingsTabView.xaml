@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             x:Class="Standup.Maui.Views.Components.SettingsTabView"
+             x:DataType="viewModels:SettingsViewModel">
+
+    <ScrollView Padding="20">
+        <VerticalStackLayout Spacing="20">
+            <Label Text="Project Settings" FontSize="24" FontAttributes="Bold" />
+            <Label Text="{Binding CurrentProject.Name, StringFormat='Editing: {0}'}" FontSize="14" TextColor="Gray" />
+
+            <!-- Source Repository Configuration -->
+            <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
+                <VerticalStackLayout Spacing="15">
+                    <HorizontalStackLayout Spacing="10">
+                        <Label Text="Source Repository" FontAttributes="Bold" VerticalOptions="Center" />
+                        <Switch IsToggled="{Binding UseLocalGeneration}" VerticalOptions="Center" />
+                        <Label Text="Local Generation" FontSize="12" TextColor="Gray" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <VerticalStackLayout Spacing="5" IsVisible="{Binding UseLocalGeneration}">
+                        <Label Text="Source Type" FontSize="12" TextColor="Gray" />
+                        <Picker ItemsSource="{Binding SourceTypes}"
+                               SelectedItem="{Binding SourceType}" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5" IsVisible="{Binding UseLocalGeneration}">
+                        <Label Text="Organization" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding SourceOrganization}" Placeholder="e.g., UPREHS or my-github-org" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5" IsVisible="{Binding UseLocalGeneration}">
+                        <Label Text="Project (Azure DevOps only)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding SourceProject}" Placeholder="e.g., AI-Chat-Bot" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5" IsVisible="{Binding UseLocalGeneration}">
+                        <Label Text="Repository" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding SourceRepository}" Placeholder="e.g., AI-Chat-Bot" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5" IsVisible="{Binding UseLocalGeneration}">
+                        <Label Text="Personal Access Token (PAT)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding SourcePat}" Placeholder="Your PAT" IsPassword="True" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5" IsVisible="{Binding UseLocalGeneration}">
+                        <Label Text="Author Filter (optional)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding AuthorIdentifier}" Placeholder="e.g., your email (leave empty for all)" />
+                    </VerticalStackLayout>
+
+                    <Button Text="Test Connection"
+                           Command="{Binding TestConnectionCommand}"
+                           IsEnabled="{Binding IsTestingConnection, Converter={StaticResource InvertedBoolConverter}}"
+                           IsVisible="{Binding UseLocalGeneration}"
+                           BackgroundColor="Gray"
+                           TextColor="White"
+                           HorizontalOptions="Start"
+                           WidthRequest="150" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- API Configuration (when not using local) -->
+            <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
+                    IsVisible="{Binding UseLocalGeneration, Converter={StaticResource InvertedBoolConverter}}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="API Configuration" FontAttributes="Bold" />
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="API Endpoint" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding ApiEndpoint}" Placeholder="https://your-api.azurewebsites.net" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="User ID (from Entra ID)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding UserId}" Placeholder="Your Entra Object ID" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Tenant ID (from Entra ID)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding TenantId}" Placeholder="Your Entra Tenant ID" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="Green" HorizontalOptions="Center" />
+
+            <Button Text="Save Settings"
+                   Command="{Binding SaveCommand}"
+                   BackgroundColor="#3B82F6"
+                   TextColor="White"
+                   HorizontalOptions="Center"
+                   WidthRequest="200" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentView>

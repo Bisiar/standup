@@ -1,4 +1,4 @@
-using Standup.Maui.ViewModels;
+using Standup.Application.ViewModels;
 
 namespace Standup.Maui.Views;
 

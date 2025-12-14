@@ -1,8 +1,9 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
+using Standup.Application.Interfaces;
 using Standup.Domain.Enums;
 using Standup.Infrastructure.SourceProviders;
+using Xunit;
 
 namespace Standup.Infrastructure.Tests.SourceProviders;
 
@@ -13,8 +14,8 @@ public sealed class SourceProviderFactoryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockGitHubProvider = Substitute.For<GitHubSourceProvider>(null!, null!);
-        services.AddSingleton(mockGitHubProvider);
+        services.AddSingleton<IEncryptionService, TestEncryptionService>();
+        services.AddSingleton<GitHubSourceProvider>();
 
         var serviceProvider = services.BuildServiceProvider();
         var factory = new SourceProviderFactory(serviceProvider);
@@ -23,7 +24,7 @@ public sealed class SourceProviderFactoryTests
         var provider = factory.GetProvider(SourceType.GitHub);
 
         // Assert
-        provider.Should().Be(mockGitHubProvider);
+        provider.Should().BeOfType<GitHubSourceProvider>();
     }
 
     [Fact]
@@ -31,8 +32,8 @@ public sealed class SourceProviderFactoryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockAdoProvider = Substitute.For<AzureDevOpsSourceProvider>(null!, null!);
-        services.AddSingleton(mockAdoProvider);
+        services.AddSingleton<IEncryptionService, TestEncryptionService>();
+        services.AddSingleton<AzureDevOpsSourceProvider>();
 
         var serviceProvider = services.BuildServiceProvider();
         var factory = new SourceProviderFactory(serviceProvider);
@@ -41,7 +42,7 @@ public sealed class SourceProviderFactoryTests
         var provider = factory.GetProvider(SourceType.AzureDevOps);
 
         // Assert
-        provider.Should().Be(mockAdoProvider);
+        provider.Should().BeOfType<AzureDevOpsSourceProvider>();
     }
 
     [Fact]
@@ -73,5 +74,18 @@ public sealed class SourceProviderFactoryTests
 
         // Assert
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    /// <summary>
+    /// Simple test encryption service that doesn't actually encrypt.
+    /// Used only for DI registration in factory tests.
+    /// </summary>
+    private sealed class TestEncryptionService : IEncryptionService
+    {
+        public string Encrypt(string plainText) => plainText;
+
+        public Task<string> EncryptAsync(string plainText) => Task.FromResult(plainText);
+
+        public Task<string> DecryptAsync(string cipherText) => Task.FromResult(cipherText);
     }
 }

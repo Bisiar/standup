@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             x:Class="Standup.Maui.Views.AddRepositoryPage"
+             x:DataType="viewModels:AddRepositoryViewModel"
+             Title="Add Repository"
+             BackgroundColor="{StaticResource Gray100}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <!-- Client Code Section -->
+            <Border Stroke="{StaticResource Gray200}"
+                    StrokeThickness="1"
+                    BackgroundColor="White"
+                    Padding="16">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Client Code"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Gray900}" />
+
+                    <Entry Text="{Binding ClientCode}"
+                           Placeholder="e.g., UPHT"
+                           CharacterSpacing="2"
+                           MaxLength="10"
+                           BackgroundColor="{StaticResource Gray100}"
+                           TextTransform="Uppercase" />
+
+                    <!-- Recent Client Codes -->
+                    <FlexLayout BindableLayout.ItemsSource="{Binding RecentClientCodes}"
+                                Wrap="Wrap"
+                                JustifyContent="Start"
+                                IsVisible="{Binding RecentClientCodes.Count, Converter={StaticResource IntToBoolConverter}}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Border Stroke="{StaticResource Primary}"
+                                        StrokeThickness="1"
+                                        BackgroundColor="{StaticResource PrimaryLight}"
+                                        Padding="8,4"
+                                        Margin="0,4,8,0">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="12" />
+                                    </Border.StrokeShape>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:AddRepositoryViewModel}}, Path=SelectRecentClientCodeCommand}"
+                                                              CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="{Binding .}"
+                                           TextColor="{StaticResource Primary}"
+                                           FontSize="12" />
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Source Type Section -->
+            <Border Stroke="{StaticResource Gray200}"
+                    StrokeThickness="1"
+                    BackgroundColor="White"
+                    Padding="16">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Source Type"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Gray900}" />
+
+                    <HorizontalStackLayout Spacing="16">
+                        <RadioButton Content="Azure DevOps"
+                                     IsChecked="True"
+                                     GroupName="SourceType"
+                                     CheckedChanged="OnSourceTypeChanged" />
+                        <RadioButton Content="GitHub"
+                                     GroupName="SourceType"
+                                     CheckedChanged="OnSourceTypeChanged" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Organization & PAT Section -->
+            <Border Stroke="{StaticResource Gray200}"
+                    StrokeThickness="1"
+                    BackgroundColor="White"
+                    Padding="16">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Organization"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Gray900}" />
+
+                    <Entry Text="{Binding Organization}"
+                           Placeholder="e.g., my-organization"
+                           BackgroundColor="{StaticResource Gray100}" />
+
+                    <!-- Existing Credential Indicator -->
+                    <HorizontalStackLayout Spacing="8"
+                                           IsVisible="{Binding HasExistingOrgCredential}">
+                        <Label Text="✓"
+                               TextColor="{StaticResource Success}"
+                               FontSize="14" />
+                        <Label Text="Using saved credential"
+                               TextColor="{StaticResource Success}"
+                               FontSize="12" />
+                    </HorizontalStackLayout>
+
+                    <!-- PAT Entry (show if no existing credential OR user wants to override) -->
+                    <VerticalStackLayout Spacing="8"
+                                         IsVisible="{Binding HasExistingOrgCredential, Converter={StaticResource InvertedBoolConverter}}">
+                        <Label Text="Personal Access Token (PAT)"
+                               FontSize="14"
+                               TextColor="{StaticResource Gray600}" />
+                        <Entry Text="{Binding Pat}"
+                               Placeholder="Enter PAT"
+                               IsPassword="True"
+                               BackgroundColor="{StaticResource Gray100}" />
+                    </VerticalStackLayout>
+
+                    <Button Text="{Binding IsDiscovering, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Discovering...|Validate &amp; Discover'}"
+                            Command="{Binding ValidateAndDiscoverCommand}"
+                            IsEnabled="{Binding IsDiscovering, Converter={StaticResource InvertedBoolConverter}}"
+                            BackgroundColor="{StaticResource Primary}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Project Selection (Azure DevOps only) -->
+            <Border Stroke="{StaticResource Gray200}"
+                    StrokeThickness="1"
+                    BackgroundColor="White"
+                    Padding="16"
+                    IsVisible="{Binding AvailableProjects.Count, Converter={StaticResource IntToBoolConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Project"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Gray900}" />
+
+                    <Picker Title="Select Project"
+                            ItemsSource="{Binding AvailableProjects}"
+                            SelectedItem="{Binding Project}"
+                            BackgroundColor="{StaticResource Gray100}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Repository Selection -->
+            <Border Stroke="{StaticResource Gray200}"
+                    StrokeThickness="1"
+                    BackgroundColor="White"
+                    Padding="16"
+                    IsVisible="{Binding AvailableRepositories.Count, Converter={StaticResource IntToBoolConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Repository"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Gray900}" />
+
+                    <Picker Title="Select Repository"
+                            ItemsSource="{Binding AvailableRepositories}"
+                            SelectedItem="{Binding SelectedRepository}"
+                            ItemDisplayBinding="{Binding Name}"
+                            BackgroundColor="{StaticResource Gray100}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Optional Settings -->
+            <Border Stroke="{StaticResource Gray200}"
+                    StrokeThickness="1"
+                    BackgroundColor="White"
+                    Padding="16"
+                    IsVisible="{Binding SelectedRepository, Converter={StaticResource IsNotNullConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Optional Settings"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Gray900}" />
+
+                    <Label Text="Author Filter"
+                           FontSize="14"
+                           TextColor="{StaticResource Gray600}" />
+                    <Entry Text="{Binding AuthorIdentifier}"
+                           Placeholder="e.g., john@example.com"
+                           BackgroundColor="{StaticResource Gray100}" />
+
+                    <Label Text="Local Path (for offline mode)"
+                           FontSize="14"
+                           TextColor="{StaticResource Gray600}" />
+                    <Entry Text="{Binding LocalPath}"
+                           Placeholder="e.g., /Users/me/repos/my-repo"
+                           BackgroundColor="{StaticResource Gray100}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Status Message -->
+            <Label Text="{Binding StatusMessage}"
+                   TextColor="{StaticResource Gray600}"
+                   HorizontalOptions="Center"
+                   IsVisible="{Binding StatusMessage, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+
+            <!-- Action Buttons -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16" Margin="0,16,0,0">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        Command="{Binding CancelCommand}"
+                        BackgroundColor="{StaticResource Gray300}"
+                        TextColor="{StaticResource Gray900}" />
+
+                <Button Grid.Column="1"
+                        Text="{Binding IsLoading, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Adding...|Add Repository'}"
+                        Command="{Binding AddRepositoryCommand}"
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
+                        BackgroundColor="{StaticResource Primary}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Standup.Domain.ValueObjects;
+using Xunit;
 
 namespace Standup.Domain.Tests.ValueObjects;
 

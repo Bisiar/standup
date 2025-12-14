@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             xmlns:components="clr-namespace:Standup.Maui.Views.Components"
+             x:Class="Standup.Maui.Views.MainTabbedPage"
+             x:DataType="viewModels:FrameworkViewModel"
+             Title="{Binding SelectedTabTitle}">
+    <!-- Manual tab implementation for MacCatalyst since TabbedPage doesn't render tabs -->
+    <!-- Shell's TabBar triggers Swift Observation crash in libswiftObservation.dylib -->
+    <!-- See: https://github.com/dotnet/maui/issues/31982 -->
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Tab Content Area -->
+        <components:StandupTabView Grid.Row="0"
+                                    BindingContext="{Binding StandupVm}"
+                                    IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0}" />
+
+        <components:GroupsTabView Grid.Row="0"
+                                   BindingContext="{Binding GroupsVm}"
+                                   IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}" />
+
+        <components:ProjectsTabView Grid.Row="0"
+                                     BindingContext="{Binding ProjectsVm}"
+                                     IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}" />
+
+        <components:SettingsTabView Grid.Row="0"
+                                     BindingContext="{Binding SettingsVm}"
+                                     IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3}" />
+
+
+        <!-- Tab Bar -->
+        <Border Grid.Row="1" BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1E1E1E}"
+                Padding="10" StrokeThickness="0">
+            <Border.Shadow>
+                <Shadow Brush="Black" Offset="0,-2" Radius="4" Opacity="0.1" />
+            </Border.Shadow>
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
+                <Button Text="Standup"
+                        Command="{Binding SelectTabCommand}"
+                        CommandParameter="{x:Int32 0}"
+                        WidthRequest="100"
+                        TextColor="White">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex}"
+                                     Value="0">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0}"
+                                     Value="False">
+                            <Setter Property="BackgroundColor" Value="DimGray" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Groups"
+                        Command="{Binding SelectTabCommand}"
+                        CommandParameter="{x:Int32 1}"
+                        WidthRequest="100"
+                        TextColor="White">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex}"
+                                     Value="1">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}"
+                                     Value="False">
+                            <Setter Property="BackgroundColor" Value="DimGray" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Projects"
+                        Command="{Binding SelectTabCommand}"
+                        CommandParameter="{x:Int32 2}"
+                        WidthRequest="100"
+                        TextColor="White">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex}"
+                                     Value="2">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}"
+                                     Value="False">
+                            <Setter Property="BackgroundColor" Value="DimGray" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Settings"
+                        Command="{Binding SelectTabCommand}"
+                        CommandParameter="{x:Int32 3}"
+                        WidthRequest="100"
+                        TextColor="White">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex}"
+                                     Value="3">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3}"
+                                     Value="False">
+                            <Setter Property="BackgroundColor" Value="DimGray" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+            </HorizontalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>
