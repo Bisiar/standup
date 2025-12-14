@@ -62,6 +62,13 @@ public sealed class GroupService
         return repository;
     }
 
+    /// <summary>
+    /// Removes a repository from a group.
+    /// </summary>
+    /// <param name="groupId">The ID of the group.</param>
+    /// <param name="repositoryId">The ID of the repository to remove.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task RemoveRepositoryFromGroupAsync(
         string groupId,
         string repositoryId,
@@ -75,8 +82,37 @@ public sealed class GroupService
     }
 
     /// <summary>
+    /// Updates an existing repository within a group.
+    /// </summary>
+    /// <param name="groupId">The ID of the group containing the repository.</param>
+    /// <param name="repository">The updated repository data.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The updated repository.</returns>
+    public async Task<GroupedRepository> UpdateRepositoryInGroupAsync(
+        string groupId,
+        GroupedRepository repository,
+        CancellationToken cancellationToken = default)
+    {
+        var group = await _groupRepository.GetByIdAsync(groupId, cancellationToken)
+            ?? throw new InvalidOperationException($"Group {groupId} not found");
+
+        var index = group.Repositories.FindIndex(r => r.Id == repository.Id);
+        if (index < 0)
+        {
+            throw new InvalidOperationException($"Repository {repository.Id} not found in group {groupId}");
+        }
+
+        group.Repositories[index] = repository;
+        await _groupRepository.UpdateAsync(group, cancellationToken);
+        return repository;
+    }
+
+    /// <summary>
     /// Gets the PAT for a repository, using repo-level PAT if available, otherwise org-level PAT.
     /// </summary>
+    /// <param name="repository">The repository to get the PAT for.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The decrypted PAT, or null if no PAT is configured.</returns>
     public async Task<string?> GetDecryptedPatForRepositoryAsync(
         GroupedRepository repository,
         CancellationToken cancellationToken = default)

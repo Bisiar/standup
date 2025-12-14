@@ -7,9 +7,11 @@ namespace Standup.Application.Interfaces;
 /// </summary>
 public interface IReportHistoryRepository
 {
-    Task<IEnumerable<ReportHistory>> GetByClientCodeAsync(string clientCode, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ReportHistory>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<ReportHistory?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
     Task<IEnumerable<ReportHistory>> GetByGroupIdAsync(string groupId, CancellationToken cancellationToken = default);
-    Task<ReportHistory?> GetLatestByClientCodeAsync(string clientCode, CancellationToken cancellationToken = default);
+    Task<ReportHistory?> GetLatestByGroupIdAsync(string groupId, CancellationToken cancellationToken = default);
     Task<ReportHistory> AddAsync(ReportHistory history, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string id, CancellationToken cancellationToken = default);
     Task DeleteByGroupIdAsync(string groupId, CancellationToken cancellationToken = default);
 }

@@ -1,6 +1,6 @@
-using Standup.Maui.Models;
+using Standup.Application.Models;
 
-namespace Standup.Maui.Services;
+namespace Standup.Application.Interfaces;
 
 public interface IDocumentService
 {

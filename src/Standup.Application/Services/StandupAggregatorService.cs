@@ -34,8 +34,7 @@ public class StandupAggregatorService : IStandupAggregatorService
             return (
                 Commits: repoCommits,
                 PullRequests: repoPrs,
-                WorkItems: repoWorkItems.Concat(completedItems)
-            );
+                WorkItems: repoWorkItems.Concat(completedItems));
         });
 
         var results = await Task.WhenAll(tasks);

@@ -1,6 +1,6 @@
 using Standup.Application.DTOs;
 
-namespace Standup.Maui.Services;
+namespace Standup.Application.Interfaces;
 
 public interface IStandupApiClient
 {

@@ -2,13 +2,12 @@ using Standup.Domain.Enums;
 
 namespace Standup.Application.DTOs;
 
-public record SourceRepositoryDto(
-    string Id,
+public record CreateSourceRepositoryDto(
     SourceType SourceType,
     string Organization,
     string? Project,
     string Repository,
     string? DisplayName,
     string AuthorIdentifier,
-    string DefaultBranch,
-    bool IsActive);
+    string? PersonalAccessToken,
+    string DefaultBranch = "main");
