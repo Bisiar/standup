@@ -302,6 +302,8 @@ module aiFoundry 'app/ai-foundry.bicep' = if (aiFoundryEnabled) {
     location: location
     tags: tags
     managedIdentityPrincipalId: mcpUserAssignedIdentity.outputs.principalId
+    userIdentityPrincipalId: principalId
+    allowUserIdentityPrincipal: storageEndpointConfig.allowUserIdentityPrincipal
     deploymentName: aiDeploymentName
   }
 }
