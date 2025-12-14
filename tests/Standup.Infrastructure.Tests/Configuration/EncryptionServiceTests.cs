@@ -66,7 +66,7 @@ public sealed class EncryptionServiceTests
     public async Task RoundTrip_WithEmptyString_Works()
     {
         // Arrange
-        var plainText = "";
+        var plainText = string.Empty;
 
         // Act
         var encrypted = await _service.EncryptAsync(plainText);

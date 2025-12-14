@@ -3,21 +3,25 @@ using Standup.Application.Interfaces;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Infrastructure.SourceProviders;
+using Standup.Infrastructure.Tests.Configuration;
 using Xunit;
 
 namespace Standup.Infrastructure.Tests.SourceProviders;
 
 public class AzureDevOpsSourceProviderTests
 {
-    // PAT should be set via environment variable AZURE_DEVOPS_PAT for integration tests
-    private static readonly string Pat = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT") ?? "";
     private const string Organization = "UPREHS";
 
     private readonly AzureDevOpsSourceProvider _provider;
     private readonly TestEncryptionService _encryptionService;
+    private readonly string _pat;
 
     public AzureDevOpsSourceProviderTests()
     {
+        // Load environment variables from .env file
+        TestEnvironmentLoader.LoadEnvironmentVariables();
+
+        _pat = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT") ?? string.Empty;
         _encryptionService = new TestEncryptionService();
         _provider = new AzureDevOpsSourceProvider(_encryptionService);
     }
@@ -139,6 +143,7 @@ public class AzureDevOpsSourceProviderTests
             {
                 Console.WriteLine($"- Committed: {commit.Message?.Split('\n').FirstOrDefault()}");
             }
+
             foreach (var item in completedWorkItems)
             {
                 Console.WriteLine($"- Completed [{item.Type}]: {item.Title}");
@@ -191,9 +196,9 @@ public class AzureDevOpsSourceProviderTests
             Organization = Organization,
             Project = "AI-Chat-Bot",
             Repository = "AI-Chat-Bot",
-            AuthorIdentifier = "", // Empty to get all authors
-            EncryptedPat = _encryptionService.Encrypt(Pat),
-            IsActive = true
+            AuthorIdentifier = string.Empty, // Empty to get all authors
+            EncryptedPat = _encryptionService.Encrypt(_pat),
+            IsActive = true,
         };
     }
 
