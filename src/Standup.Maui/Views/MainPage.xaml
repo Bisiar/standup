@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:vm="clr-namespace:Standup.Maui.ViewModels"
+             xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
              x:Class="Standup.Maui.Views.MainPage"
-             x:DataType="vm:MainViewModel"
+             x:DataType="viewModels:MainViewModel"
              Title="Standup">
 
     <Shell.TitleView>
@@ -21,7 +22,8 @@
 
             <Label Text="Automate your daily standup reports" FontSize="16" TextColor="Gray" HorizontalOptions="Center" />
 
-            <Frame BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2D2D2D}" Padding="20" CornerRadius="10">
+            <Border BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2D2D2D}" Padding="20"
+                    StrokeShape="RoundRectangle 10">
                 <VerticalStackLayout Spacing="15">
                     <Label Text="{Binding CurrentProject.Name, StringFormat='Current Project: {0}'}" FontSize="16" />
                     <Label Text="{Binding CurrentProject.TenantName, StringFormat='Tenant: {0}'}" FontSize="14" TextColor="Gray" />
@@ -31,7 +33,7 @@
                             BackgroundColor="{StaticResource Primary}"
                             TextColor="White" />
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
         </VerticalStackLayout>
 
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"

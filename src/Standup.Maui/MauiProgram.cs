@@ -4,9 +4,16 @@ using Serilog;
 using Serilog.Events;
 using Standup.Application.Interfaces;
 using Standup.Application.Services;
+using Standup.Application.ViewModels;
+using Standup.Domain.Interfaces;
+using Standup.Infrastructure.AI;
+using Standup.Infrastructure.Configuration;
+using Standup.Infrastructure.Git;
+using Standup.Infrastructure.Http;
+using Standup.Infrastructure.Services;
+using Standup.Infrastructure.SourceProviders;
 using Standup.Maui.Repositories;
 using Standup.Maui.Services;
-using Standup.Maui.ViewModels;
 using Standup.Maui.Views;
 #if MACCATALYST
 using Standup.Maui.Platforms.MacCatalyst.Helpers;
@@ -46,6 +53,7 @@ public static class MauiProgram
 
             builder
                 .UseMauiApp<App>()
+
                 // .UseMauiCommunityToolkit() // Temporarily disabled to test if this causes crash
                 .ConfigureFonts(fonts =>
                 {
@@ -59,6 +67,28 @@ public static class MauiProgram
             builder.Services.AddSingleton<IStandupApiClient, StandupApiClient>();
             builder.Services.AddSingleton<IDocumentService, DocumentService>();
             builder.Services.AddSingleton<IEncryptionService, MauiEncryptionService>();
+            builder.Services.AddSingleton<IClipboardService, MauiClipboardService>();
+
+            // AI Summary Service - MUST be registered BEFORE LocalStandupService
+            // because LocalStandupService has an optional dependency on IAISummaryService
+            // Configure from environment or preferences
+            builder.Services.Configure<AIFoundryOptions>(options =>
+            {
+                options.Endpoint = Preferences.Get("AIFoundry__Endpoint", "https://cog-vtht5f2batt7q.openai.azure.com/");
+                options.DeploymentName = Preferences.Get("AIFoundry__DeploymentName", "gpt-4o");
+                options.ApiKey = Preferences.Get("AIFoundry__ApiKey", string.Empty);
+
+                // Use Azure Identity (DefaultAzureCredential) when no API key is provided
+                options.UseAzureIdentity = string.IsNullOrEmpty(options.ApiKey);
+                Log.Information(
+                    "AI Foundry configured: Endpoint={Endpoint}, Deployment={Deployment}, UseIdentity={UseIdentity}",
+                    options.Endpoint,
+                    options.DeploymentName,
+                    options.UseAzureIdentity);
+            });
+            builder.Services.AddSingleton<IAISummaryService, AIFoundrySummaryService>();
+
+            // LocalStandupService depends on IAISummaryService (must be registered after)
             builder.Services.AddSingleton<ILocalStandupService, LocalStandupService>();
 
             // Repository Groups - Repositories (MAUI-specific Preferences-based persistence)
@@ -69,6 +99,14 @@ public static class MauiProgram
             // Repository Groups - Application Services
             builder.Services.AddSingleton<GroupService>();
             builder.Services.AddSingleton<CredentialService>();
+            builder.Services.AddSingleton<ReportHistoryService>();
+
+            // Local Git Services
+            builder.Services.AddSingleton<GitConfigParser>();
+            builder.Services.AddSingleton<LocalGitService>();
+
+            // Repository Discovery Service
+            builder.Services.AddSingleton<IRepositoryDiscoveryService, RepositoryDiscoveryService>();
 
             // HTTP Client
             builder.Services.AddHttpClient<IStandupApiClient, StandupApiClient>(client =>
@@ -76,23 +114,33 @@ public static class MauiProgram
                 // Base URL will be set per project instance
             });
 
+            // Folder Picker Service (MAUI-specific implementation)
+            builder.Services.AddSingleton<IFolderPickerService, MauiFolderPickerService>();
+
             // ViewModels
             Log.Debug("Registering ViewModels");
             builder.Services.AddTransient<MainViewModel>();
             builder.Services.AddTransient<ProjectListViewModel>();
+            builder.Services.AddTransient<GroupListViewModel>();
             builder.Services.AddTransient<StandupViewModel>();
             builder.Services.AddTransient<SettingsViewModel>();
             builder.Services.AddTransient<RepositoryConfigViewModel>();
             builder.Services.AddTransient<DocumentsViewModel>();
+            builder.Services.AddTransient<AddRepositoryViewModel>();
+            builder.Services.AddTransient<ReportViewModel>();
+            builder.Services.AddTransient<FrameworkViewModel>();
 
             // Views
             Log.Debug("Registering Views");
             builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<MainTabbedPage>();
             builder.Services.AddTransient<ProjectListPage>();
+            builder.Services.AddTransient<GroupListPage>();
             builder.Services.AddTransient<StandupPage>();
             builder.Services.AddTransient<SettingsPage>();
             builder.Services.AddTransient<RepositoryConfigPage>();
             builder.Services.AddTransient<DocumentsPage>();
+            builder.Services.AddTransient<AddRepositoryPage>();
 
             // Configure logging
             Log.Information("Configuring logging providers");

@@ -1,7 +1,7 @@
+using System.Text.Json;
 using Serilog;
 using Standup.Application.Interfaces;
 using Standup.Domain.Entities;
-using System.Text.Json;
 
 namespace Standup.Maui.Repositories;
 
@@ -13,35 +13,37 @@ public sealed class PreferencesReportHistoryRepository : IReportHistoryRepositor
     private const string HistoryKey = "standup_report_history";
     private List<ReportHistory>? _cachedHistory;
 
-    public async Task<IEnumerable<ReportHistory>> GetByClientCodeAsync(
-        string clientCode,
-        CancellationToken cancellationToken = default)
+    public Task<IEnumerable<ReportHistory>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var all = await GetAllAsync(cancellationToken);
-        return all.Where(h => h.ClientCode.Equals(clientCode, StringComparison.OrdinalIgnoreCase))
-                  .OrderByDescending(h => h.GeneratedAt);
+        return LoadAllAsync(cancellationToken);
+    }
+
+    public async Task<ReportHistory?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var all = await LoadAllAsync(cancellationToken);
+        return all.FirstOrDefault(h => h.Id == id);
     }
 
     public async Task<IEnumerable<ReportHistory>> GetByGroupIdAsync(
         string groupId,
         CancellationToken cancellationToken = default)
     {
-        var all = await GetAllAsync(cancellationToken);
+        var all = await LoadAllAsync(cancellationToken);
         return all.Where(h => h.GroupId == groupId)
                   .OrderByDescending(h => h.GeneratedAt);
     }
 
-    public async Task<ReportHistory?> GetLatestByClientCodeAsync(
-        string clientCode,
+    public async Task<ReportHistory?> GetLatestByGroupIdAsync(
+        string groupId,
         CancellationToken cancellationToken = default)
     {
-        var byClient = await GetByClientCodeAsync(clientCode, cancellationToken);
-        return byClient.FirstOrDefault();
+        var byGroup = await GetByGroupIdAsync(groupId, cancellationToken);
+        return byGroup.FirstOrDefault();
     }
 
     public async Task<ReportHistory> AddAsync(ReportHistory history, CancellationToken cancellationToken = default)
     {
-        var all = (await GetAllAsync(cancellationToken)).ToList();
+        var all = (await LoadAllAsync(cancellationToken)).ToList();
 
         history.Id = Guid.NewGuid().ToString();
         history.GeneratedAt = DateTimeOffset.UtcNow;
@@ -50,13 +52,23 @@ public sealed class PreferencesReportHistoryRepository : IReportHistoryRepositor
         _cachedHistory = all;
         SaveHistory();
 
-        Log.Information("Added report history for {ClientCode}", history.ClientCode);
+        Log.Information("Added report history for group {GroupName}", history.GroupName);
         return history;
+    }
+
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var all = (await LoadAllAsync(cancellationToken)).ToList();
+        var removed = all.RemoveAll(h => h.Id == id);
+        _cachedHistory = all;
+        SaveHistory();
+
+        Log.Information("Deleted report history: {Id} (removed {Count})", id, removed);
     }
 
     public async Task DeleteByGroupIdAsync(string groupId, CancellationToken cancellationToken = default)
     {
-        var all = (await GetAllAsync(cancellationToken)).ToList();
+        var all = (await LoadAllAsync(cancellationToken)).ToList();
         all.RemoveAll(h => h.GroupId == groupId);
         _cachedHistory = all;
         SaveHistory();
@@ -64,7 +76,7 @@ public sealed class PreferencesReportHistoryRepository : IReportHistoryRepositor
         Log.Information("Deleted report history for group: {GroupId}", groupId);
     }
 
-    private Task<IEnumerable<ReportHistory>> GetAllAsync(CancellationToken cancellationToken = default)
+    private Task<IEnumerable<ReportHistory>> LoadAllAsync(CancellationToken cancellationToken = default)
     {
         if (_cachedHistory != null)
         {
@@ -96,7 +108,10 @@ public sealed class PreferencesReportHistoryRepository : IReportHistoryRepositor
 
     private void SaveHistory()
     {
-        if (_cachedHistory == null) return;
+        if (_cachedHistory == null)
+        {
+            return;
+        }
 
         var json = JsonSerializer.Serialize(_cachedHistory);
         Preferences.Default.Set(HistoryKey, json);

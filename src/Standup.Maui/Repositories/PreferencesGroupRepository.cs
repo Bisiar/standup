@@ -1,7 +1,7 @@
+using System.Text.Json;
 using Serilog;
 using Standup.Application.Interfaces;
 using Standup.Domain.Entities;
-using System.Text.Json;
 
 namespace Standup.Maui.Repositories;
 
@@ -60,7 +60,10 @@ public sealed class PreferencesGroupRepository : IGroupRepository
         if (!string.IsNullOrEmpty(defaultId))
         {
             var defaultGroup = groups.FirstOrDefault(g => g.Id == defaultId);
-            if (defaultGroup != null) return defaultGroup;
+            if (defaultGroup != null)
+            {
+                return defaultGroup;
+            }
         }
 
         return groups.FirstOrDefault(g => g.IsDefault) ?? groups.FirstOrDefault();
@@ -72,7 +75,10 @@ public sealed class PreferencesGroupRepository : IGroupRepository
 
         if (group.IsDefault)
         {
-            foreach (var g in groups) g.IsDefault = false;
+            foreach (var g in groups)
+            {
+                g.IsDefault = false;
+            }
         }
 
         groups.Add(group);
@@ -89,12 +95,19 @@ public sealed class PreferencesGroupRepository : IGroupRepository
         var index = groups.FindIndex(g => g.Id == group.Id);
 
         if (index < 0)
+        {
             throw new InvalidOperationException($"Group {group.Id} not found");
+        }
 
         if (group.IsDefault)
         {
             for (var i = 0; i < groups.Count; i++)
-                if (i != index) groups[i].IsDefault = false;
+            {
+                if (i != index)
+                {
+                    groups[i].IsDefault = false;
+                }
+            }
         }
 
         groups[index] = group;
@@ -120,7 +133,11 @@ public sealed class PreferencesGroupRepository : IGroupRepository
         Preferences.Default.Set(DefaultGroupKey, groupId);
 
         var groups = (await GetAllAsync(cancellationToken)).ToList();
-        foreach (var g in groups) g.IsDefault = g.Id == groupId;
+        foreach (var g in groups)
+        {
+            g.IsDefault = g.Id == groupId;
+        }
+
         _cachedGroups = groups;
         SaveGroups();
 
@@ -129,7 +146,10 @@ public sealed class PreferencesGroupRepository : IGroupRepository
 
     private void SaveGroups()
     {
-        if (_cachedGroups == null) return;
+        if (_cachedGroups == null)
+        {
+            return;
+        }
 
         var json = JsonSerializer.Serialize(_cachedGroups);
         Preferences.Default.Set(GroupsKey, json);

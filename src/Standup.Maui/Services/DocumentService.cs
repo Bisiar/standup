@@ -1,5 +1,6 @@
-using Standup.Maui.Models;
 using System.Reflection;
+using Standup.Application.Interfaces;
+using Standup.Application.Models;
 
 namespace Standup.Maui.Services;
 
@@ -12,14 +13,12 @@ public class DocumentService : IDocumentService
             .Where(r => r.StartsWith("Docs.") && r.EndsWith(".md"))
             .Select(r =>
             {
-                var path = r.Replace("Docs.", "").Replace(".md", "");
-                var parts = path.Split('.');
-                return new DocumentItem
-                {
-                    Path = r,
-                    Title = FormatTitle(parts.Last()),
-                    Category = parts.Length > 1 ? parts.First() : "General"
-                };
+                var resourcePath = r.Replace("Docs.", string.Empty).Replace(".md", string.Empty);
+                var parts = resourcePath.Split('.');
+                return new DocumentItem(
+                    Path: r,
+                    Title: FormatTitle(parts.Last()),
+                    Category: parts.Length > 1 ? parts.First() : "General");
             })
             .OrderBy(d => d.Category)
             .ThenBy(d => d.Title)
@@ -34,7 +33,9 @@ public class DocumentService : IDocumentService
         using var stream = assembly.GetManifestResourceStream(path);
 
         if (stream == null)
+        {
             return "Document not found.";
+        }
 
         using var reader = new StreamReader(stream);
         return await reader.ReadToEndAsync();

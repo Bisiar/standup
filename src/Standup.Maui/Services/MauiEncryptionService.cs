@@ -10,17 +10,6 @@ public sealed class MauiEncryptionService : IEncryptionService
     private const string EncryptionKeyStorageKey = "standup_encryption_key";
     private byte[]? _key;
 
-    // Use Preferences instead of SecureStorage for development (no provisioning profile needed)
-    private static string? GetPreference(string key)
-    {
-        return Preferences.Default.Get<string?>(key, null);
-    }
-
-    private static void SetPreference(string key, string value)
-    {
-        Preferences.Default.Set(key, value);
-    }
-
     public string Encrypt(string plainText)
     {
         Log.Debug("MauiEncryptionService.Encrypt called");
@@ -68,6 +57,24 @@ public sealed class MauiEncryptionService : IEncryptionService
         return Task.FromResult(Encoding.UTF8.GetString(plainBytes));
     }
 
+    // Use Preferences instead of SecureStorage for development (no provisioning profile needed)
+    private static string? GetPreference(string key)
+    {
+        return Preferences.Default.Get<string?>(key, null);
+    }
+
+    private static void SetPreference(string key, string value)
+    {
+        Preferences.Default.Set(key, value);
+    }
+
+    private static byte[] GenerateKey()
+    {
+        using var aes = Aes.Create();
+        aes.GenerateKey();
+        return aes.Key;
+    }
+
     private byte[] GetOrCreateKey()
     {
         if (_key != null)
@@ -92,12 +99,5 @@ public sealed class MauiEncryptionService : IEncryptionService
         Log.Information("New encryption key saved to Preferences");
 
         return _key;
-    }
-
-    private static byte[] GenerateKey()
-    {
-        using var aes = Aes.Create();
-        aes.GenerateKey();
-        return aes.Key;
     }
 }

@@ -1,8 +1,8 @@
+using System.Text.Json;
 using Serilog;
 using Standup.Application.Interfaces;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
-using System.Text.Json;
 
 namespace Standup.Maui.Repositories;
 
@@ -94,7 +94,10 @@ public sealed class PreferencesCredentialRepository : ICredentialRepository
 
     private void SaveCredentials()
     {
-        if (_cachedCredentials == null) return;
+        if (_cachedCredentials == null)
+        {
+            return;
+        }
 
         var json = JsonSerializer.Serialize(_cachedCredentials);
         Preferences.Default.Set(CredentialsKey, json);

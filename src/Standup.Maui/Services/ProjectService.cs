@@ -1,6 +1,7 @@
-using Serilog;
-using Standup.Maui.Models;
 using System.Text.Json;
+using Serilog;
+using Standup.Application.Interfaces;
+using Standup.Application.Models;
 
 namespace Standup.Maui.Services;
 
@@ -9,18 +10,6 @@ public class ProjectService : IProjectService
     private const string ProjectsKey = "standup_projects";
     private const string CurrentProjectKey = "standup_current_project";
     private List<ProjectInstance>? _cachedProjects;
-
-    // Use Preferences instead of SecureStorage for development (no provisioning profile needed)
-    // SecureStorage requires Keychain entitlements which need a provisioning profile on MacCatalyst
-    private static string? GetPreference(string key)
-    {
-        return Preferences.Default.Get<string?>(key, null);
-    }
-
-    private static void SetPreference(string key, string value)
-    {
-        Preferences.Default.Set(key, value);
-    }
 
     public async Task<IEnumerable<ProjectInstance>> GetProjectsAsync()
     {
@@ -41,34 +30,39 @@ public class ProjectService : IProjectService
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Preferences.Get failed for key {Key}. Type: {ExType}, Message: {Message}",
-                ProjectsKey, ex.GetType().Name, ex.Message);
+            Log.Error(
+                ex,
+                "Preferences.Get failed for key {Key}. Type: {ExType}, Message: {Message}",
+                ProjectsKey,
+                ex.GetType().Name,
+                ex.Message);
         }
 
         if (string.IsNullOrEmpty(json))
         {
             Log.Information("No existing projects found, creating default UPREHS project");
-            _cachedProjects = new List<ProjectInstance>
-            {
-                new ProjectInstance
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Name = "UPREHS AI-Chat-Bot",
-                    TenantName = "UPREHS",
-                    ApiEndpoint = "https://standup-journeyteam.azurewebsites.net",
-                    IsDefault = true,
-                    UseLocalGeneration = true,
-                    SourceType = Domain.Enums.SourceType.AzureDevOps,
-                    SourceOrganization = "UPREHS",
-                    SourceProject = "AI-Chat-Bot",
-                    SourceRepository = "AI-Chat-Bot",
-                    SourcePat = "", // User must configure PAT in Settings
-                    AuthorIdentifier = ""
-                }
-            };
+            _cachedProjects =
+            [
+                new ProjectInstance(
+                    Id: Guid.NewGuid().ToString(),
+                    Name: "UPREHS AI-Chat-Bot",
+                    TenantName: "UPREHS",
+                    ApiEndpoint: "https://standup-journeyteam.azurewebsites.net",
+                    IsDefault: true,
+                    UseLocalGeneration: true,
+                    SourceType: Domain.Enums.SourceType.AzureDevOps,
+                    SourceOrganization: "UPREHS",
+                    SourceProject: "AI-Chat-Bot",
+                    SourceRepository: "AI-Chat-Bot",
+                    SourcePat: string.Empty, // User must configure PAT in Settings
+                    AuthorIdentifier: string.Empty)
+            ];
 
-            Log.Information("Default project created: {Name}, Org: {Org}, Project: {Project}",
-                _cachedProjects[0].Name, _cachedProjects[0].SourceOrganization, _cachedProjects[0].SourceProject);
+            Log.Information(
+                "Default project created: {Name}, Org: {Org}, Project: {Project}",
+                _cachedProjects[0].Name,
+                _cachedProjects[0].SourceOrganization,
+                _cachedProjects[0].SourceProject);
 
             await SaveProjectsAsync();
         }
@@ -82,8 +76,11 @@ public class ProjectService : IProjectService
 
                 foreach (var p in _cachedProjects)
                 {
-                    Log.Information("  Project: {Name}, Org: {Org}, UseLocal: {UseLocal}",
-                        p.Name, p.SourceOrganization, p.UseLocalGeneration);
+                    Log.Information(
+                        "  Project: {Name}, Org: {Org}, UseLocal: {UseLocal}",
+                        p.Name,
+                        p.SourceOrganization,
+                        p.UseLocalGeneration);
                 }
             }
             catch (Exception ex)
@@ -134,21 +131,23 @@ public class ProjectService : IProjectService
 
         var projects = (await GetProjectsAsync()).ToList();
 
-        project.Id = Guid.NewGuid().ToString();
-        project.CreatedAt = DateTimeOffset.UtcNow;
-
-        if (project.IsDefault)
+        var newProject = project with
         {
-            foreach (var p in projects)
-                p.IsDefault = false;
+            Id = Guid.NewGuid().ToString(),
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        if (newProject.IsDefault)
+        {
+            projects = projects.Select(p => p with { IsDefault = false }).ToList();
         }
 
-        projects.Add(project);
+        projects.Add(newProject);
         _cachedProjects = projects;
         await SaveProjectsAsync();
 
-        Log.Information("Project added with ID: {Id}", project.Id);
-        return project;
+        Log.Information("Project added with ID: {Id}", newProject.Id);
+        return newProject;
     }
 
     public async Task<ProjectInstance> UpdateProjectAsync(ProjectInstance project)
@@ -166,8 +165,7 @@ public class ProjectService : IProjectService
 
         if (project.IsDefault)
         {
-            foreach (var p in projects)
-                p.IsDefault = false;
+            projects = projects.Select(p => p with { IsDefault = false }).ToList();
         }
 
         projects[index] = project;
@@ -201,12 +199,27 @@ public class ProjectService : IProjectService
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to save current project ID to Preferences. Type: {ExType}, Message: {Message}",
-                ex.GetType().Name, ex.Message);
+            Log.Error(
+                ex,
+                "Failed to save current project ID to Preferences. Type: {ExType}, Message: {Message}",
+                ex.GetType().Name,
+                ex.Message);
             throw;
         }
 
         await Task.CompletedTask;
+    }
+
+    // Use Preferences instead of SecureStorage for development (no provisioning profile needed)
+    // SecureStorage requires Keychain entitlements which need a provisioning profile on MacCatalyst
+    private static string? GetPreference(string key)
+    {
+        return Preferences.Default.Get<string?>(key, null);
+    }
+
+    private static void SetPreference(string key, string value)
+    {
+        Preferences.Default.Set(key, value);
     }
 
     private Task SaveProjectsAsync()
@@ -227,8 +240,12 @@ public class ProjectService : IProjectService
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Preferences.Set FAILED for key {Key}. Type: {ExType}, Message: {Message}",
-                ProjectsKey, ex.GetType().Name, ex.Message);
+            Log.Error(
+                ex,
+                "Preferences.Set FAILED for key {Key}. Type: {ExType}, Message: {Message}",
+                ProjectsKey,
+                ex.GetType().Name,
+                ex.Message);
             throw;
         }
 
