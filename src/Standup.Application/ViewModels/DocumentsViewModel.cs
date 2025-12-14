@@ -1,10 +1,10 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Standup.Maui.Models;
-using Standup.Maui.Services;
-using System.Collections.ObjectModel;
+using Standup.Application.Interfaces;
+using Standup.Application.Models;
 
-namespace Standup.Maui.ViewModels;
+namespace Standup.Application.ViewModels;
 
 public partial class DocumentsViewModel : ObservableObject
 {

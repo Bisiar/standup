@@ -1,0 +1,582 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Standup.Application.DTOs;
+using Standup.Application.Interfaces;
+using Standup.Application.Models;
+using Standup.Application.Services;
+using Standup.Domain.Entities;
+using Standup.Domain.Enums;
+using Standup.Domain.Interfaces;
+
+namespace Standup.Application.ViewModels;
+
+public partial class StandupViewModel : ObservableObject
+{
+    private readonly IProjectService _projectService;
+    private readonly IStandupApiClient _apiClient;
+    private readonly ILocalStandupService _localStandupService;
+    private readonly IClipboardService _clipboardService;
+    private readonly GroupService _groupService;
+    private readonly ReportHistoryService _reportHistoryService;
+
+    [ObservableProperty]
+    private ProjectInstance? _currentProject;
+
+    [ObservableProperty]
+    private StandupReportDto? _latestReport;
+
+    [ObservableProperty]
+    private GroupedStandupReportDto? _groupedReport;
+
+    [ObservableProperty]
+    private ObservableCollection<RepositoryGroup> _groups = new();
+
+    [ObservableProperty]
+    private RepositoryGroup? _selectedGroup;
+
+    [ObservableProperty]
+    private DateTimeOffset _periodStart = DateTimeOffset.UtcNow.AddDays(-7);
+
+    [ObservableProperty]
+    private DateTimeOffset _periodEnd = DateTimeOffset.UtcNow;
+
+    [ObservableProperty]
+    private bool _useGroupMode = true;
+
+    /// <summary>
+    /// Toggle to generate Executive summary (business-focused, for stakeholders).
+    /// </summary>
+    [ObservableProperty]
+    private bool _generateExecutive = true;
+
+    /// <summary>
+    /// Toggle to generate Technical summary (developer-focused, code details).
+    /// </summary>
+    [ObservableProperty]
+    private bool _generateTechnical;
+
+    /// <summary>
+    /// Toggle to generate Code Review summary (security, quality, testing).
+    /// </summary>
+    [ObservableProperty]
+    private bool _generateCodeReview;
+
+    [ObservableProperty]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    private bool _isGenerating;
+
+    [ObservableProperty]
+    private string _statusMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _reportContent = string.Empty;
+
+    /// <summary>
+    /// HTML-formatted report content for WebView display.
+    /// </summary>
+    [ObservableProperty]
+    private string _htmlReportContent = string.Empty;
+
+    /// <summary>
+    /// Whether to display the report as rendered HTML (true) or raw markdown (false).
+    /// Defaults to true for better visual presentation.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showAsHtml = true;
+
+    /// <summary>
+    /// Current view mode within the Standup tab.
+    /// 0 = Config (group selection), 1 = Report summary, 2 = Commits, 3 = PRs, 4 = Work Items
+    /// </summary>
+    [ObservableProperty]
+    private int _currentViewMode;
+
+    /// <summary>
+    /// Whether we have a report generated (to show internal tabs).
+    /// </summary>
+    public bool HasReport => GroupedReport != null;
+
+    /// <summary>
+    /// All commits from the current report, flattened across all sections.
+    /// </summary>
+    public IReadOnlyList<CommitInfo> AllCommits => GroupedReport?.Sections
+        .SelectMany(s => s.Commits)
+        .OrderByDescending(c => c.CommittedAt)
+        .ToList() ?? [];
+
+    /// <summary>
+    /// All pull requests from the current report, flattened across all sections.
+    /// </summary>
+    public IReadOnlyList<PullRequestInfo> AllPullRequests => GroupedReport?.Sections
+        .SelectMany(s => s.PullRequests)
+        .ToList() ?? [];
+
+    /// <summary>
+    /// All work items from the current report, flattened across all sections.
+    /// </summary>
+    public IReadOnlyList<WorkItemInfo> AllWorkItems => GroupedReport?.Sections
+        .SelectMany(s => s.WorkItems)
+        .ToList() ?? [];
+
+    [ObservableProperty]
+    private ObservableCollection<ReportHistory> _reportHistory = new();
+
+    [ObservableProperty]
+    private ReportHistory? _selectedHistoryItem;
+
+    public StandupViewModel(
+        IProjectService projectService,
+        IStandupApiClient apiClient,
+        ILocalStandupService localStandupService,
+        IClipboardService clipboardService,
+        GroupService groupService,
+        ReportHistoryService reportHistoryService)
+    {
+        _projectService = projectService;
+        _apiClient = apiClient;
+        _localStandupService = localStandupService;
+        _clipboardService = clipboardService;
+        _groupService = groupService;
+        _reportHistoryService = reportHistoryService;
+    }
+
+    [RelayCommand]
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            // Load groups
+            var groups = await _groupService.GetGroupsAsync();
+            Groups.Clear();
+            foreach (var group in groups)
+            {
+                Groups.Add(group);
+            }
+
+            // Set selected group to default
+            SelectedGroup = await _groupService.GetDefaultGroupAsync() ?? Groups.FirstOrDefault();
+
+            // Also load legacy project for non-group mode
+            CurrentProject = await _projectService.GetCurrentProjectAsync();
+
+            if (CurrentProject != null && !CurrentProject.UseLocalGeneration)
+            {
+                _apiClient.SetProject(CurrentProject.ApiEndpoint, CurrentProject.AccessToken);
+            }
+
+            // Default to group mode if we have groups
+            UseGroupMode = Groups.Any();
+
+            // Load report history
+            await LoadHistoryAsync();
+
+            // Set smart date default based on last report for selected group
+            await SetSmartDateDefaultsAsync();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        var history = await _reportHistoryService.GetAllAsync();
+        ReportHistory.Clear();
+        foreach (var item in history.OrderByDescending(h => h.GeneratedAt))
+        {
+            ReportHistory.Add(item);
+        }
+    }
+
+    private async Task SetSmartDateDefaultsAsync()
+    {
+        if (SelectedGroup == null)
+        {
+            return;
+        }
+
+        var lastReport = await _reportHistoryService.GetLatestByGroupIdAsync(SelectedGroup.Id);
+        if (lastReport != null)
+        {
+            // Start from where the last report ended
+            PeriodStart = lastReport.PeriodEnd;
+            PeriodEnd = DateTimeOffset.UtcNow;
+        }
+    }
+
+    [RelayCommand]
+    private void SelectGroup(RepositoryGroup group)
+    {
+        SelectedGroup = group;
+    }
+
+    /// <summary>
+    /// Switch the internal view mode.
+    /// 0 = Config, 1 = Report, 2 = Commits, 3 = PRs, 4 = Work Items.
+    /// </summary>
+    [RelayCommand]
+    private void SwitchView(int viewMode)
+    {
+        CurrentViewMode = viewMode;
+    }
+
+    /// <summary>
+    /// Go back to the configuration/group selection view.
+    /// </summary>
+    [RelayCommand]
+    private void BackToConfig()
+    {
+        CurrentViewMode = 0;
+    }
+
+    [RelayCommand]
+    private async Task GenerateStandupAsync()
+    {
+        IsGenerating = true;
+        StatusMessage = "Generating standup report...";
+
+        try
+        {
+            if (UseGroupMode && SelectedGroup != null)
+            {
+                await GenerateGroupedStandupAsync();
+            }
+            else if (CurrentProject != null)
+            {
+                if (CurrentProject.UseLocalGeneration)
+                {
+                    await GenerateLocalStandupAsync();
+                }
+                else
+                {
+                    await GenerateApiStandupAsync();
+                }
+            }
+            else
+            {
+                StatusMessage = "Please select a group or project.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
+    }
+
+    private async Task GenerateGroupedStandupAsync()
+    {
+        if (SelectedGroup == null || SelectedGroup.Repositories.Count == 0)
+        {
+            StatusMessage = "Please add repositories to the group first.";
+            return;
+        }
+
+        // Get the list of summary types to generate based on toggles
+        var typesToGenerate = GetSelectedSummaryTypes().ToList();
+        if (typesToGenerate.Count == 0)
+        {
+            StatusMessage = "Please select at least one summary type.";
+            return;
+        }
+
+        // Generate first type to get the raw data
+        var firstType = typesToGenerate[0];
+        StatusMessage = $"Generating {firstType} summary...";
+
+        GroupedReport = await _localStandupService.GenerateGroupedStandupAsync(
+            SelectedGroup,
+            async repo => await _groupService.GetDecryptedPatForRepositoryAsync(repo),
+            PeriodStart,
+            PeriodEnd,
+            firstType);
+
+        // Generate additional types if selected
+        foreach (var summaryType in typesToGenerate.Skip(1))
+        {
+            StatusMessage = $"Generating {summaryType} summary...";
+
+            var additionalReport = await _localStandupService.GenerateGroupedStandupAsync(
+                SelectedGroup,
+                async repo => await _groupService.GetDecryptedPatForRepositoryAsync(repo),
+                PeriodStart,
+                PeriodEnd,
+                summaryType);
+
+            // Merge the new summaries into existing sections
+            var mergedSections = GroupedReport.Sections.Select(existingSection =>
+            {
+                var newSection = additionalReport.Sections.FirstOrDefault(s => s.ClientCode == existingSection.ClientCode);
+                if (newSection == null)
+                {
+                    return existingSection;
+                }
+
+                var mergedSummaries = existingSection.AllSummaries != null
+                    ? new Dictionary<SummaryType, string>(existingSection.AllSummaries)
+                    : new Dictionary<SummaryType, string>();
+
+                if (newSection.AllSummaries != null)
+                {
+                    foreach (var kvp in newSection.AllSummaries)
+                    {
+                        mergedSummaries[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                return existingSection with { AllSummaries = mergedSummaries };
+            }).ToList();
+
+            GroupedReport = GroupedReport with { Sections = mergedSections };
+        }
+
+        // Clear legacy report
+        LatestReport = null;
+
+        // Update the display content (both markdown and HTML)
+        UpdateReportDisplay(GroupedReport);
+
+        var typeNames = string.Join(", ", typesToGenerate);
+        StatusMessage = $"Generated at {GroupedReport.GeneratedAt:HH:mm} - {GroupedReport.Sections.Count} clients, {GroupedReport.TotalCommits} commits ({typeNames})";
+
+        // Switch to report view and notify property changes
+        CurrentViewMode = 1;
+        OnPropertyChanged(nameof(HasReport));
+        OnPropertyChanged(nameof(AllCommits));
+        OnPropertyChanged(nameof(AllPullRequests));
+        OnPropertyChanged(nameof(AllWorkItems));
+    }
+
+    /// <summary>
+    /// Gets the summary types selected via toggles.
+    /// </summary>
+    private IEnumerable<SummaryType> GetSelectedSummaryTypes()
+    {
+        if (GenerateExecutive)
+        {
+            yield return SummaryType.Executive;
+        }
+
+        if (GenerateTechnical)
+        {
+            yield return SummaryType.Technical;
+        }
+
+        if (GenerateCodeReview)
+        {
+            yield return SummaryType.CodeReview;
+        }
+    }
+
+    private async Task GenerateLocalStandupAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentProject!.SourceOrganization) ||
+            string.IsNullOrEmpty(CurrentProject.SourceProject) ||
+            string.IsNullOrEmpty(CurrentProject.SourceRepository) ||
+            string.IsNullOrEmpty(CurrentProject.SourcePat))
+        {
+            StatusMessage = "Please configure your source repository in settings.";
+            return;
+        }
+
+        LatestReport = await _localStandupService.GenerateStandupAsync(
+            CurrentProject.SourceType,
+            CurrentProject.SourceOrganization,
+            CurrentProject.SourceProject,
+            CurrentProject.SourceRepository,
+            CurrentProject.SourcePat,
+            CurrentProject.AuthorIdentifier);
+
+        // Clear grouped report
+        GroupedReport = null;
+
+        StatusMessage = $"Generated at {LatestReport.GeneratedAt:HH:mm}";
+    }
+
+    private async Task GenerateApiStandupAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentProject!.UserId) || string.IsNullOrEmpty(CurrentProject.TenantId))
+        {
+            StatusMessage = "Please configure your user credentials in settings.";
+            return;
+        }
+
+        LatestReport = await _apiClient.GenerateStandupAsync(
+            CurrentProject.UserId,
+            CurrentProject.TenantId);
+
+        // Clear grouped report
+        GroupedReport = null;
+
+        StatusMessage = $"Generated at {LatestReport.GeneratedAt:HH:mm}";
+    }
+
+    /// <summary>
+    /// Switches the display to show a different summary type (if available).
+    /// </summary>
+    [RelayCommand]
+    private void SwitchSummaryType(SummaryType summaryType)
+    {
+        if (GroupedReport == null)
+        {
+            return;
+        }
+
+        var hasType = GroupedReport.Sections.Any(s => s.AllSummaries?.ContainsKey(summaryType) == true);
+        if (!hasType)
+        {
+            StatusMessage = $"{summaryType} summary not generated. Enable it and regenerate.";
+            return;
+        }
+
+        // Update sections to show the selected summary type
+        var updatedSections = GroupedReport.Sections.Select(section =>
+        {
+            var summary = section.GetSummary(summaryType);
+            return section with { Summary = summary };
+        }).ToList();
+
+        GroupedReport = GroupedReport with
+        {
+            Sections = updatedSections,
+            CurrentSummaryType = summaryType
+        };
+
+        UpdateReportDisplay(GroupedReport);
+        StatusMessage = $"Switched to {summaryType} summary.";
+    }
+
+    /// <summary>
+    /// Gets which summary types are available in the current report.
+    /// </summary>
+    public IEnumerable<SummaryType> GetAvailableSummaryTypesInReport()
+    {
+        if (GroupedReport == null)
+        {
+            return [];
+        }
+
+        return GroupedReport.Sections
+            .Where(s => s.AllSummaries != null)
+            .SelectMany(s => s.AllSummaries!.Keys)
+            .Distinct()
+            .OrderBy(t => t);
+    }
+
+    [RelayCommand]
+    private async Task CopyAsMarkdownAsync()
+    {
+        var content = GroupedReport != null
+            ? StandupReportFormatter.BuildGroupedReportMarkdown(GroupedReport)
+            : LatestReport?.Summary;
+
+        if (!string.IsNullOrEmpty(content))
+        {
+            await _clipboardService.SetTextAsync(content);
+            StatusMessage = "Copied as Markdown!";
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyAsHtmlAsync()
+    {
+        var content = GroupedReport != null
+            ? StandupReportFormatter.BuildGroupedReportHtml(GroupedReport)
+            : LatestReport != null ? StandupReportFormatter.ConvertMarkdownToHtml(LatestReport.Summary) : null;
+
+        if (!string.IsNullOrEmpty(content))
+        {
+            await _clipboardService.SetTextAsync(content);
+            StatusMessage = "Copied as HTML!";
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveReportAsync()
+    {
+        if (GroupedReport == null)
+        {
+            StatusMessage = "No report to save.";
+            return;
+        }
+
+        try
+        {
+            var saved = await _reportHistoryService.SaveReportAsync(GroupedReport, ReportContent);
+            ReportHistory.Insert(0, saved);
+            StatusMessage = $"Report saved ({saved.DisplaySummary})";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error saving report: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void LoadHistoryItem(ReportHistory item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        SelectedHistoryItem = item;
+        UpdateReportDisplayFromMarkdown(item.ReportContent);
+        StatusMessage = $"Loaded report: {item.DisplaySummary}";
+    }
+
+    [RelayCommand]
+    private async Task DeleteHistoryItemAsync(ReportHistory item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _reportHistoryService.DeleteAsync(item.Id);
+            ReportHistory.Remove(item);
+
+            if (SelectedHistoryItem?.Id == item.Id)
+            {
+                SelectedHistoryItem = null;
+                ReportContent = string.Empty;
+            }
+
+            StatusMessage = "Report deleted.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error deleting report: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Updates both markdown and HTML report content from a grouped report.
+    /// </summary>
+    /// <param name="report">The grouped report to display.</param>
+    private void UpdateReportDisplay(GroupedStandupReportDto report)
+    {
+        ReportContent = StandupReportFormatter.BuildGroupedReportMarkdown(report);
+        HtmlReportContent = StandupReportFormatter.BuildGroupedReportHtml(report);
+    }
+
+    /// <summary>
+    /// Updates both markdown and HTML report content from raw markdown.
+    /// </summary>
+    /// <param name="markdown">The markdown content to display.</param>
+    private void UpdateReportDisplayFromMarkdown(string markdown)
+    {
+        ReportContent = markdown;
+        HtmlReportContent = StandupReportFormatter.ConvertMarkdownToHtml(markdown);
+    }
+}

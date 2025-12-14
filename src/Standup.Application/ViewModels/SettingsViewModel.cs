@@ -1,10 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Standup.Application.Interfaces;
+using Standup.Application.Models;
 using Standup.Domain.Enums;
-using Standup.Maui.Models;
-using Standup.Maui.Services;
 
-namespace Standup.Maui.ViewModels;
+namespace Standup.Application.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
@@ -95,22 +95,26 @@ public partial class SettingsViewModel : ObservableObject
     private async Task SaveAsync()
     {
         if (CurrentProject == null)
+        {
             return;
+        }
 
-        CurrentProject.UserId = UserId;
-        CurrentProject.TenantId = TenantId;
-        CurrentProject.ApiEndpoint = ApiEndpoint;
+        var updated = CurrentProject with
+        {
+            UserId = UserId,
+            TenantId = TenantId,
+            ApiEndpoint = ApiEndpoint,
+            UseLocalGeneration = UseLocalGeneration,
+            SourceType = SourceType,
+            SourceOrganization = SourceOrganization,
+            SourceProject = SourceProject,
+            SourceRepository = SourceRepository,
+            SourcePat = SourcePat,
+            AuthorIdentifier = AuthorIdentifier
+        };
 
-        // Save source configuration
-        CurrentProject.UseLocalGeneration = UseLocalGeneration;
-        CurrentProject.SourceType = SourceType;
-        CurrentProject.SourceOrganization = SourceOrganization;
-        CurrentProject.SourceProject = SourceProject;
-        CurrentProject.SourceRepository = SourceRepository;
-        CurrentProject.SourcePat = SourcePat;
-        CurrentProject.AuthorIdentifier = AuthorIdentifier;
-
-        await _projectService.UpdateProjectAsync(CurrentProject);
+        await _projectService.UpdateProjectAsync(updated);
+        CurrentProject = updated;
         StatusMessage = "Settings saved!";
     }
 

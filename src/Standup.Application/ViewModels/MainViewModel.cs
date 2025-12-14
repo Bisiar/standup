@@ -1,9 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Standup.Maui.Models;
-using Standup.Maui.Services;
+using Standup.Application.Interfaces;
+using Standup.Application.Models;
 
-namespace Standup.Maui.ViewModels;
+namespace Standup.Application.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
