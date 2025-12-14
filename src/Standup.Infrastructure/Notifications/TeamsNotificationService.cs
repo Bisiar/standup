@@ -83,6 +83,23 @@ public class TeamsNotificationService : INotificationService
         }
     }
 
+    private static string FormatAsHtml(StandupReport report)
+    {
+        var period = $"{report.PeriodStart:MMM dd} - {report.PeriodEnd:MMM dd, yyyy}";
+
+        return $@"
+<div style='font-family: Segoe UI, sans-serif;'>
+    <h3>📋 Standup Update - {period}</h3>
+    <div style='white-space: pre-wrap;'>{report.Summary}</div>
+    <hr/>
+    <small style='color: #666;'>
+        📊 {report.RawData.Commits.Count} commits |
+        🔀 {report.RawData.PullRequests.Count} PRs |
+        📝 {report.RawData.WorkItems.Count} work items
+    </small>
+</div>";
+    }
+
     private async Task<Graph.Chat?> GetOrCreateChatAsync(string teamsUserId, CancellationToken cancellationToken)
     {
         try
@@ -124,22 +141,5 @@ public class TeamsNotificationService : INotificationService
         {
             return null;
         }
-    }
-
-    private static string FormatAsHtml(StandupReport report)
-    {
-        var period = $"{report.PeriodStart:MMM dd} - {report.PeriodEnd:MMM dd, yyyy}";
-
-        return $@"
-<div style='font-family: Segoe UI, sans-serif;'>
-    <h3>📋 Standup Update - {period}</h3>
-    <div style='white-space: pre-wrap;'>{report.Summary}</div>
-    <hr/>
-    <small style='color: #666;'>
-        📊 {report.RawData.Commits.Count} commits |
-        🔀 {report.RawData.PullRequests.Count} PRs |
-        📝 {report.RawData.WorkItems.Count} work items
-    </small>
-</div>";
     }
 }
