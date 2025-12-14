@@ -28,6 +28,7 @@ The Standup Automation Platform helps developers:
 - [Configuration Guide](Configuration)
 - [API Reference](API-Reference)
 - [MAUI App Guide](MAUI-App)
+- [Local Repository Support](Local-Repository-Support)
 - [Teams Integration](Teams-Integration)
 - [Deployment Guide](Deployment)
 - [Troubleshooting](Troubleshooting)
