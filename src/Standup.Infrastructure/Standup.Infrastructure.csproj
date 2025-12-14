@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Standup.Infrastructure</RootNamespace>
+    <!-- Suppress SqlClient vulnerability warning - transitive dep from Azure packages, not directly used -->
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,11 +14,12 @@
     <PackageReference Include="Azure.AI.OpenAI" />
     <PackageReference Include="Microsoft.Azure.Cosmos" />
     <PackageReference Include="Microsoft.Graph" />
-    <PackageReference Include="Microsoft.TeamsFx" />
     <PackageReference Include="Octokit" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Serilog" />
   </ItemGroup>
 
   <ItemGroup>

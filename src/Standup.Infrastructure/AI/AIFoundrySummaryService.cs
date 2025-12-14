@@ -71,21 +71,15 @@ public class AIFoundrySummaryService : IAISummaryService
         {
             SummaryTone.Casual => "casual and friendly, as if talking to coworkers",
             SummaryTone.Brief => "extremely concise, using bullet points only",
-            _ => "professional but natural, suitable for a standup meeting"
+            _ => "professional but natural"
         };
 
-        var basePrompt = $@"You are a helpful assistant that summarizes developer work activity into standup updates.
-
-Generate a {toneDescription} standup update based on the work data provided.
-
-Structure the update as:
-1. **What I completed** - Summarize commits and merged PRs at a high level, focusing on features and fixes rather than technical details
-2. **What I'm working on** - Summarize open PRs and in-progress work items
-{(options.IncludeBlockers ? "3. **Blockers** - Mention any PRs waiting for review or blocked work items" : "")}
-{(options.IncludeNextSteps ? "4. **Next steps** - Brief mention of planned work if evident from the data" : "")}
-
-Keep it natural and conversational - this is meant to be spoken or shared in a team chat.
-Focus on impact and outcomes rather than listing every commit.";
+        var basePrompt = options.Type switch
+        {
+            SummaryType.Executive => BuildExecutivePrompt(toneDescription, options),
+            SummaryType.CodeReview => BuildCodeReviewPrompt(toneDescription, options),
+            _ => BuildTechnicalPrompt(toneDescription, options) // Technical is default
+        };
 
         if (!string.IsNullOrEmpty(options.CustomPrompt))
         {
@@ -93,6 +87,77 @@ Focus on impact and outcomes rather than listing every commit.";
         }
 
         return basePrompt;
+    }
+
+    private static string BuildTechnicalPrompt(string toneDescription, SummaryOptions options)
+    {
+        return $@"You are a helpful assistant that summarizes developer work activity for a technical audience.
+
+Generate a {toneDescription} developer-focused standup update based on the work data provided.
+
+Focus on TECHNICAL DETAILS that matter to developers:
+- Specific code changes, APIs modified, or architecture decisions
+- Technical debt addressed or introduced
+- Performance improvements or regressions
+- Dependencies updated or added
+- Breaking changes or migration notes
+
+Structure the update as:
+1. **Code Changes** - Summarize commits with technical details: what was changed, which modules/components, APIs affected
+2. **Pull Requests** - Status of PRs with technical context (what problem they solve, approach taken)
+3. **Work Items** - Technical tasks and their implementation status
+{(options.IncludeBlockers ? "4. **Blockers** - Technical blockers, dependencies waiting, or code review feedback needed" : "")}
+{(options.IncludeNextSteps ? "5. **Next Steps** - Planned technical work, refactoring, or features to implement" : "")}
+
+Use technical terminology appropriate for developers. Include file names, method names, and specific technical details when relevant.";
+    }
+
+    private static string BuildExecutivePrompt(string toneDescription, SummaryOptions options)
+    {
+        return $@"You are a helpful assistant that summarizes developer work activity for executives and stakeholders.
+
+Generate a {toneDescription} executive summary based on the work data provided.
+
+Focus on BUSINESS VALUE and OUTCOMES, not technical details:
+- Features delivered and their business impact
+- Progress toward project milestones
+- Risks and blockers that might affect timelines
+- Resource utilization and team productivity
+
+Structure the update as:
+1. **Delivered Value** - What features or capabilities were completed? What business problems do they solve?
+2. **In Progress** - What's being worked on? Expected completion timeframes?
+3. **Project Health** - Overall status, any concerns about timelines or scope
+{(options.IncludeBlockers ? "4. **Risks & Blockers** - What could delay the project? What decisions are needed?" : "")}
+{(options.IncludeNextSteps ? "5. **Upcoming** - What's planned next? Any dependencies on other teams or decisions?" : "")}
+
+Avoid technical jargon. Translate code changes into business outcomes (e.g., 'fixed login bug' becomes 'improved user authentication reliability').
+Keep it high-level and focused on what matters to business stakeholders.";
+    }
+
+    private static string BuildCodeReviewPrompt(string toneDescription, SummaryOptions options)
+    {
+        return $@"You are a senior software engineer reviewing code changes for quality and security.
+
+Generate a {toneDescription} code review summary based on the work data provided.
+
+Focus on CODE QUALITY and SECURITY concerns:
+- Potential security vulnerabilities (injection, XSS, authentication issues, etc.)
+- Code quality observations (complexity, maintainability, test coverage)
+- Architectural concerns or anti-patterns
+- Best practices violations
+- Areas that need additional review or testing
+
+Structure the update as:
+1. **Security Assessment** - Any potential security issues in the changes? Sensitive data handling? Authentication/authorization changes?
+2. **Code Quality** - Code complexity, duplication, naming conventions, error handling
+3. **Architecture Impact** - Do changes align with architecture? Any concerning patterns?
+4. **Test Coverage** - Are changes adequately tested? Missing test scenarios?
+{(options.IncludeBlockers ? "5. **Action Items** - Specific issues that should be addressed before merging" : "")}
+{(options.IncludeNextSteps ? "6. **Recommendations** - Suggestions for improvement, refactoring opportunities" : "")}
+
+Be specific about concerns and provide actionable feedback. Reference specific commits or changes when noting issues.
+Prioritize security and reliability concerns over style preferences.";
     }
 
     private static string BuildUserPrompt(StandupData data)
