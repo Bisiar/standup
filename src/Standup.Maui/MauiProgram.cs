@@ -1,4 +1,4 @@
-// using CommunityToolkit.Maui; // Temporarily disabled to test crash
+using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
@@ -53,8 +53,7 @@ public static class MauiProgram
 
             builder
                 .UseMauiApp<App>()
-
-                // .UseMauiCommunityToolkit() // Temporarily disabled to test if this causes crash
+                .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

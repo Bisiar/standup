@@ -12,24 +12,16 @@ public static class StandupReportFormatter
         var sb = new StringBuilder();
         sb.AppendLine($"# Standup Report - {report.GroupName}");
         sb.AppendLine($"**Period:** {report.PeriodStart:MMM dd} - {report.PeriodEnd:MMM dd, yyyy}");
-        sb.AppendLine($"**Summary Type:** {report.CurrentSummaryType}");
         sb.AppendLine();
 
-        foreach (var section in report.Sections)
-        {
-            sb.AppendLine($"## {section.ClientCode}");
-            sb.AppendLine();
+        // Section 1: Team Standup Quick Overview (for team meetings)
+        AppendTeamOverviewMarkdown(sb, report);
 
-            if (!string.IsNullOrEmpty(section.Summary))
-            {
-                sb.AppendLine(section.Summary);
-                sb.AppendLine();
-            }
+        // Section 2: Technical Details per Project
+        AppendTechnicalDetailsMarkdown(sb, report);
 
-            AppendCommitsSection(sb, section);
-            AppendPullRequestsSection(sb, section);
-            AppendWorkItemsSection(sb, section);
-        }
+        // Section 3: Executive Summaries (client-shareable)
+        AppendExecutiveSummariesMarkdown(sb, report);
 
         AppendFooter(sb, report);
 
@@ -43,21 +35,15 @@ public static class StandupReportFormatter
 
         sb.AppendLine($"<h1>Standup Report - {HtmlEncode(report.GroupName)}</h1>");
         sb.AppendLine($"<p class=\"meta\"><strong>Period:</strong> {report.PeriodStart:MMM dd} - {report.PeriodEnd:MMM dd, yyyy}</p>");
-        sb.AppendLine($"<p class=\"meta\"><strong>Summary Type:</strong> {report.CurrentSummaryType}</p>");
 
-        foreach (var section in report.Sections)
-        {
-            sb.AppendLine($"<h2>{HtmlEncode(section.ClientCode)}</h2>");
+        // Section 1: Team Standup Quick Overview
+        AppendTeamOverviewHtml(sb, report);
 
-            if (!string.IsNullOrEmpty(section.Summary))
-            {
-                sb.AppendLine($"<div class=\"summary\">{ConvertMarkdownToHtml(section.Summary)}</div>");
-            }
+        // Section 2: Technical Details per Project
+        AppendTechnicalDetailsHtml(sb, report);
 
-            AppendCommitsSectionHtml(sb, section);
-            AppendPullRequestsSectionHtml(sb, section);
-            AppendWorkItemsSectionHtml(sb, section);
-        }
+        // Section 3: Executive Summaries (client-shareable)
+        AppendExecutiveSummariesHtml(sb, report);
 
         AppendHtmlFooter(sb, report);
 
@@ -145,6 +131,219 @@ public static class StandupReportFormatter
             .Replace("'", "&#39;");
     }
 
+    private static void AppendTeamOverviewMarkdown(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        sb.AppendLine("## Team Standup Overview");
+        sb.AppendLine();
+
+        foreach (var section in report.Sections)
+        {
+            var quickSummary = GetQuickSummary(section);
+            sb.AppendLine($"**{section.ClientCode}** ({section.CommitCount} commits) - {quickSummary}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("---");
+        sb.AppendLine();
+    }
+
+    private static void AppendTechnicalDetailsMarkdown(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        sb.AppendLine("## Technical Details");
+        sb.AppendLine();
+
+        foreach (var section in report.Sections)
+        {
+            sb.AppendLine($"### {section.ClientCode}");
+            sb.AppendLine();
+
+            // Show Technical summary if available
+            if (section.AllSummaries?.TryGetValue(SummaryType.Technical, out var techSummary) == true)
+            {
+                sb.AppendLine(techSummary);
+                sb.AppendLine();
+            }
+
+            // Show Code Review summary if available
+            if (section.AllSummaries?.TryGetValue(SummaryType.CodeReview, out var codeReview) == true)
+            {
+                sb.AppendLine("#### Code Review");
+                sb.AppendLine(codeReview);
+                sb.AppendLine();
+            }
+
+            // Fall back to generic summary if no specific types
+            if (section.AllSummaries == null || section.AllSummaries.Count == 0)
+            {
+                if (!string.IsNullOrEmpty(section.Summary))
+                {
+                    sb.AppendLine(section.Summary);
+                    sb.AppendLine();
+                }
+            }
+
+            AppendCommitsSection(sb, section);
+            AppendPullRequestsSection(sb, section);
+            AppendWorkItemsSection(sb, section);
+        }
+
+        sb.AppendLine("---");
+        sb.AppendLine();
+    }
+
+    private static void AppendExecutiveSummariesMarkdown(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        var hasExecutive = report.Sections.Any(s =>
+            s.AllSummaries?.ContainsKey(SummaryType.Executive) == true);
+
+        if (!hasExecutive)
+        {
+            return;
+        }
+
+        sb.AppendLine("## Executive Summary (Client-Shareable)");
+        sb.AppendLine();
+
+        foreach (var section in report.Sections)
+        {
+            if (section.AllSummaries?.TryGetValue(SummaryType.Executive, out var execSummary) == true)
+            {
+                sb.AppendLine($"### {section.ClientCode}");
+                sb.AppendLine();
+                sb.AppendLine(execSummary);
+                sb.AppendLine();
+            }
+        }
+    }
+
+    private static string GetQuickSummary(ClientCodeSection section)
+    {
+        // Try to get first sentence from Technical summary
+        if (section.AllSummaries?.TryGetValue(SummaryType.Technical, out var techSummary) == true)
+        {
+            return ExtractFirstSentence(techSummary);
+        }
+
+        // Fall back to Executive summary
+        if (section.AllSummaries?.TryGetValue(SummaryType.Executive, out var execSummary) == true)
+        {
+            return ExtractFirstSentence(execSummary);
+        }
+
+        // Fall back to generic summary
+        if (!string.IsNullOrEmpty(section.Summary))
+        {
+            return ExtractFirstSentence(section.Summary);
+        }
+
+        // Last resort: summarize from commits
+        if (section.Commits.Any())
+        {
+            var firstCommit = section.Commits.First().Message.Split('\n')[0];
+            return firstCommit.Length > 80 ? firstCommit[..77] + "..." : firstCommit;
+        }
+
+        return "No activity";
+    }
+
+    private static string ExtractFirstSentence(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return string.Empty;
+        }
+
+        // Remove markdown headers and bold markers
+        var cleaned = Regex.Replace(text, @"^#+\s*", string.Empty, RegexOptions.Multiline);
+        cleaned = Regex.Replace(cleaned, @"\*\*([^*]+)\*\*", "$1");
+        cleaned = cleaned.Trim();
+
+        // Find first sentence (ending with . ! or ?)
+        var match = Regex.Match(cleaned, @"^[^.!?]+[.!?]");
+        if (match.Success)
+        {
+            var sentence = match.Value.Trim();
+            return sentence.Length > 120 ? sentence[..117] + "..." : sentence;
+        }
+
+        // No sentence ending found, take first line
+        var firstLine = cleaned.Split('\n')[0].Trim();
+        return firstLine.Length > 120 ? firstLine[..117] + "..." : firstLine;
+    }
+
+    private static void AppendTeamOverviewHtml(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        sb.AppendLine("<h2 style=\"color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 5px;\">Team Standup Overview</h2>");
+        sb.AppendLine("<div class=\"overview-section\" style=\"background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;\">");
+
+        foreach (var section in report.Sections)
+        {
+            var quickSummary = GetQuickSummary(section);
+            sb.AppendLine($"<p style=\"margin: 8px 0;\"><strong>{HtmlEncode(section.ClientCode)}</strong> <span style=\"color: #666;\">({section.CommitCount} commits)</span> - {HtmlEncode(quickSummary)}</p>");
+        }
+
+        sb.AppendLine("</div>");
+    }
+
+    private static void AppendTechnicalDetailsHtml(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        sb.AppendLine("<h2 style=\"color: #10B981;\">Technical Details</h2>");
+
+        foreach (var section in report.Sections)
+        {
+            sb.AppendLine($"<h3>{HtmlEncode(section.ClientCode)}</h3>");
+
+            // Show Technical summary if available
+            if (section.AllSummaries?.TryGetValue(SummaryType.Technical, out var techSummary) == true)
+            {
+                sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid #10B981;\">{ConvertMarkdownToHtml(techSummary)}</div>");
+            }
+
+            // Show Code Review summary if available
+            if (section.AllSummaries?.TryGetValue(SummaryType.CodeReview, out var codeReview) == true)
+            {
+                sb.AppendLine("<h4 style=\"color: #8B5CF6;\">Code Review</h4>");
+                sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid #8B5CF6;\">{ConvertMarkdownToHtml(codeReview)}</div>");
+            }
+
+            // Fall back to generic summary if no specific types
+            if (section.AllSummaries == null || section.AllSummaries.Count == 0)
+            {
+                if (!string.IsNullOrEmpty(section.Summary))
+                {
+                    sb.AppendLine($"<div class=\"summary\">{ConvertMarkdownToHtml(section.Summary)}</div>");
+                }
+            }
+
+            AppendCommitsSectionHtml(sb, section);
+            AppendPullRequestsSectionHtml(sb, section);
+            AppendWorkItemsSectionHtml(sb, section);
+        }
+    }
+
+    private static void AppendExecutiveSummariesHtml(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        var hasExecutive = report.Sections.Any(s =>
+            s.AllSummaries?.ContainsKey(SummaryType.Executive) == true);
+
+        if (!hasExecutive)
+        {
+            return;
+        }
+
+        sb.AppendLine("<hr style=\"margin: 30px 0;\">");
+        sb.AppendLine("<h2 style=\"color: #3B82F6;\">Executive Summary <span style=\"font-size: 0.7em; color: #666; font-weight: normal;\">(Client-Shareable)</span></h2>");
+
+        foreach (var section in report.Sections)
+        {
+            if (section.AllSummaries?.TryGetValue(SummaryType.Executive, out var execSummary) == true)
+            {
+                sb.AppendLine($"<h3>{HtmlEncode(section.ClientCode)}</h3>");
+                sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid #3B82F6; background: #f0f7ff;\">{ConvertMarkdownToHtml(execSummary)}</div>");
+            }
+        }
+    }
+
     private static void AppendCommitsSection(StringBuilder sb, ClientCodeSection section, int maxCommits = 10)
     {
         if (!section.Commits.Any())
@@ -215,7 +414,7 @@ public static class StandupReportFormatter
     {
         sb.AppendLine("<!DOCTYPE html>");
         sb.AppendLine("<html><head><style>");
-        sb.AppendLine("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }");
+        sb.AppendLine("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; }");
         sb.AppendLine("h1 { color: #1a1a1a; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }");
         sb.AppendLine("h2 { color: #0066cc; margin-top: 30px; }");
         sb.AppendLine("h3 { color: #444; }");

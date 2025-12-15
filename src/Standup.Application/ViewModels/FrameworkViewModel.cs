@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Serilog;
 using Standup.Application.DTOs;
 using Standup.Application.Interfaces;
+using Standup.Application.Models;
 using Standup.Domain.Entities;
 
 namespace Standup.Application.ViewModels;
@@ -54,6 +55,10 @@ public partial class FrameworkViewModel : ObservableObject
 
         // Wire up the folder picker for GroupListViewModel
         GroupsVm.OnBrowseForFolder += BrowseForFolderAsync;
+
+        // Wire up project report events
+        ProjectsVm.OnProjectReportGenerated += HandleProjectReportGeneratedAsync;
+        ProjectsVm.OnViewProjectReport += HandleViewProjectReportAsync;
 
         Log.Information("FrameworkViewModel initialized with all child ViewModels");
     }
@@ -198,5 +203,40 @@ public partial class FrameworkViewModel : ObservableObject
         {
             _ = SelectTabAsync(0);
         }
+    }
+
+    /// <summary>
+    /// Handles a newly generated report from a project.
+    /// Creates a temporary group for display purposes and shows the report.
+    /// </summary>
+    private async Task HandleProjectReportGeneratedAsync(GroupedStandupReportDto report, ProjectInstance project)
+    {
+        Log.Information("Project report generated for: {ProjectName}", project.Name);
+
+        // Create a temporary group representation for the ReportViewModel
+        var tempGroup = new RepositoryGroup
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = $"Report for project: {project.Name}",
+        };
+
+        // Set the report and show the tab
+        ReportVm.SetReport(report, tempGroup);
+        ShowReportTab = true;
+        await SelectTabAsync(4);
+    }
+
+    /// <summary>
+    /// Handles viewing a saved report from project history.
+    /// </summary>
+    private async Task HandleViewProjectReportAsync(ReportHistory history, ProjectInstance project)
+    {
+        Log.Information("Viewing saved report for project: {ProjectName}", project.Name);
+
+        // Set the report from history
+        ReportVm.SetReportFromHistory(history, project.Name);
+        ShowReportTab = true;
+        await SelectTabAsync(4);
     }
 }

@@ -271,6 +271,7 @@ public sealed class LocalStandupService : ILocalStandupService
         DateTimeOffset since,
         DateTimeOffset until,
         SummaryType summaryType = SummaryType.Technical,
+        IProgress<(double Progress, string Message)>? progress = null,
         CancellationToken cancellationToken = default)
     {
         Log.Information(
@@ -281,25 +282,35 @@ public sealed class LocalStandupService : ILocalStandupService
 
         var activeRepos = group.Repositories.Where(r => r.IsActive).ToList();
 
-        // Fetch data from all repos in parallel
-        var repoDataTasks = activeRepos.Select(async repo =>
+        // Progress allocation:
+        // - Fetching repos: 0% - 50%
+        // - Processing: 50% - 55%
+        // - Generating summaries: 55% - 100%
+        const double fetchWeight = 0.50;
+        const double processWeight = 0.05;
+        const double summaryWeight = 0.45;
+
+        // Fetch data from all repos sequentially to report progress
+        var repoData = new List<RepositoryStandupData>();
+        for (int i = 0; i < activeRepos.Count; i++)
         {
+            var repo = activeRepos[i];
+            var fetchProgress = (double)i / activeRepos.Count * fetchWeight;
+            progress?.Report((fetchProgress, $"Fetching data from {repo.Repository} ({i + 1}/{activeRepos.Count})..."));
+
             try
             {
-                return await FetchRepositoryDataAsync(repo, getPatForRepo, since, until, cancellationToken);
+                var data = await FetchRepositoryDataAsync(repo, getPatForRepo, since, until, cancellationToken);
+                repoData.Add(data);
             }
             catch (Exception ex)
             {
                 Log.Warning(ex, "Failed to fetch data for repository {Repo}", repo.Repository);
-                return new RepositoryStandupData(
-                    repo.ClientCode,
-                    [],
-                    [],
-                    []);
+                repoData.Add(new RepositoryStandupData(repo.ClientCode, [], [], []));
             }
-        });
+        }
 
-        var repoData = await Task.WhenAll(repoDataTasks);
+        progress?.Report((fetchWeight, "Processing commits and work items..."));
 
         // Group results by client code
         var sections = repoData
@@ -313,10 +324,18 @@ public sealed class LocalStandupService : ILocalStandupService
             .OrderBy(s => s.ClientCode)
             .ToList();
 
+        progress?.Report((fetchWeight + processWeight, "Starting AI summary generation..."));
+
         // Generate AI summaries for each section if available
         if (_aiSummaryService != null)
         {
-            sections = await GenerateSectionsWithSummariesAsync(sections, summaryType, cancellationToken);
+            sections = await GenerateSectionsWithSummariesAsync(
+                sections,
+                summaryType,
+                progress,
+                fetchWeight + processWeight,
+                summaryWeight,
+                cancellationToken);
         }
 
         var totalCommits = sections.Sum(s => s.CommitCount);
@@ -533,9 +552,14 @@ public sealed class LocalStandupService : ILocalStandupService
     private async Task<List<ClientCodeSection>> GenerateSectionsWithSummariesAsync(
         List<ClientCodeSection> sections,
         SummaryType summaryType,
+        IProgress<(double Progress, string Message)>? progress,
+        double progressBase,
+        double progressWeight,
         CancellationToken cancellationToken)
     {
         var result = new List<ClientCodeSection>();
+        var sectionsWithData = sections.Where(s => s.Commits.Count > 0 || s.PullRequests.Count > 0 || s.WorkItems.Count > 0).ToList();
+        var currentIndex = 0;
 
         foreach (var section in sections)
         {
@@ -544,6 +568,10 @@ public sealed class LocalStandupService : ILocalStandupService
                 result.Add(section);
                 continue;
             }
+
+            currentIndex++;
+            var sectionProgress = progressBase + ((double)currentIndex / sectionsWithData.Count * progressWeight);
+            progress?.Report((sectionProgress, $"Generating {summaryType} summary for {section.ClientCode} ({currentIndex}/{sectionsWithData.Count})..."));
 
             try
             {

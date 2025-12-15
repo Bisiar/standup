@@ -353,12 +353,6 @@ public partial class AddRepositoryViewModel : ObservableObject
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(ClientCode))
-        {
-            StatusMessage = "Client code is required";
-            return;
-        }
-
         if (SelectedRepository == null)
         {
             StatusMessage = "Please select a repository";

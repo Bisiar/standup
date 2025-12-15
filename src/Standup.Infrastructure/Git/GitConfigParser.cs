@@ -42,9 +42,9 @@ public class GitConfigParser
         @"https://(?<org>[^.]+)\.visualstudio\.com/(?<project>[^/]+)/_git/(?<repo>[^/\s]+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    // GitHub patterns
+    // GitHub patterns (supports optional embedded credentials like token@github.com)
     private static readonly Regex GitHubHttpsPattern = new(
-        @"https://github\.com/(?<org>[^/]+)/(?<repo>[^/\s\.]+)(?:\.git)?",
+        @"https://(?:[^@]+@)?github\.com/(?<org>[^/]+)/(?<repo>[^/\s\.]+)(?:\.git)?",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Regex GitHubSshPattern = new(

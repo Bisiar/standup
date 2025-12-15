@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Standup.Application.Interfaces;
@@ -10,6 +11,9 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly IProjectService _projectService;
     private readonly ILocalStandupService _localStandupService;
+
+    [ObservableProperty]
+    private ObservableCollection<ProjectInstance> _projects = new();
 
     [ObservableProperty]
     private ProjectInstance? _currentProject;
@@ -68,26 +72,51 @@ public partial class SettingsViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            CurrentProject = await _projectService.GetCurrentProjectAsync();
-            if (CurrentProject != null)
+            // Load all projects for the picker
+            var allProjects = await _projectService.GetProjectsAsync();
+            Projects.Clear();
+            foreach (var project in allProjects)
             {
-                UserId = CurrentProject.UserId ?? string.Empty;
-                TenantId = CurrentProject.TenantId ?? string.Empty;
-                ApiEndpoint = CurrentProject.ApiEndpoint;
-
-                // Load source configuration
-                UseLocalGeneration = CurrentProject.UseLocalGeneration;
-                SourceType = CurrentProject.SourceType;
-                SourceOrganization = CurrentProject.SourceOrganization ?? string.Empty;
-                SourceProject = CurrentProject.SourceProject ?? string.Empty;
-                SourceRepository = CurrentProject.SourceRepository ?? string.Empty;
-                SourcePat = CurrentProject.SourcePat ?? string.Empty;
-                AuthorIdentifier = CurrentProject.AuthorIdentifier ?? string.Empty;
+                Projects.Add(project);
             }
+
+            // Select the current project
+            var current = await _projectService.GetCurrentProjectAsync();
+            CurrentProject = Projects.FirstOrDefault(p => p.Id == current?.Id) ?? Projects.FirstOrDefault();
+
+            LoadProjectSettings();
         }
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    partial void OnCurrentProjectChanged(ProjectInstance? value)
+    {
+        if (value != null && !IsLoading)
+        {
+            LoadProjectSettings();
+        }
+    }
+
+    private void LoadProjectSettings()
+    {
+        if (CurrentProject != null)
+        {
+            UserId = CurrentProject.UserId ?? string.Empty;
+            TenantId = CurrentProject.TenantId ?? string.Empty;
+            ApiEndpoint = CurrentProject.ApiEndpoint;
+
+            // Load source configuration
+            UseLocalGeneration = CurrentProject.UseLocalGeneration;
+            SourceType = CurrentProject.SourceType;
+            SourceOrganization = CurrentProject.SourceOrganization ?? string.Empty;
+            SourceProject = CurrentProject.SourceProject ?? string.Empty;
+            SourceRepository = CurrentProject.SourceRepository ?? string.Empty;
+            SourcePat = CurrentProject.SourcePat ?? string.Empty;
+            AuthorIdentifier = CurrentProject.AuthorIdentifier ?? string.Empty;
+            StatusMessage = string.Empty;
         }
     }
 

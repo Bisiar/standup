@@ -31,5 +31,10 @@
 	<!-- See: https://github.com/dotnet/maui/issues/31982 -->
 	<key>UIDesignRequiresCompatibility</key>
 	<true/>
+	<!-- Required by MAUI/CommunityToolkit background delegate -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>

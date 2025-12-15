@@ -28,6 +28,7 @@ public partial class GroupListViewModel : ObservableObject
     private bool _isLoading;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanShowAddGroupButton))]
     private bool _isAddingGroup;
 
     [ObservableProperty]
@@ -38,6 +39,25 @@ public partial class GroupListViewModel : ObservableObject
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
+
+    // Edit Group Form Properties
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanShowAddGroupButton))]
+    private bool _isEditingGroup;
+
+    [ObservableProperty]
+    private string? _editingGroupId;
+
+    [ObservableProperty]
+    private string _editGroupName = string.Empty;
+
+    [ObservableProperty]
+    private string _editGroupDescription = string.Empty;
+
+    /// <summary>
+    /// Gets a value indicating whether the Add Group button should be visible.
+    /// </summary>
+    public bool CanShowAddGroupButton => !IsAddingGroup && !IsEditingGroup;
 
     // Add Repository Form Properties
     [ObservableProperty]
@@ -155,9 +175,9 @@ public partial class GroupListViewModel : ObservableObject
         var adoPattern2 = @"https://[^@]+@dev\.azure\.com/([^/]+)/([^/]+)/_git/(.+?)(?:\.git)?$";
         var adoPattern3 = @"([^/]+)@vs-ssh\.visualstudio\.com:v3/([^/]+)/([^/]+)/(.+?)(?:\.git)?$";
 
-        // GitHub patterns
+        // GitHub patterns (ghPattern2 supports optional embedded credentials like token@github.com)
         var ghPattern1 = @"git@github\.com:([^/]+)/(.+?)(?:\.git)?$";
-        var ghPattern2 = @"https://github\.com/([^/]+)/(.+?)(?:\.git)?$";
+        var ghPattern2 = @"https://(?:[^@]+@)?github\.com/([^/]+)/(.+?)(?:\.git)?$";
 
         // Try Azure DevOps patterns
         var match = System.Text.RegularExpressions.Regex.Match(url, adoPattern1);
@@ -271,6 +291,66 @@ public partial class GroupListViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ShowEditGroup(RepositoryGroup group)
+    {
+        EditingGroupId = group.Id;
+        EditGroupName = group.Name;
+        EditGroupDescription = group.Description ?? string.Empty;
+        IsEditingGroup = true;
+    }
+
+    [RelayCommand]
+    private async Task SaveEditGroupAsync()
+    {
+        if (string.IsNullOrWhiteSpace(EditingGroupId))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(EditGroupName))
+        {
+            StatusMessage = "Group name is required.";
+            return;
+        }
+
+        IsLoading = true;
+        try
+        {
+            var group = Groups.FirstOrDefault(g => g.Id == EditingGroupId);
+            if (group != null)
+            {
+                group.Name = EditGroupName;
+                group.Description = EditGroupDescription;
+                await _groupService.UpdateGroupAsync(group);
+                StatusMessage = "Group updated successfully!";
+            }
+
+            IsEditingGroup = false;
+            EditingGroupId = null;
+
+            // Reload to refresh UI
+            await LoadGroupsAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelEditGroup()
+    {
+        IsEditingGroup = false;
+        EditingGroupId = null;
+        EditGroupName = string.Empty;
+        EditGroupDescription = string.Empty;
+    }
+
+    [RelayCommand]
     private async Task DeleteGroupAsync(RepositoryGroup group)
     {
         await _groupService.DeleteGroupAsync(group.Id);
@@ -323,13 +403,6 @@ public partial class GroupListViewModel : ObservableObject
         {
             StatusMessage = "No group selected";
             Log.Warning("AddRepository failed: No group selected");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(NewRepoClientCode))
-        {
-            StatusMessage = "Client code is required";
-            Log.Warning("AddRepository failed: Client code is required");
             return;
         }
 

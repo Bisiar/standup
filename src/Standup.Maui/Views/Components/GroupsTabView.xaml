@@ -31,7 +31,7 @@
                                     Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}">
                                 <VerticalStackLayout>
                                     <!-- Group Header -->
-                                    <Grid Padding="15" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                    <Grid Padding="15" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
                                         <!-- Default Star -->
                                         <Label Grid.Column="0" Text="★" FontSize="18" TextColor="Gold"
                                                IsVisible="{Binding IsDefault}" VerticalOptions="Center" Margin="0,0,10,0">
@@ -62,22 +62,30 @@
                                             </HorizontalStackLayout>
                                         </VerticalStackLayout>
 
+                                        <!-- Edit Button -->
+                                        <Button Grid.Column="2" Text="✎" FontSize="14"
+                                                BackgroundColor="Transparent" TextColor="#F59E0B"
+                                                WidthRequest="30" HeightRequest="30" Padding="0"
+                                                VerticalOptions="Center"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=ShowEditGroupCommand}"
+                                                CommandParameter="{Binding .}" />
+
                                         <!-- Add Repo Button -->
-                                        <Button Grid.Column="2" Text="+Repo" FontSize="11"
+                                        <Button Grid.Column="3" Text="+Repo" FontSize="11"
                                                 BackgroundColor="#3B82F6" TextColor="White"
                                                 Padding="8,4" VerticalOptions="Center" Margin="5,0"
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=ShowAddRepositoryCommand}"
                                                 CommandParameter="{Binding .}" />
 
                                         <!-- Generate Button -->
-                                        <Button Grid.Column="3" Text="Generate" FontSize="11"
+                                        <Button Grid.Column="4" Text="Generate" FontSize="11"
                                                 BackgroundColor="#10B981" TextColor="White"
                                                 Padding="8,4" VerticalOptions="Center" Margin="5,0"
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=NavigateToStandupCommand}"
                                                 CommandParameter="{Binding .}" />
 
                                         <!-- Delete Button -->
-                                        <Button Grid.Column="4" Text="✕" FontSize="14"
+                                        <Button Grid.Column="5" Text="✕" FontSize="14"
                                                 BackgroundColor="Transparent" TextColor="Gray"
                                                 WidthRequest="30" HeightRequest="30" Padding="0"
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=DeleteGroupCommand}"
@@ -167,12 +175,19 @@
                         <!-- Local Path with Browse Button -->
                         <VerticalStackLayout Spacing="5">
                             <Label Text="Local Path (optional)" FontSize="12" TextColor="Gray" />
-                            <HorizontalStackLayout Spacing="10">
-                                <Entry Placeholder="/path/to/local/repo" Text="{Binding NewRepoLocalPath}" HorizontalOptions="FillAndExpand" />
-                                <Button Text="Browse" Command="{Binding BrowseForLocalRepoCommand}"
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Entry Grid.Column="0" Placeholder="/path/to/local/repo" Text="{Binding NewRepoLocalPath}" />
+                                <Button Grid.Column="1" Text="Browse" Command="{Binding BrowseForLocalRepoCommand}"
                                         BackgroundColor="Gray" TextColor="White" Padding="10,5" />
-                            </HorizontalStackLayout>
+                            </Grid>
                         </VerticalStackLayout>
+
+                        <!-- Error Message -->
+                        <Label Text="{Binding StatusMessage}"
+                               TextColor="#EF4444"
+                               FontSize="12"
+                               HorizontalOptions="Center"
+                               IsVisible="{Binding StatusMessage, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
 
                         <!-- Buttons -->
                         <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,10,0,0">
@@ -203,9 +218,33 @@
             </VerticalStackLayout>
         </Border>
 
-        <!-- Add Group Button -->
+        <!-- Edit Group Form -->
+        <Border Grid.Row="2" IsVisible="{Binding IsEditingGroup}" Padding="15" Margin="0,10,0,0"
+                StrokeShape="RoundRectangle 8"
+                BackgroundColor="{AppThemeBinding Light=#FFF7ED, Dark=#3D2D1D}"
+                Stroke="#F59E0B">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Edit Group" FontAttributes="Bold" FontSize="16" TextColor="#F59E0B" />
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Group Name" FontSize="12" TextColor="Gray" />
+                    <Entry Text="{Binding EditGroupName}" Placeholder="Group Name" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Description" FontSize="12" TextColor="Gray" />
+                    <Entry Text="{Binding EditGroupDescription}" Placeholder="Description (optional)" />
+                </VerticalStackLayout>
+                <HorizontalStackLayout Spacing="10" HorizontalOptions="End">
+                    <Button Text="Cancel" Command="{Binding CancelEditGroupCommand}"
+                            BackgroundColor="Gray" TextColor="White" />
+                    <Button Text="Save Changes" Command="{Binding SaveEditGroupCommand}"
+                            BackgroundColor="#F59E0B" TextColor="White" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Add Group Button (hidden when adding or editing) -->
         <Button Grid.Row="2" Text="+ Add Group" Command="{Binding ShowAddGroupCommand}"
-                IsVisible="{Binding IsAddingGroup, Converter={StaticResource InvertedBoolConverter}}"
+                IsVisible="{Binding CanShowAddGroupButton}"
                 HorizontalOptions="End" Margin="0,10,0,0" />
 
         <!-- Loading Indicator -->

@@ -9,7 +9,16 @@
     <ScrollView Padding="20">
         <VerticalStackLayout Spacing="20">
             <Label Text="Project Settings" FontSize="24" FontAttributes="Bold" />
-            <Label Text="{Binding CurrentProject.Name, StringFormat='Editing: {0}'}" FontSize="14" TextColor="Gray" />
+
+            <!-- Project Selector -->
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="Project:" FontSize="14" VerticalOptions="Center" />
+                <Picker ItemsSource="{Binding Projects}"
+                        SelectedItem="{Binding CurrentProject}"
+                        ItemDisplayBinding="{Binding Name}"
+                        WidthRequest="300"
+                        VerticalOptions="Center" />
+            </HorizontalStackLayout>
 
             <!-- Source Repository Configuration -->
             <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">

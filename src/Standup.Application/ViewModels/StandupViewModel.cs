@@ -69,6 +69,9 @@ public partial class StandupViewModel : ObservableObject
     private bool _isGenerating;
 
     [ObservableProperty]
+    private double _generationProgress;
+
+    [ObservableProperty]
     private string _statusMessage = string.Empty;
 
     [ObservableProperty]
@@ -98,6 +101,19 @@ public partial class StandupViewModel : ObservableObject
     /// Gets a value indicating whether we have a report generated (to show internal tabs).
     /// </summary>
     public bool HasReport => GroupedReport != null;
+
+    /// <summary>
+    /// Gets a formatted summary of repos in the selected group (e.g., "UPREHS/AI-Chat-Bot, JT-Ops/jt-azr").
+    /// </summary>
+    public string SelectedGroupReposSummary => SelectedGroup?.Repositories
+        .Select(r => string.IsNullOrWhiteSpace(r.ClientCode) ? r.Repository : $"{r.ClientCode}/{r.Repository}")
+        .DefaultIfEmpty("No repositories")
+        .Aggregate((a, b) => $"{a}, {b}") ?? "No group selected";
+
+    partial void OnSelectedGroupChanged(RepositoryGroup? value)
+    {
+        OnPropertyChanged(nameof(SelectedGroupReposSummary));
+    }
 
     /// <summary>
     /// Gets all commits from the current report, flattened across all sections.
@@ -306,28 +322,47 @@ public partial class StandupViewModel : ObservableObject
             return;
         }
 
+        // Reset progress
+        GenerationProgress = 0;
+
+        // Calculate progress weight per summary type
+        var typeCount = typesToGenerate.Count;
+        var progressPerType = 1.0 / typeCount;
+        var currentTypeIndex = 0;
+
+        // Create progress handler that updates both progress bar and status message
+        var progress = new Progress<(double Progress, string Message)>(update =>
+        {
+            // Scale progress based on which summary type we're generating
+            GenerationProgress = (currentTypeIndex * progressPerType) + (update.Progress * progressPerType);
+            StatusMessage = update.Message;
+        });
+
         // Generate first type to get the raw data
         var firstType = typesToGenerate[0];
-        StatusMessage = $"Generating {firstType} summary...";
+        StatusMessage = $"Starting {firstType} summary generation...";
 
         GroupedReport = await _localStandupService.GenerateGroupedStandupAsync(
             SelectedGroup,
             async repo => await _groupService.GetDecryptedPatForRepositoryAsync(repo),
             PeriodStart,
             PeriodEnd,
-            firstType);
+            firstType,
+            progress);
 
         // Generate additional types if selected
         foreach (var summaryType in typesToGenerate.Skip(1))
         {
-            StatusMessage = $"Generating {summaryType} summary...";
+            currentTypeIndex++;
+            StatusMessage = $"Starting {summaryType} summary generation...";
 
             var additionalReport = await _localStandupService.GenerateGroupedStandupAsync(
                 SelectedGroup,
                 async repo => await _groupService.GetDecryptedPatForRepositoryAsync(repo),
                 PeriodStart,
                 PeriodEnd,
-                summaryType);
+                summaryType,
+                progress);
 
             // Merge the new summaries into existing sections
             var mergedSections = GroupedReport.Sections.Select(existingSection =>
@@ -358,6 +393,9 @@ public partial class StandupViewModel : ObservableObject
 
         // Clear legacy report
         LatestReport = null;
+
+        // Mark progress as complete
+        GenerationProgress = 1.0;
 
         // Update the display content (both markdown and HTML)
         UpdateReportDisplay(GroupedReport);
@@ -497,6 +535,22 @@ public partial class StandupViewModel : ObservableObject
         {
             await _clipboardService.SetTextAsync(content);
             StatusMessage = "Copied as HTML!";
+        }
+    }
+
+    /// <summary>
+    /// Copy report to clipboard based on current display mode (HTML or Markdown).
+    /// </summary>
+    [RelayCommand]
+    private async Task CopyToClipboardAsync()
+    {
+        if (ShowAsHtml)
+        {
+            await CopyAsHtmlAsync();
+        }
+        else
+        {
+            await CopyAsMarkdownAsync();
         }
     }
 

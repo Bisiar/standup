@@ -92,9 +92,9 @@ public partial class ReportViewModel : ObservableObject
     private string _statusMessage = string.Empty;
 
     /// <summary>
-    /// Gets a value indicating whether there is a report to display.
+    /// Gets a value indicating whether there is report content to display.
     /// </summary>
-    public bool HasReport => Report != null;
+    public bool HasReport => Report != null || !string.IsNullOrEmpty(ExecutiveSummary);
 
     /// <summary>
     /// Gets or sets the report title/header info.
@@ -167,6 +167,40 @@ public partial class ReportViewModel : ObservableObject
         CodeReviewDetails = string.Empty;
 
         StatusMessage = $"Generated at {report.GeneratedAt:HH:mm}";
+
+        OnPropertyChanged(nameof(HasReport));
+    }
+
+    /// <summary>
+    /// Sets the report view from saved history (for viewing existing reports).
+    /// </summary>
+    /// <param name="history">The saved report history entry.</param>
+    /// <param name="projectName">Optional project name for display.</param>
+    public void SetReportFromHistory(ReportHistory history, string? projectName = null)
+    {
+        // We don't have the full report DTO, just the saved content
+        Report = null;
+        SourceGroup = null;
+
+        // Set header info from history
+        ReportTitle = $"Standup Report - {projectName ?? history.GroupName}";
+        ReportPeriod = $"{history.PeriodStart:MMM dd} - {history.PeriodEnd:MMM dd, yyyy}";
+        TotalCommits = history.TotalCommits;
+        TotalPRs = history.TotalPullRequests;
+        TotalWorkItems = history.TotalWorkItems;
+
+        // Set the saved content as executive summary
+        ExecutiveSummary = history.ReportContent;
+
+        // Disable lazy loading sections since we don't have the source data
+        IsTechnicalExpanded = false;
+        IsCodeReviewExpanded = false;
+        HasTechnicalGenerated = false;
+        HasCodeReviewGenerated = false;
+        TechnicalDetails = string.Empty;
+        CodeReviewDetails = string.Empty;
+
+        StatusMessage = $"Report from {history.GeneratedAt:MMM dd, HH:mm}";
 
         OnPropertyChanged(nameof(HasReport));
     }

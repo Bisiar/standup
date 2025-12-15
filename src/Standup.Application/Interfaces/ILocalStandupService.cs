@@ -81,6 +81,7 @@ public interface ILocalStandupService
     /// <param name="since">Start date for the report period.</param>
     /// <param name="until">End date for the report period.</param>
     /// <param name="summaryType">The type of AI summary to generate (Technical, Executive, or CodeReview).</param>
+    /// <param name="progress">Optional progress reporter for status updates (percentage 0-1, message).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A grouped standup report with sections per client code.</returns>
     Task<GroupedStandupReportDto> GenerateGroupedStandupAsync(
@@ -89,5 +90,6 @@ public interface ILocalStandupService
         DateTimeOffset since,
         DateTimeOffset until,
         SummaryType summaryType = SummaryType.Technical,
+        IProgress<(double Progress, string Message)>? progress = null,
         CancellationToken cancellationToken = default);
 }
