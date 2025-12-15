@@ -108,16 +108,21 @@ public static class StandupReportFormatter
         html = Regex.Replace(html, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
         html = Regex.Replace(html, @"\*(.+?)\*", "<em>$1</em>");
 
-        // Convert bullet lists (both - and * styles)
-        html = Regex.Replace(html, @"^[\-\*] (.+)$", "<li>$1</li>", RegexOptions.Multiline);
-        html = Regex.Replace(html, @"(<li>.*</li>\n?)+", "<ul>$0</ul>");
+        // Convert bullet lists (both - and * styles, with optional leading whitespace)
+        html = Regex.Replace(html, @"^\s*[\-\*] (.+)$", "<li>$1</li>", RegexOptions.Multiline);
 
-        // Convert numbered lists
-        html = Regex.Replace(html, @"^\d+\. (.+)$", "<li>$1</li>", RegexOptions.Multiline);
+        // Convert numbered lists (with optional leading whitespace)
+        html = Regex.Replace(html, @"^\s*\d+\. (.+)$", "<li>$1</li>", RegexOptions.Multiline);
 
-        // Convert line breaks
-        html = html.Replace("\n\n", "</p><p>");
+        // Wrap consecutive <li> elements in <ul> tags
+        html = Regex.Replace(html, @"((?:<li>.*?</li>\s*)+)", "<ul>$1</ul>", RegexOptions.Singleline);
+
+        // Clean up any empty paragraphs and normalize spacing
+        html = Regex.Replace(html, @"\n\s*\n", "</p><p>");
         html = $"<p>{html}</p>";
+
+        // Clean up empty <p></p> tags
+        html = Regex.Replace(html, @"<p>\s*</p>", string.Empty);
 
         return html;
     }
@@ -576,7 +581,9 @@ public static class StandupReportFormatter
         sb.AppendLine("h2 { color: #0066cc; margin-top: 30px; }");
         sb.AppendLine("h3 { color: #444; }");
         sb.AppendLine(".meta { color: #666; font-size: 0.9em; }");
-        sb.AppendLine(".summary { background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 10px 0; }");
+        sb.AppendLine(".summary { background: #f5f5f5; padding: 15px; padding-left: 20px; border-radius: 8px; margin: 10px 0; }");
+        sb.AppendLine(".summary ul { padding-left: 25px; margin: 10px 0; }");
+        sb.AppendLine(".summary li { margin: 8px 0; }");
         sb.AppendLine("ul { padding-left: 20px; }");
         sb.AppendLine("li { margin: 5px 0; }");
         sb.AppendLine(".status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }");
