@@ -2,8 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- App Sandbox disabled for development to allow SecureStorage without provisioning profile -->
-	<key>com.apple.security.app-sandbox</key>
-	<false/>
+	<!-- Allow access to user-selected files/folders -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- Persist file access across app launches using security-scoped bookmarks -->
+	<key>com.apple.security.files.bookmarks.app-scope</key>
+	<true/>
+	<!-- Access to Downloads folder -->
+	<key>com.apple.security.files.downloads.read-write</key>
+	<true/>
 </dict>
 </plist>
