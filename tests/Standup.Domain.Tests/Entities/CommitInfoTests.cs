@@ -148,10 +148,13 @@ public class CommitInfoTests
             CommittedAt: committedAt,
             FilesChanged: files,
             Additions: 100,
-            Deletions: 0);
+            Deletions: 0,
+            Branch: "main",
+            Author: "Test User",
+            AuthorEmail: "test@example.com");
 
-        // Act
-        var (sha, message, repository, sourceType, committed, filesChanged, additions, deletions) = commit;
+        // Act - deconstruct all 11 positional parameters
+        var (sha, message, repository, sourceType, committed, filesChanged, additions, deletions, branch, author, authorEmail) = commit;
 
         // Assert
         sha.Should().Be("commit123");
@@ -162,6 +165,9 @@ public class CommitInfoTests
         filesChanged.Should().HaveCount(1);
         additions.Should().Be(100);
         deletions.Should().Be(0);
+        branch.Should().Be("main");
+        author.Should().Be("Test User");
+        authorEmail.Should().Be("test@example.com");
     }
 
     [Theory]

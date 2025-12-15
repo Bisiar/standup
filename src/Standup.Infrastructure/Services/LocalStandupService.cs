@@ -1,4 +1,3 @@
-using System.Text;
 using Serilog;
 using Standup.Application.DTOs;
 using Standup.Application.Interfaces;
@@ -335,7 +334,7 @@ public sealed class LocalStandupService : ILocalStandupService
                 PullRequests: g.SelectMany(r => r.PullRequests).DistinctBy(p => p.Id).ToList(),
                 WorkItems: g.SelectMany(r => r.WorkItems).DistinctBy(w => w.Id).ToList(),
                 AllSummaries: null,
-                SourceStatus: AggregateSourceStatus(g.Select(r => r.SourceStatus).ToList())))
+                SourceStatus: DataSourceStatusAggregator.Aggregate(g.Select(r => r.SourceStatus).ToList())))
             .OrderBy(s => s.ClientCode)
             .ToList();
 
@@ -486,70 +485,6 @@ public sealed class LocalStandupService : ILocalStandupService
             SentTo: new List<NotificationChannel>());
     }
 
-    private static string BuildSimpleSummary(
-        List<CommitInfo> commits,
-        List<PullRequestInfo> prs,
-        List<WorkItemInfo> workItems,
-        DateTimeOffset since,
-        DateTimeOffset until)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine($"## Standup Report");
-        sb.AppendLine($"**Period:** {since:MMM dd} - {until:MMM dd, yyyy}");
-        sb.AppendLine();
-
-        if (commits.Count > 0)
-        {
-            sb.AppendLine("### Commits");
-            foreach (var commit in commits.Take(10))
-            {
-                var message = commit.Message.Split('\n')[0];
-                if (message.Length > 80)
-                {
-                    message = message[..77] + "...";
-                }
-
-                sb.AppendLine($"- {message}");
-            }
-
-            if (commits.Count > 10)
-            {
-                sb.AppendLine($"- ... and {commits.Count - 10} more");
-            }
-
-            sb.AppendLine();
-        }
-
-        if (prs.Count > 0)
-        {
-            sb.AppendLine("### Pull Requests");
-            foreach (var pr in prs)
-            {
-                sb.AppendLine($"- [{pr.Status}] {pr.Title}");
-            }
-
-            sb.AppendLine();
-        }
-
-        if (workItems.Count > 0)
-        {
-            sb.AppendLine("### Work Items");
-            foreach (var item in workItems)
-            {
-                sb.AppendLine($"- [{item.Status}] {item.Title} ({item.Type})");
-            }
-
-            sb.AppendLine();
-        }
-
-        if (commits.Count == 0 && prs.Count == 0 && workItems.Count == 0)
-        {
-            sb.AppendLine("*No activity found for this period.*");
-        }
-
-        return sb.ToString();
-    }
-
     private async Task<string> GenerateSummaryAsync(
         List<CommitInfo> commits,
         List<PullRequestInfo> prs,
@@ -580,7 +515,7 @@ public sealed class LocalStandupService : ILocalStandupService
             }
         }
 
-        return BuildSimpleSummary(commits, prs, workItems, since, until);
+        return SimpleSummaryBuilder.Build(commits, prs, workItems, since, until);
     }
 
     private async Task<RepositoryStandupData> FetchRepositoryDataAsync(
@@ -760,65 +695,6 @@ public sealed class LocalStandupService : ILocalStandupService
         }
 
         return result;
-    }
-
-    /// <summary>
-    /// Aggregates multiple source statuses into a single status.
-    /// Uses worst-case status for each source type.
-    /// </summary>
-    private static DataSourceStatus AggregateSourceStatus(List<DataSourceStatus> statuses)
-    {
-        if (statuses.Count == 0)
-        {
-            return DataSourceStatus.AllSuccess();
-        }
-
-        if (statuses.Count == 1)
-        {
-            return statuses[0];
-        }
-
-        // Aggregate by taking worst status for each source type
-        var commitsStatus = GetWorstStatus(statuses.Select(s => s.CommitsStatus));
-        var prsStatus = GetWorstStatus(statuses.Select(s => s.PullRequestsStatus));
-        var workItemsStatus = GetWorstStatus(statuses.Select(s => s.WorkItemsStatus));
-
-        // Aggregate error messages
-        var commitsErrors = statuses.Where(s => s.CommitsError != null).Select(s => s.CommitsError).Distinct().ToList();
-        var prsErrors = statuses.Where(s => s.PullRequestsError != null).Select(s => s.PullRequestsError).Distinct().ToList();
-        var workItemsErrors = statuses.Where(s => s.WorkItemsError != null).Select(s => s.WorkItemsError).Distinct().ToList();
-
-        return new DataSourceStatus(
-            commitsStatus,
-            prsStatus,
-            workItemsStatus,
-            commitsErrors.Count > 0 ? string.Join("; ", commitsErrors) : null,
-            prsErrors.Count > 0 ? string.Join("; ", prsErrors) : null,
-            workItemsErrors.Count > 0 ? string.Join("; ", workItemsErrors) : null);
-    }
-
-    /// <summary>
-    /// Gets the worst status from a collection (Error > NoPat > NotApplicable > Success).
-    /// </summary>
-    private static FetchStatus GetWorstStatus(IEnumerable<FetchStatus> statuses)
-    {
-        var statusList = statuses.ToList();
-        if (statusList.Any(s => s == FetchStatus.Error))
-        {
-            return FetchStatus.Error;
-        }
-
-        if (statusList.Any(s => s == FetchStatus.NoPat))
-        {
-            return FetchStatus.NoPat;
-        }
-
-        if (statusList.Any(s => s == FetchStatus.NotApplicable))
-        {
-            return FetchStatus.NotApplicable;
-        }
-
-        return FetchStatus.Success;
     }
 
     private record RepositoryStandupData(

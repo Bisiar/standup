@@ -106,6 +106,21 @@ public sealed class InMemoryReportCacheService : IReportCacheService
         return $"{groupId}:{since:yyyy-MM-dd}:{until:yyyy-MM-dd}";
     }
 
+    private static long EstimateSize(GroupedStandupReportDto report)
+    {
+        // Rough estimation based on typical JSON serialization size
+        try
+        {
+            var json = JsonSerializer.Serialize(report);
+            return json.Length * 2; // UTF-16 chars
+        }
+        catch
+        {
+            // Fallback estimate
+            return 10000 + (report.TotalCommits * 500) + (report.TotalPullRequests * 1000);
+        }
+    }
+
     private void CleanupExpiredEntries()
     {
         var now = DateTimeOffset.UtcNow;
@@ -122,21 +137,6 @@ public sealed class InMemoryReportCacheService : IReportCacheService
         if (expiredKeys.Count > 0)
         {
             Log.Debug("Cleaned up {Count} expired cache entries", expiredKeys.Count);
-        }
-    }
-
-    private static long EstimateSize(GroupedStandupReportDto report)
-    {
-        // Rough estimation based on typical JSON serialization size
-        try
-        {
-            var json = JsonSerializer.Serialize(report);
-            return json.Length * 2; // UTF-16 chars
-        }
-        catch
-        {
-            // Fallback estimate
-            return 10000 + (report.TotalCommits * 500) + (report.TotalPullRequests * 1000);
         }
     }
 

@@ -14,6 +14,7 @@ public record DataSourceStatus(
     /// <summary>
     /// Creates a status indicating all sources were successful.
     /// </summary>
+    /// <returns>A new DataSourceStatus with all sources set to Success.</returns>
     public static DataSourceStatus AllSuccess() => new(
         FetchStatus.Success,
         FetchStatus.Success,
@@ -22,13 +23,14 @@ public record DataSourceStatus(
     /// <summary>
     /// Creates a status for local-only mode (commits from git, no PAT for PRs/work items).
     /// </summary>
+    /// <returns>A new DataSourceStatus with commits Success and PRs/work items NoPat.</returns>
     public static DataSourceStatus LocalOnly() => new(
         FetchStatus.Success,
         FetchStatus.NoPat,
         FetchStatus.NoPat);
 
     /// <summary>
-    /// Returns true if any data source had an error.
+    /// Gets a value indicating whether any data source had an error.
     /// </summary>
     public bool HasErrors =>
         CommitsStatus == FetchStatus.Error ||
@@ -36,36 +38,10 @@ public record DataSourceStatus(
         WorkItemsStatus == FetchStatus.Error;
 
     /// <summary>
-    /// Returns true if any data source is missing due to no PAT.
+    /// Gets a value indicating whether any data source is missing due to no PAT.
     /// </summary>
     public bool HasMissingPat =>
         CommitsStatus == FetchStatus.NoPat ||
         PullRequestsStatus == FetchStatus.NoPat ||
         WorkItemsStatus == FetchStatus.NoPat;
-}
-
-/// <summary>
-/// Status of a data fetch operation.
-/// </summary>
-public enum FetchStatus
-{
-    /// <summary>
-    /// Data was fetched successfully.
-    /// </summary>
-    Success,
-
-    /// <summary>
-    /// Data fetch failed with an error.
-    /// </summary>
-    Error,
-
-    /// <summary>
-    /// Data not fetched because no PAT was provided.
-    /// </summary>
-    NoPat,
-
-    /// <summary>
-    /// Data source not applicable for this repository type.
-    /// </summary>
-    NotApplicable
 }
