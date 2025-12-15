@@ -192,6 +192,7 @@ public static class StandupReportFormatter
                 sb.AppendLine($"<strong style=\"color: #ffd700;\">{HtmlEncode(highlight.ClientCode)}</strong> - {HtmlEncode(highlight.Highlight)}");
                 sb.AppendLine("</li>");
             }
+
             sb.AppendLine("</ul>");
         }
 
@@ -258,7 +259,10 @@ public static class StandupReportFormatter
     private static List<string> ExtractBulletPoints(string text)
     {
         var highlights = new List<string>();
-        if (string.IsNullOrEmpty(text)) return highlights;
+        if (string.IsNullOrEmpty(text))
+        {
+            return highlights;
+        }
 
         var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
@@ -266,7 +270,9 @@ public static class StandupReportFormatter
         {
             var trimmed = line.Trim();
             if (trimmed.StartsWith('#') || trimmed.Length < 10 || trimmed.EndsWith(':'))
+            {
                 continue;
+            }
 
             var isBullet = trimmed.StartsWith('-') || trimmed.StartsWith('*') || trimmed.StartsWith('•');
             var isNumbered = Regex.IsMatch(trimmed, @"^\d+\.");
