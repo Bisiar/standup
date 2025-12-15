@@ -91,6 +91,9 @@ public partial class GroupListViewModel : ObservableObject
     private string? _newRepoLocalPath;
 
     [ObservableProperty]
+    private string? _newRepoApiEndpoint;
+
+    [ObservableProperty]
     private bool _isLocalRepo;
 
     [ObservableProperty]
@@ -129,7 +132,7 @@ public partial class GroupListViewModel : ObservableObject
             .Take(10);
     }
 
-    private static (SourceType SourceType, string? Org, string? Project, string? Repo) ParseGitRemoteUrl(string gitConfig)
+    private static (SourceType SourceType, string? Org, string? Project, string? Repo, string? ApiEndpoint) ParseGitRemoteUrl(string gitConfig)
     {
         // Parse git config to find remote "origin" URL
         // Patterns:
@@ -137,6 +140,7 @@ public partial class GroupListViewModel : ObservableObject
         // Azure DevOps: https://{org}@dev.azure.com/{org}/{project}/_git/{repo}
         // GitHub: git@github.com:{org}/{repo}.git
         // GitHub: https://github.com/{org}/{repo}.git
+        // GitHub Enterprise: https://github.company.com/{org}/{repo}.git
         var lines = gitConfig.Split('\n');
         var inOriginSection = false;
 
@@ -163,10 +167,10 @@ public partial class GroupListViewModel : ObservableObject
             }
         }
 
-        return (SourceType.GitHub, null, null, null);
+        return (SourceType.GitHub, null, null, null, null);
     }
 
-    private static (SourceType SourceType, string? Org, string? Project, string? Repo) ParseRemoteUrl(string url)
+    private static (SourceType SourceType, string? Org, string? Project, string? Repo, string? ApiEndpoint) ParseRemoteUrl(string url)
     {
         Log.Debug("Parsing remote URL: {Url}", url);
 
@@ -175,44 +179,75 @@ public partial class GroupListViewModel : ObservableObject
         var adoPattern2 = @"https://[^@]+@dev\.azure\.com/([^/]+)/([^/]+)/_git/(.+?)(?:\.git)?$";
         var adoPattern3 = @"([^/]+)@vs-ssh\.visualstudio\.com:v3/([^/]+)/([^/]+)/(.+?)(?:\.git)?$";
 
-        // GitHub patterns (ghPattern2 supports optional embedded credentials like token@github.com)
+        // GitHub.com patterns (ghPattern2 supports optional embedded credentials like token@github.com)
         var ghPattern1 = @"git@github\.com:([^/]+)/(.+?)(?:\.git)?$";
         var ghPattern2 = @"https://(?:[^@]+@)?github\.com/([^/]+)/(.+?)(?:\.git)?$";
+
+        // GitHub Enterprise patterns - matches any host with github-like URL structure
+        var gheHttpsPattern = @"https://(?:[^@]+@)?([^/]+)/([^/]+)/(.+?)(?:\.git)?$";
+        var gheSshPattern = @"git@([^:]+):([^/]+)/(.+?)(?:\.git)?$";
 
         // Try Azure DevOps patterns
         var match = System.Text.RegularExpressions.Regex.Match(url, adoPattern1);
         if (match.Success)
         {
-            return (SourceType.AzureDevOps, match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value);
+            return (SourceType.AzureDevOps, match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value, null);
         }
 
         match = System.Text.RegularExpressions.Regex.Match(url, adoPattern2);
         if (match.Success)
         {
-            return (SourceType.AzureDevOps, match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value);
+            return (SourceType.AzureDevOps, match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value, null);
         }
 
         match = System.Text.RegularExpressions.Regex.Match(url, adoPattern3);
         if (match.Success)
         {
-            return (SourceType.AzureDevOps, match.Groups[2].Value, match.Groups[3].Value, match.Groups[4].Value);
+            return (SourceType.AzureDevOps, match.Groups[2].Value, match.Groups[3].Value, match.Groups[4].Value, null);
         }
 
-        // Try GitHub patterns
+        // Try GitHub.com patterns first (no ApiEndpoint needed)
         match = System.Text.RegularExpressions.Regex.Match(url, ghPattern1);
         if (match.Success)
         {
-            return (SourceType.GitHub, match.Groups[1].Value, null, match.Groups[2].Value);
+            return (SourceType.GitHub, match.Groups[1].Value, null, match.Groups[2].Value, null);
         }
 
         match = System.Text.RegularExpressions.Regex.Match(url, ghPattern2);
         if (match.Success)
         {
-            return (SourceType.GitHub, match.Groups[1].Value, null, match.Groups[2].Value);
+            return (SourceType.GitHub, match.Groups[1].Value, null, match.Groups[2].Value, null);
+        }
+
+        // Try GitHub Enterprise patterns (any other git hosting)
+        match = System.Text.RegularExpressions.Regex.Match(url, gheHttpsPattern);
+        if (match.Success)
+        {
+            var host = match.Groups[1].Value;
+
+            // Skip known non-GitHub hosts
+            if (!host.Contains("azure.com", StringComparison.OrdinalIgnoreCase) &&
+                !host.Contains("visualstudio.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return (SourceType.GitHub, match.Groups[2].Value, null, match.Groups[3].Value, $"https://{host}");
+            }
+        }
+
+        match = System.Text.RegularExpressions.Regex.Match(url, gheSshPattern);
+        if (match.Success)
+        {
+            var host = match.Groups[1].Value;
+
+            // Skip known non-GitHub hosts
+            if (!host.Contains("azure.com", StringComparison.OrdinalIgnoreCase) &&
+                !host.Contains("visualstudio.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return (SourceType.GitHub, match.Groups[2].Value, null, match.Groups[3].Value, $"https://{host}");
+            }
         }
 
         Log.Warning("Could not parse remote URL: {Url}", url);
-        return (SourceType.GitHub, null, null, null);
+        return (SourceType.GitHub, null, null, null, null);
     }
 
     [RelayCommand]
@@ -377,6 +412,7 @@ public partial class GroupListViewModel : ObservableObject
         NewRepoPat = null;
         NewRepoAuthorIdentifier = null;
         NewRepoLocalPath = null;
+        NewRepoApiEndpoint = null;
         IsLocalRepo = false;
         DetectedRepoInfo = null;
     }
@@ -466,6 +502,7 @@ public partial class GroupListViewModel : ObservableObject
                 EncryptedPat = encryptedPat,
                 AuthorIdentifier = NewRepoAuthorIdentifier,
                 LocalPath = NewRepoLocalPath,
+                ApiEndpoint = NewRepoApiEndpoint,
                 IsActive = true
             };
 
@@ -556,7 +593,7 @@ public partial class GroupListViewModel : ObservableObject
             if (File.Exists(gitConfigPath))
             {
                 var gitConfig = await File.ReadAllTextAsync(gitConfigPath);
-                var (sourceType, org, project, repo) = ParseGitRemoteUrl(gitConfig);
+                var (sourceType, org, project, repo, apiEndpoint) = ParseGitRemoteUrl(gitConfig);
 
                 if (!string.IsNullOrEmpty(org) && !string.IsNullOrEmpty(repo))
                 {
@@ -564,8 +601,10 @@ public partial class GroupListViewModel : ObservableObject
                     NewRepoOrganization = org;
                     NewRepoProject = project;
                     NewRepoRepository = repo;
-                    DetectedRepoInfo = $"Detected: {sourceType} - {org}/{(project != null ? project + "/" : string.Empty)}{repo}";
-                    Log.Information("Auto-detected repo: {Info}", DetectedRepoInfo);
+                    NewRepoApiEndpoint = apiEndpoint;
+                    var enterpriseInfo = apiEndpoint != null ? $" (Enterprise: {apiEndpoint})" : string.Empty;
+                    DetectedRepoInfo = $"Detected: {sourceType} - {org}/{(project != null ? project + "/" : string.Empty)}{repo}{enterpriseInfo}";
+                    Log.Information("Auto-detected repo: {Info}, ApiEndpoint: {ApiEndpoint}", DetectedRepoInfo, apiEndpoint ?? "null");
                     StatusMessage = DetectedRepoInfo;
                 }
                 else

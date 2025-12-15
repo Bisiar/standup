@@ -58,7 +58,30 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
+    // AI Configuration (stored in Preferences, not per-project)
+    [ObservableProperty]
+    private string _aiEndpoint = string.Empty;
+
+    [ObservableProperty]
+    private string _aiDeploymentName = string.Empty;
+
+    [ObservableProperty]
+    private string _aiApiKey = string.Empty;
+
+    [ObservableProperty]
+    private bool _aiUseAzureIdentity;
+
     public List<SourceType> SourceTypes { get; } = [SourceType.AzureDevOps, SourceType.GitHub];
+
+    /// <summary>
+    /// Event to request AI settings from MAUI layer (Preferences).
+    /// </summary>
+    public event Func<(string Endpoint, string Deployment, string ApiKey)>? LoadAISettingsRequested;
+
+    /// <summary>
+    /// Event to save AI settings to MAUI layer (Preferences).
+    /// </summary>
+    public event Action<string, string, string>? SaveAISettingsRequested;
 
     public SettingsViewModel(IProjectService projectService, ILocalStandupService localStandupService)
     {
@@ -85,10 +108,25 @@ public partial class SettingsViewModel : ObservableObject
             CurrentProject = Projects.FirstOrDefault(p => p.Id == current?.Id) ?? Projects.FirstOrDefault();
 
             LoadProjectSettings();
+
+            // Load AI settings from MAUI Preferences
+            LoadAISettings();
         }
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    private void LoadAISettings()
+    {
+        var settings = LoadAISettingsRequested?.Invoke();
+        if (settings.HasValue)
+        {
+            AiEndpoint = settings.Value.Endpoint;
+            AiDeploymentName = settings.Value.Deployment;
+            AiApiKey = settings.Value.ApiKey;
+            AiUseAzureIdentity = string.IsNullOrEmpty(AiApiKey);
         }
     }
 
@@ -144,7 +182,22 @@ public partial class SettingsViewModel : ObservableObject
 
         await _projectService.UpdateProjectAsync(updated);
         CurrentProject = updated;
+
+        // Save AI settings to MAUI Preferences
+        SaveAISettingsRequested?.Invoke(AiEndpoint, AiDeploymentName, AiApiKey);
+
         StatusMessage = "Settings saved!";
+    }
+
+    /// <summary>
+    /// Save only AI settings (separate from project settings).
+    /// </summary>
+    [RelayCommand]
+    private void SaveAISettings()
+    {
+        SaveAISettingsRequested?.Invoke(AiEndpoint, AiDeploymentName, AiApiKey);
+        AiUseAzureIdentity = string.IsNullOrEmpty(AiApiKey);
+        StatusMessage = "AI settings saved! Restart app to apply changes.";
     }
 
     [RelayCommand]

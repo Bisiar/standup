@@ -62,4 +62,12 @@ public sealed class ReportHistoryService
 
     public Task DeleteByGroupIdAsync(string groupId, CancellationToken cancellationToken = default)
         => _repository.DeleteByGroupIdAsync(groupId, cancellationToken);
+
+    /// <summary>
+    /// Clears all report history.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public Task ClearAllAsync(CancellationToken cancellationToken = default)
+        => _repository.ClearAllAsync(cancellationToken);
 }

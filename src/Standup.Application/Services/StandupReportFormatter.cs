@@ -96,18 +96,24 @@ public static class StandupReportFormatter
 
         var html = markdown;
 
-        // Convert headers
+        // Convert headers (order matters - longest first)
+        html = Regex.Replace(html, @"^###### (.+)$", "<h6>$1</h6>", RegexOptions.Multiline);
+        html = Regex.Replace(html, @"^##### (.+)$", "<h5>$1</h5>", RegexOptions.Multiline);
+        html = Regex.Replace(html, @"^#### (.+)$", "<h4>$1</h4>", RegexOptions.Multiline);
         html = Regex.Replace(html, @"^### (.+)$", "<h3>$1</h3>", RegexOptions.Multiline);
         html = Regex.Replace(html, @"^## (.+)$", "<h2>$1</h2>", RegexOptions.Multiline);
         html = Regex.Replace(html, @"^# (.+)$", "<h1>$1</h1>", RegexOptions.Multiline);
 
-        // Convert bold and italic
+        // Convert bold and italic (bold first to avoid conflict)
         html = Regex.Replace(html, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
         html = Regex.Replace(html, @"\*(.+?)\*", "<em>$1</em>");
 
-        // Convert bullet lists
-        html = Regex.Replace(html, @"^- (.+)$", "<li>$1</li>", RegexOptions.Multiline);
+        // Convert bullet lists (both - and * styles)
+        html = Regex.Replace(html, @"^[\-\*] (.+)$", "<li>$1</li>", RegexOptions.Multiline);
         html = Regex.Replace(html, @"(<li>.*</li>\n?)+", "<ul>$0</ul>");
+
+        // Convert numbered lists
+        html = Regex.Replace(html, @"^\d+\. (.+)$", "<li>$1</li>", RegexOptions.Multiline);
 
         // Convert line breaks
         html = html.Replace("\n\n", "</p><p>");
@@ -329,6 +335,23 @@ public static class StandupReportFormatter
         return "No activity";
     }
 
+    private static readonly string[] ProjectColors =
+    {
+        "#3B82F6", // Blue
+        "#10B981", // Green
+        "#F59E0B", // Amber
+        "#8B5CF6", // Purple
+        "#EF4444", // Red
+        "#06B6D4", // Cyan
+        "#EC4899", // Pink
+        "#6366F1" // Indigo
+    };
+
+    private static string GetProjectColor(int index)
+    {
+        return ProjectColors[index % ProjectColors.Length];
+    }
+
     private static string ExtractFirstSentence(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -405,22 +428,35 @@ public static class StandupReportFormatter
 
     private static void AppendTechnicalDetailsHtml(StringBuilder sb, GroupedStandupReportDto report)
     {
-        sb.AppendLine("<h2 style=\"color: #10B981;\">Technical Details</h2>");
+        sb.AppendLine("<h2 style=\"color: #10B981; margin-top: 40px;\">Technical Details</h2>");
 
-        foreach (var section in report.Sections)
+        for (var i = 0; i < report.Sections.Count; i++)
         {
-            sb.AppendLine($"<h3>{HtmlEncode(section.ClientCode)}</h3>");
+            var section = report.Sections[i];
+            var color = GetProjectColor(i);
+
+            // Project container with colored border
+            sb.AppendLine($"<div style=\"border: 2px solid {color}; border-radius: 12px; margin: 20px 0; overflow: hidden;\">");
+
+            // Prominent project header banner
+            sb.AppendLine($"<div style=\"background: {color}; color: white; padding: 15px 20px;\">");
+            sb.AppendLine($"<h3 style=\"color: white; margin: 0; font-size: 1.3em;\">📁 {HtmlEncode(section.ClientCode)}</h3>");
+            sb.AppendLine($"<p style=\"margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9em;\">{section.CommitCount} commits | {section.PullRequestCount} PRs | {section.WorkItemCount} work items</p>");
+            sb.AppendLine("</div>");
+
+            // Content area with padding
+            sb.AppendLine("<div style=\"padding: 15px 20px;\">");
 
             // Show Technical summary if available
             if (section.AllSummaries?.TryGetValue(SummaryType.Technical, out var techSummary) == true)
             {
-                sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid #10B981;\">{ConvertMarkdownToHtml(techSummary)}</div>");
+                sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid {color};\">{ConvertMarkdownToHtml(techSummary)}</div>");
             }
 
             // Show Code Review summary if available
             if (section.AllSummaries?.TryGetValue(SummaryType.CodeReview, out var codeReview) == true)
             {
-                sb.AppendLine("<h4 style=\"color: #8B5CF6;\">Code Review</h4>");
+                sb.AppendLine("<h4 style=\"color: #8B5CF6; margin-top: 20px;\">🔍 Code Review</h4>");
                 sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid #8B5CF6;\">{ConvertMarkdownToHtml(codeReview)}</div>");
             }
 
@@ -429,13 +465,16 @@ public static class StandupReportFormatter
             {
                 if (!string.IsNullOrEmpty(section.Summary))
                 {
-                    sb.AppendLine($"<div class=\"summary\">{ConvertMarkdownToHtml(section.Summary)}</div>");
+                    sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid {color};\">{ConvertMarkdownToHtml(section.Summary)}</div>");
                 }
             }
 
-            AppendCommitsSectionHtml(sb, section);
-            AppendPullRequestsSectionHtml(sb, section);
-            AppendWorkItemsSectionHtml(sb, section);
+            AppendCommitsSectionHtml(sb, section, color);
+            AppendPullRequestsSectionHtml(sb, section, color);
+            AppendWorkItemsSectionHtml(sb, section, color);
+
+            sb.AppendLine("</div>"); // Close content area
+            sb.AppendLine("</div>"); // Close project container
         }
     }
 
@@ -549,15 +588,15 @@ public static class StandupReportFormatter
         sb.AppendLine("</style></head><body>");
     }
 
-    private static void AppendCommitsSectionHtml(StringBuilder sb, ClientCodeSection section)
+    private static void AppendCommitsSectionHtml(StringBuilder sb, ClientCodeSection section, string color)
     {
         if (!section.Commits.Any())
         {
             return;
         }
 
-        sb.AppendLine($"<h3>Commits ({section.CommitCount})</h3>");
-        sb.AppendLine("<ul>");
+        sb.AppendLine($"<h4 style=\"color: {color}; margin-top: 15px;\">📝 Commits ({section.CommitCount})</h4>");
+        sb.AppendLine("<ul style=\"margin-top: 5px;\">");
         foreach (var commit in section.Commits.Take(10))
         {
             var message = commit.Message.Split('\n')[0];
@@ -577,15 +616,15 @@ public static class StandupReportFormatter
         sb.AppendLine("</ul>");
     }
 
-    private static void AppendPullRequestsSectionHtml(StringBuilder sb, ClientCodeSection section)
+    private static void AppendPullRequestsSectionHtml(StringBuilder sb, ClientCodeSection section, string color)
     {
         if (!section.PullRequests.Any())
         {
             return;
         }
 
-        sb.AppendLine($"<h3>Pull Requests ({section.PullRequestCount})</h3>");
-        sb.AppendLine("<ul>");
+        sb.AppendLine($"<h4 style=\"color: {color}; margin-top: 15px;\">🔀 Pull Requests ({section.PullRequestCount})</h4>");
+        sb.AppendLine("<ul style=\"margin-top: 5px;\">");
         foreach (var pr in section.PullRequests)
         {
             var statusClass = pr.Status.ToLowerInvariant() switch
@@ -600,15 +639,15 @@ public static class StandupReportFormatter
         sb.AppendLine("</ul>");
     }
 
-    private static void AppendWorkItemsSectionHtml(StringBuilder sb, ClientCodeSection section)
+    private static void AppendWorkItemsSectionHtml(StringBuilder sb, ClientCodeSection section, string color)
     {
         if (!section.WorkItems.Any())
         {
             return;
         }
 
-        sb.AppendLine($"<h3>Work Items ({section.WorkItemCount})</h3>");
-        sb.AppendLine("<ul>");
+        sb.AppendLine($"<h4 style=\"color: {color}; margin-top: 15px;\">📋 Work Items ({section.WorkItemCount})</h4>");
+        sb.AppendLine("<ul style=\"margin-top: 5px;\">");
         foreach (var item in section.WorkItems)
         {
             var statusClass = item.Status switch

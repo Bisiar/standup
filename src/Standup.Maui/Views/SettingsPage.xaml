@@ -86,6 +86,37 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- AI Configuration -->
+            <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#E8F4FD, Dark=#1E3A4C}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="AI Summary Configuration" FontAttributes="Bold" />
+                    <Label Text="Configure Azure OpenAI for generating standup summaries" FontSize="12" TextColor="Gray" />
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Azure OpenAI Endpoint" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding AiEndpoint}" Placeholder="https://your-resource.openai.azure.com/" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Deployment Name" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding AiDeploymentName}" Placeholder="gpt-4o" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="API Key (required for MAUI app)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding AiApiKey}" Placeholder="Your Azure OpenAI API Key" IsPassword="True" />
+                        <Label Text="{Binding AiUseAzureIdentity, StringFormat='Using Azure Identity: {0}'}" FontSize="10" TextColor="Orange" />
+                    </VerticalStackLayout>
+
+                    <Button Text="Save AI Settings"
+                           Command="{Binding SaveAISettingsCommand}"
+                           BackgroundColor="#0078D4"
+                           TextColor="White"
+                           HorizontalOptions="Start"
+                           WidthRequest="150" />
+                </VerticalStackLayout>
+            </Border>
+
             <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="Green" HorizontalOptions="Center" />
 
             <Button Text="Save Settings"

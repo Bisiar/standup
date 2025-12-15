@@ -76,6 +76,14 @@ public sealed class PreferencesReportHistoryRepository : IReportHistoryRepositor
         Log.Information("Deleted report history for group: {GroupId}", groupId);
     }
 
+    public Task ClearAllAsync(CancellationToken cancellationToken = default)
+    {
+        _cachedHistory = new List<ReportHistory>();
+        Preferences.Default.Remove(HistoryKey);
+        Log.Information("Cleared all report history");
+        return Task.CompletedTask;
+    }
+
     private Task<IEnumerable<ReportHistory>> LoadAllAsync(CancellationToken cancellationToken = default)
     {
         if (_cachedHistory != null)

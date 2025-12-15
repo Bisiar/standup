@@ -104,6 +104,11 @@ public static class MauiProgram
             builder.Services.AddSingleton<GitConfigParser>();
             builder.Services.AddSingleton<LocalGitService>();
 
+            // Source Providers for GitHub and Azure DevOps
+            builder.Services.AddSingleton<GitHubSourceProvider>();
+            builder.Services.AddSingleton<AzureDevOpsSourceProvider>();
+            builder.Services.AddSingleton<ISourceProviderFactory, SourceProviderFactory>();
+
             // Repository Discovery Service
             builder.Services.AddSingleton<IRepositoryDiscoveryService, RepositoryDiscoveryService>();
 

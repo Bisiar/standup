@@ -61,4 +61,11 @@ public interface IReportHistoryRepository
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task representing the operation.</returns>
     Task DeleteByGroupIdAsync(string groupId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Clears all report history entries.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A task representing the operation.</returns>
+    Task ClearAllAsync(CancellationToken cancellationToken = default);
 }

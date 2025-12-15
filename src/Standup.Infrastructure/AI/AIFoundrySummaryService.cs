@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Extensions.Options;
 using OpenAI.Chat;
+using Serilog;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
@@ -13,11 +15,21 @@ namespace Standup.Infrastructure.AI;
 
 public class AIFoundrySummaryService : IAISummaryService
 {
+    private static int _requestCount;
+
     private readonly AIFoundryOptions _options;
 
     public AIFoundrySummaryService(IOptions<AIFoundryOptions> options)
     {
         _options = options.Value;
+
+        // Log configuration on first creation
+        Log.Information(
+            "AIFoundrySummaryService configured: Endpoint={Endpoint}, Deployment={Deployment}, UseAzureIdentity={UseIdentity}, HasApiKey={HasKey}",
+            _options.Endpoint,
+            _options.DeploymentName,
+            _options.UseAzureIdentity,
+            !string.IsNullOrEmpty(_options.ApiKey));
     }
 
     public async Task<string> GenerateSummaryAsync(
@@ -26,29 +38,77 @@ public class AIFoundrySummaryService : IAISummaryService
         CancellationToken cancellationToken = default)
     {
         options ??= new SummaryOptions();
+        var requestId = Interlocked.Increment(ref _requestCount);
+        var stopwatch = Stopwatch.StartNew();
 
-        var client = CreateClient();
-        var chatClient = client.GetChatClient(_options.DeploymentName);
+        Log.Information(
+            "[AI-{RequestId}] START: Type={SummaryType}, Commits={Commits}, PRs={PRs}, WorkItems={WorkItems}",
+            requestId,
+            options.Type,
+            data.Commits.Count,
+            data.PullRequests.Count,
+            data.WorkItems.Count);
 
-        var systemPrompt = BuildSystemPrompt(options);
-        var userPrompt = BuildUserPrompt(data);
-
-        var messages = new List<ChatMessage>
+        try
         {
-            new SystemChatMessage(systemPrompt),
-            new UserChatMessage(userPrompt)
-        };
+            Log.Debug(
+                "[AI-{RequestId}] Creating client with UseAzureIdentity={UseIdentity}",
+                requestId,
+                _options.UseAzureIdentity);
 
-        var completion = await chatClient.CompleteChatAsync(
-            messages,
-            new ChatCompletionOptions
+            var client = CreateClient();
+            var chatClient = client.GetChatClient(_options.DeploymentName);
+
+            var systemPrompt = BuildSystemPrompt(options);
+            var userPrompt = BuildUserPrompt(data);
+
+            Log.Debug(
+                "[AI-{RequestId}] Sending request to {Endpoint}/{Deployment}",
+                requestId,
+                _options.Endpoint,
+                _options.DeploymentName);
+
+            var messages = new List<ChatMessage>
             {
-                MaxOutputTokenCount = options.MaxLength * 2,
-                Temperature = 0.7f
-            },
-            cancellationToken);
+                new SystemChatMessage(systemPrompt),
+                new UserChatMessage(userPrompt)
+            };
 
-        return completion.Value.Content[0].Text;
+            var completion = await chatClient.CompleteChatAsync(
+                messages,
+                new ChatCompletionOptions
+                {
+                    MaxOutputTokenCount = options.MaxLength * 2,
+                    Temperature = 0.7f
+                },
+                cancellationToken);
+
+            stopwatch.Stop();
+            var result = completion.Value.Content[0].Text;
+
+            Log.Information(
+                "[AI-{RequestId}] SUCCESS: Type={SummaryType}, ResponseLength={Length}, ElapsedMs={Elapsed}",
+                requestId,
+                options.Type,
+                result?.Length ?? 0,
+                stopwatch.ElapsedMilliseconds);
+
+            return result ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            Log.Error(
+                ex,
+                "[AI-{RequestId}] FAILED: Type={SummaryType}, ElapsedMs={Elapsed}, Error={ErrorType}: {ErrorMessage}",
+                requestId,
+                options.Type,
+                stopwatch.ElapsedMilliseconds,
+                ex.GetType().Name,
+                ex.Message);
+
+            throw;
+        }
     }
 
     private static string BuildSystemPrompt(SummaryOptions options)

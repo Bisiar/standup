@@ -400,8 +400,21 @@ public partial class StandupViewModel : ObservableObject
         // Update the display content (both markdown and HTML)
         UpdateReportDisplay(GroupedReport);
 
+        // Check for AI failures and show appropriate status
         var typeNames = string.Join(", ", typesToGenerate);
-        StatusMessage = $"Generated at {GroupedReport.GeneratedAt:HH:mm} - {GroupedReport.Sections.Count} clients, {GroupedReport.TotalCommits} commits ({typeNames})";
+        var aiFailureCount = GroupedReport.Sections
+            .Where(s => s.AllSummaries != null)
+            .SelectMany(s => s.AllSummaries!.Values)
+            .Count(v => v.Contains("⚠️ AI Summary Unavailable"));
+
+        if (aiFailureCount > 0)
+        {
+            StatusMessage = $"⚠️ Generated with {aiFailureCount} AI failures - {GroupedReport.Sections.Count} clients, {GroupedReport.TotalCommits} commits ({typeNames})";
+        }
+        else
+        {
+            StatusMessage = $"Generated at {GroupedReport.GeneratedAt:HH:mm} - {GroupedReport.Sections.Count} clients, {GroupedReport.TotalCommits} commits ({typeNames})";
+        }
 
         // Switch to report view and notify property changes
         CurrentViewMode = 1;
@@ -612,6 +625,27 @@ public partial class StandupViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = $"Error deleting report: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Clears all report history.
+    /// </summary>
+    [RelayCommand]
+    private async Task ClearAllHistoryAsync()
+    {
+        try
+        {
+            await _reportHistoryService.ClearAllAsync();
+            ReportHistory.Clear();
+            SelectedHistoryItem = null;
+            ReportContent = string.Empty;
+            HtmlReportContent = string.Empty;
+            StatusMessage = "All reports cleared.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error clearing reports: {ex.Message}";
         }
     }
 

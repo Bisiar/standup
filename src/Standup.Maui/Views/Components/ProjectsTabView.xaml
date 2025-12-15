@@ -46,7 +46,7 @@
                                                  CommandParameter="{Binding .}" />
                         </Border.GestureRecognizers>
 
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
                             <VerticalStackLayout Grid.Column="0">
                                 <HorizontalStackLayout Spacing="10">
                                     <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
@@ -67,29 +67,50 @@
                                        IsVisible="{Binding SourcePat, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
                                 <Label Text="⚠ No PAT - Click Edit" FontSize="11" TextColor="Orange"
                                        IsVisible="{Binding SourcePat, Converter={StaticResource IsNullOrEmptyConverter}}" />
+                                <!-- Latest Commit Info -->
+                                <HorizontalStackLayout Spacing="5" IsVisible="{Binding LastCommitHash, Converter={StaticResource IsNotNullOrEmptyConverter}}">
+                                    <Label Text="📝" FontSize="11" />
+                                    <Label Text="{Binding CommitInfoDisplay}" FontSize="11" TextColor="#10B981" FontAttributes="Bold" />
+                                </HorizontalStackLayout>
+                                <!-- Validation Error -->
+                                <Label Text="{Binding ValidationError}" FontSize="11" TextColor="#EF4444"
+                                       IsVisible="{Binding ValidationError, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+                                <!-- Validating Indicator -->
+                                <HorizontalStackLayout Spacing="5" IsVisible="{Binding IsValidating}">
+                                    <ActivityIndicator IsRunning="True" HeightRequest="12" WidthRequest="12" Color="#3B82F6" />
+                                    <Label Text="Validating..." FontSize="11" TextColor="#3B82F6" />
+                                </HorizontalStackLayout>
                             </VerticalStackLayout>
 
+                            <!-- Validate PAT Button -->
+                            <Button Grid.Column="1" Text="✓" FontSize="14" Padding="8,5"
+                                    BackgroundColor="#6366F1" TextColor="White"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=ValidateProjectCommand}"
+                                    CommandParameter="{Binding .}" Margin="0,0,5,0"
+                                    WidthRequest="36"
+                                    ToolTipProperties.Text="Validate PAT and fetch latest commit" />
+
                             <!-- View Latest Report Button -->
-                            <Button Grid.Column="1" Text="View" FontSize="12" Padding="10,5"
+                            <Button Grid.Column="2" Text="View" FontSize="12" Padding="10,5"
                                     BackgroundColor="#10B981" TextColor="White"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=ViewLatestReportCommand}"
                                     CommandParameter="{Binding .}" Margin="0,0,5,0"
                                     ToolTipProperties.Text="View latest report" />
 
                             <!-- Run/Refresh Report Button -->
-                            <Button Grid.Column="2" Text="⟳" FontSize="16" Padding="8,5"
+                            <Button Grid.Column="3" Text="⟳" FontSize="16" Padding="8,5"
                                     BackgroundColor="#F59E0B" TextColor="White"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=RunReportCommand}"
                                     CommandParameter="{Binding .}" Margin="0,0,10,0"
                                     WidthRequest="40"
                                     ToolTipProperties.Text="Generate new report" />
 
-                            <Button Grid.Column="3" Text="Edit" FontSize="12" Padding="10,5"
+                            <Button Grid.Column="4" Text="Edit" FontSize="12" Padding="10,5"
                                     BackgroundColor="#3B82F6" TextColor="White"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=EditProjectCommand}"
                                     CommandParameter="{Binding .}" Margin="0,0,10,0" />
 
-                            <Button Grid.Column="4" Text="✕" FontSize="14"
+                            <Button Grid.Column="5" Text="✕" FontSize="14"
                                     BackgroundColor="Transparent" TextColor="Gray"
                                     WidthRequest="30" HeightRequest="30" Padding="0"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=DeleteProjectCommand}"
@@ -156,7 +177,7 @@
         </Border>
 
         <Button Grid.Row="2" Text="+ Add Project" Command="{Binding ShowAddProjectCommand}"
-               IsVisible="{Binding IsAddingProject, Converter={StaticResource InvertedBoolConverter}}"
+               IsVisible="{Binding ShouldShowAddProjectButton}"
                HorizontalOptions="End" />
 
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"

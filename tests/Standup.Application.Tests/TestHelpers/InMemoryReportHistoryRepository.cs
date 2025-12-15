@@ -83,4 +83,10 @@ public sealed class InMemoryReportHistoryRepository : IReportHistoryRepository
 
         return Task.CompletedTask;
     }
+
+    public Task ClearAllAsync(CancellationToken cancellationToken = default)
+    {
+        _history.Clear();
+        return Task.CompletedTask;
+    }
 }

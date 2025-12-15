@@ -1,12 +1,14 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Serilog;
 using Standup.Application.DTOs;
 using Standup.Application.Interfaces;
 using Standup.Application.Models;
 using Standup.Application.Services;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
+using Standup.Domain.Interfaces;
 
 namespace Standup.Application.ViewModels;
 
@@ -15,6 +17,8 @@ public partial class ProjectListViewModel : ObservableObject
     private readonly IProjectService _projectService;
     private readonly ILocalStandupService _localStandupService;
     private readonly ReportHistoryService _reportHistoryService;
+    private readonly ISourceProviderFactory? _sourceProviderFactory;
+    private readonly IEncryptionService? _encryptionService;
 
     /// <summary>
     /// Event raised when a report is generated for a project.
@@ -46,6 +50,7 @@ public partial class ProjectListViewModel : ObservableObject
     private string _reportStatusMessage = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShouldShowAddProjectButton))]
     private bool _isAddingProject;
 
     [ObservableProperty]
@@ -59,7 +64,13 @@ public partial class ProjectListViewModel : ObservableObject
 
     // Edit project properties
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShouldShowAddProjectButton))]
     private bool _isEditingProject;
+
+    /// <summary>
+    /// Gets a value indicating whether the Add Project button should be visible.
+    /// </summary>
+    public bool ShouldShowAddProjectButton => !IsAddingProject && !IsEditingProject;
 
     [ObservableProperty]
     private ProjectInstance? _editingProject;
@@ -79,11 +90,15 @@ public partial class ProjectListViewModel : ObservableObject
     public ProjectListViewModel(
         IProjectService projectService,
         ILocalStandupService localStandupService,
-        ReportHistoryService reportHistoryService)
+        ReportHistoryService reportHistoryService,
+        ISourceProviderFactory? sourceProviderFactory = null,
+        IEncryptionService? encryptionService = null)
     {
         _projectService = projectService;
         _localStandupService = localStandupService;
         _reportHistoryService = reportHistoryService;
+        _sourceProviderFactory = sourceProviderFactory;
+        _encryptionService = encryptionService;
     }
 
     [RelayCommand]
@@ -216,11 +231,19 @@ public partial class ProjectListViewModel : ObservableObject
     [RelayCommand]
     private async Task RunReportAsync(ProjectInstance project)
     {
+        // Validate required fields - SourceProject is only required for Azure DevOps
+        var requiresProject = project.SourceType == SourceType.AzureDevOps;
         if (string.IsNullOrEmpty(project.SourceOrganization) ||
-            string.IsNullOrEmpty(project.SourceProject) ||
-            string.IsNullOrEmpty(project.SourceRepository))
+            string.IsNullOrEmpty(project.SourceRepository) ||
+            (requiresProject && string.IsNullOrEmpty(project.SourceProject)))
         {
             ReportStatusMessage = "Project source configuration incomplete. Please edit the project.";
+            Log.Warning(
+                "Project configuration incomplete: Org={Org}, Project={Project}, Repo={Repo}, SourceType={SourceType}",
+                project.SourceOrganization ?? "(null)",
+                project.SourceProject ?? "(null)",
+                project.SourceRepository ?? "(null)",
+                project.SourceType);
             return;
         }
 
@@ -241,7 +264,7 @@ public partial class ProjectListViewModel : ObservableObject
             var tempRepo = new GroupedRepository
             {
                 Id = Guid.NewGuid().ToString(),
-                ClientCode = project.TenantName ?? project.Name,
+                ClientCode = string.IsNullOrEmpty(project.TenantName) ? project.Name : project.TenantName,
                 SourceType = project.SourceType,
                 Organization = project.SourceOrganization,
                 Project = project.SourceProject,
@@ -306,29 +329,172 @@ public partial class ProjectListViewModel : ObservableObject
 
     /// <summary>
     /// Views the latest saved report for a project.
+    /// If no report exists, automatically generates one.
     /// </summary>
     [RelayCommand]
     private async Task ViewLatestReportAsync(ProjectInstance project)
     {
+        Log.Information("ViewLatestReportAsync called for project: {ProjectName} (Id: {ProjectId})", project?.Name, project?.Id);
+
+        if (project == null)
+        {
+            Log.Warning("ViewLatestReportAsync called with null project");
+            return;
+        }
+
         try
         {
             var latestReport = await _reportHistoryService.GetLatestByGroupIdAsync(project.Id);
+            Log.Information("Latest report lookup result: {HasReport}", latestReport != null);
 
             if (latestReport == null)
             {
-                ReportStatusMessage = "No saved report found. Click refresh to generate one.";
+                // No saved report - generate one automatically
+                Log.Information("No saved report found, generating new report for {ProjectName}", project.Name);
+                ReportStatusMessage = "No saved report found. Generating...";
+                await RunReportAsync(project);
                 return;
             }
 
             // Notify listeners to display the saved report
             if (OnViewProjectReport != null)
             {
+                Log.Information("Invoking OnViewProjectReport for {ProjectName}", project.Name);
                 await OnViewProjectReport.Invoke(latestReport, project);
+            }
+            else
+            {
+                Log.Warning("OnViewProjectReport event has no subscribers");
             }
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Error in ViewLatestReportAsync for project {ProjectName}", project.Name);
             ReportStatusMessage = $"Error: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Validates a project's PAT by fetching the latest commit.
+    /// Updates the project's transient LastCommitHash and LastCommitDate properties.
+    /// </summary>
+    [RelayCommand]
+    private async Task ValidateProjectAsync(ProjectInstance project)
+    {
+        if (project == null)
+        {
+            return;
+        }
+
+        Log.Information("ValidateProjectAsync called for project: {ProjectName}", project.Name);
+
+        if (_sourceProviderFactory == null || _encryptionService == null)
+        {
+            Log.Warning("Source provider factory or encryption service not available");
+            project.ValidationError = "Validation service unavailable";
+            RefreshProjectInList(project);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(project.SourcePat))
+        {
+            project.ValidationError = "No PAT configured";
+            RefreshProjectInList(project);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(project.SourceOrganization) || string.IsNullOrEmpty(project.SourceRepository))
+        {
+            project.ValidationError = "Missing org/repo config";
+            RefreshProjectInList(project);
+            return;
+        }
+
+        project.IsValidating = true;
+        project.ValidationError = null;
+        project.LastCommitHash = null;
+        project.LastCommitDate = null;
+        RefreshProjectInList(project);
+
+        try
+        {
+            var provider = _sourceProviderFactory.GetProvider(project.SourceType);
+
+            // Create a temporary SourceRepository for the provider
+            var sourceRepo = new SourceRepository
+            {
+                Id = project.Id,
+                SourceType = project.SourceType,
+                Organization = project.SourceOrganization,
+                Project = project.SourceProject,
+                Repository = project.SourceRepository,
+                AuthorIdentifier = string.Empty, // Get all commits, not filtered by author
+                EncryptedPat = _encryptionService.Encrypt(project.SourcePat),
+                ApiEndpoint = project.ApiEndpointOverride
+            };
+
+            // Fetch commits from the last 90 days to find the latest one
+            var since = DateTimeOffset.UtcNow.AddDays(-90);
+            var until = DateTimeOffset.UtcNow;
+
+            var commits = await provider.GetCommitsAsync(sourceRepo, since, until);
+            var latestCommit = commits.OrderByDescending(c => c.CommittedAt).FirstOrDefault();
+
+            if (latestCommit != null)
+            {
+                project.LastCommitHash = latestCommit.Sha.Length >= 8
+                    ? latestCommit.Sha.Substring(0, 8)
+                    : latestCommit.Sha;
+                project.LastCommitDate = latestCommit.CommittedAt;
+                Log.Information(
+                    "Latest commit for {ProjectName}: {Hash} on {Date}",
+                    project.Name,
+                    project.LastCommitHash,
+                    project.LastCommitDate);
+            }
+            else
+            {
+                project.ValidationError = "No commits in 90 days";
+                Log.Information("No recent commits found for {ProjectName}", project.Name);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to validate project {ProjectName}", project.Name);
+            project.ValidationError = ex.Message.Length > 30
+                ? ex.Message.Substring(0, 30) + "..."
+                : ex.Message;
+        }
+        finally
+        {
+            project.IsValidating = false;
+            RefreshProjectInList(project);
+        }
+    }
+
+    /// <summary>
+    /// Validates all projects in the list sequentially.
+    /// </summary>
+    [RelayCommand]
+    private async Task ValidateAllProjectsAsync()
+    {
+        foreach (var project in Projects.ToList())
+        {
+            await ValidateProjectAsync(project);
+        }
+    }
+
+    /// <summary>
+    /// Forces a UI refresh for a specific project by replacing it in the collection.
+    /// This is needed because the transient properties don't raise PropertyChanged.
+    /// </summary>
+    private void RefreshProjectInList(ProjectInstance project)
+    {
+        var index = Projects.IndexOf(project);
+        if (index >= 0)
+        {
+            // Force UI refresh by notifying collection changed
+            Projects[index] = project;
         }
     }
 }

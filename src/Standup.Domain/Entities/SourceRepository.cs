@@ -42,6 +42,12 @@ public class SourceRepository
     public string? EncryptedPat { get; set; }
 
     /// <summary>
+    /// Gets or sets the API endpoint for GitHub Enterprise (e.g., https://github.company.com).
+    /// Leave null for public github.com.
+    /// </summary>
+    public string? ApiEndpoint { get; set; }
+
+    /// <summary>
     /// Gets or sets the default branch to track.
     /// </summary>
     public string DefaultBranch { get; set; } = "main";

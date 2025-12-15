@@ -245,20 +245,63 @@
                     </VerticalStackLayout>
 
                     <!-- Report History -->
-                    <Border Grid.Row="3" Margin="0,15,0,0" Padding="10" StrokeShape="RoundRectangle 8"
+                    <Border Grid.Row="3" Margin="0,15,0,0" Padding="15" StrokeShape="RoundRectangle 8"
+                            BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#1A1A1A}"
                             IsVisible="{Binding ReportHistory.Count, Converter={StaticResource IntToBoolConverter}}">
-                        <VerticalStackLayout Spacing="5">
-                            <Label Text="Recent Reports" FontSize="14" FontAttributes="Bold" />
-                            <CollectionView ItemsSource="{Binding ReportHistory}" HeightRequest="150">
+                        <VerticalStackLayout Spacing="10">
+                            <!-- Header with Clear All button -->
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="Recent Reports" FontSize="14" FontAttributes="Bold" VerticalOptions="Center" />
+                                <Button Grid.Column="1" Text="Clear All" FontSize="11"
+                                        BackgroundColor="#EF4444" TextColor="White"
+                                        Padding="10,5" HeightRequest="28"
+                                        Command="{Binding ClearAllHistoryCommand}" />
+                            </Grid>
+
+                            <!-- Reports List -->
+                            <CollectionView ItemsSource="{Binding ReportHistory}" HeightRequest="180" SelectionMode="None">
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate x:DataType="entities:ReportHistory">
-                                        <HorizontalStackLayout Spacing="10" Padding="5">
-                                            <Label Text="{Binding GeneratedAt, StringFormat='{0:MMM dd, HH:mm}'}"
-                                                   FontSize="12" TextColor="Gray" WidthRequest="100" />
-                                            <Label Text="{Binding SummaryType}" FontSize="12" WidthRequest="80" />
-                                            <Label Text="{Binding TotalCommits, StringFormat='{0} commits'}"
-                                                   FontSize="12" TextColor="DimGray" />
-                                        </HorizontalStackLayout>
+                                        <Border Margin="0,2" Padding="10,8" StrokeShape="RoundRectangle 6"
+                                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#252525}"
+                                                Stroke="{AppThemeBinding Light=#E5E5E5, Dark=#333333}">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:StandupViewModel}}, Path=LoadHistoryItemCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Border.GestureRecognizers>
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                                <!-- Date -->
+                                                <Label Grid.Column="0" VerticalOptions="Center"
+                                                       Text="{Binding GeneratedAt, StringFormat='{0:MMM dd, HH:mm}'}"
+                                                       FontSize="12" TextColor="Gray" WidthRequest="90" />
+
+                                                <!-- Group Name -->
+                                                <Label Grid.Column="1" VerticalOptions="Center"
+                                                       Text="{Binding GroupName}"
+                                                       FontSize="12" FontAttributes="Bold"
+                                                       LineBreakMode="TailTruncation" />
+
+                                                <!-- Summary Type Badge -->
+                                                <Border Grid.Column="2" Padding="6,2" StrokeShape="RoundRectangle 4"
+                                                        BackgroundColor="#3B82F6" VerticalOptions="Center" Margin="5,0">
+                                                    <Label Text="{Binding SummaryType}" FontSize="10" TextColor="White" />
+                                                </Border>
+
+                                                <!-- Commit Count -->
+                                                <Label Grid.Column="3" VerticalOptions="Center"
+                                                       Text="{Binding TotalCommits, StringFormat='{0} commits'}"
+                                                       FontSize="11" TextColor="DimGray" WidthRequest="70" />
+
+                                                <!-- Delete Button -->
+                                                <Button Grid.Column="4" Text="✕" FontSize="12"
+                                                        BackgroundColor="Transparent" TextColor="#EF4444"
+                                                        WidthRequest="28" HeightRequest="28" Padding="0"
+                                                        VerticalOptions="Center"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:StandupViewModel}}, Path=DeleteHistoryItemCommand}"
+                                                        CommandParameter="{Binding .}" />
+                                            </Grid>
+                                        </Border>
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>
                             </CollectionView>

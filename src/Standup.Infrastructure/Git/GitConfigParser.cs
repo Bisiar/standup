@@ -27,7 +27,8 @@ public class GitConfigParser
         string Organization,
         string? Project,
         string Repository,
-        string RemoteUrl);
+        string RemoteUrl,
+        string? ApiEndpoint = null);
 
     // Azure DevOps patterns
     private static readonly Regex AzureDevOpsHttpsPattern = new(
@@ -49,6 +50,15 @@ public class GitConfigParser
 
     private static readonly Regex GitHubSshPattern = new(
         @"git@github\.com:(?<org>[^/]+)/(?<repo>[^/\s\.]+)(?:\.git)?",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    // GitHub Enterprise patterns - matches any host with github-like URL structure
+    private static readonly Regex GitHubEnterpriseHttpsPattern = new(
+        @"https://(?:[^@]+@)?(?<host>[^/]+)/(?<org>[^/]+)/(?<repo>[^/\s\.]+)(?:\.git)?",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex GitHubEnterpriseSshPattern = new(
+        @"git@(?<host>[^:]+):(?<org>[^/]+)/(?<repo>[^/\s\.]+)(?:\.git)?",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     /// <summary>
@@ -147,7 +157,7 @@ public class GitConfigParser
                 remoteUrl);
         }
 
-        // Try GitHub patterns
+        // Try GitHub.com patterns first
         var ghHttps = GitHubHttpsPattern.Match(remoteUrl);
         if (ghHttps.Success)
         {
@@ -156,7 +166,8 @@ public class GitConfigParser
                 ghHttps.Groups["org"].Value,
                 null,
                 ghHttps.Groups["repo"].Value,
-                remoteUrl);
+                remoteUrl,
+                ApiEndpoint: null); // null = use github.com
         }
 
         var ghSsh = GitHubSshPattern.Match(remoteUrl);
@@ -167,7 +178,51 @@ public class GitConfigParser
                 ghSsh.Groups["org"].Value,
                 null,
                 ghSsh.Groups["repo"].Value,
-                remoteUrl);
+                remoteUrl,
+                ApiEndpoint: null);
+        }
+
+        // Try GitHub Enterprise patterns (any other git hosting that looks like GitHub)
+        var gheHttps = GitHubEnterpriseHttpsPattern.Match(remoteUrl);
+        if (gheHttps.Success)
+        {
+            var host = gheHttps.Groups["host"].Value;
+
+            // Skip known non-GitHub hosts (unsupported platforms)
+            if (!host.Contains("azure.com", StringComparison.OrdinalIgnoreCase) &&
+                !host.Contains("visualstudio.com", StringComparison.OrdinalIgnoreCase) &&
+                !host.Contains("bitbucket.org", StringComparison.OrdinalIgnoreCase) &&
+                !host.Contains("gitlab.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return new GitConfigInfo(
+                    SourceType.GitHub,
+                    gheHttps.Groups["org"].Value,
+                    null,
+                    gheHttps.Groups["repo"].Value,
+                    remoteUrl,
+                    ApiEndpoint: $"https://{host}");
+            }
+        }
+
+        var gheSsh = GitHubEnterpriseSshPattern.Match(remoteUrl);
+        if (gheSsh.Success)
+        {
+            var host = gheSsh.Groups["host"].Value;
+
+            // Skip known non-GitHub hosts (unsupported platforms)
+            if (!host.Contains("azure.com", StringComparison.OrdinalIgnoreCase) &&
+                !host.Contains("visualstudio.com", StringComparison.OrdinalIgnoreCase) &&
+                !host.Contains("bitbucket.org", StringComparison.OrdinalIgnoreCase) &&
+                !host.Contains("gitlab.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return new GitConfigInfo(
+                    SourceType.GitHub,
+                    gheSsh.Groups["org"].Value,
+                    null,
+                    gheSsh.Groups["repo"].Value,
+                    remoteUrl,
+                    ApiEndpoint: $"https://{host}");
+            }
         }
 
         _logger?.LogWarning("Could not parse remote URL: {Url}", remoteUrl);

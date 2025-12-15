@@ -16,5 +16,12 @@ public class GroupedRepository
     public string? EncryptedPat { get; set; }
     public string? AuthorIdentifier { get; set; }
     public string? LocalPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the API endpoint for GitHub Enterprise (e.g., https://github.company.com).
+    /// Leave null for public github.com.
+    /// </summary>
+    public string? ApiEndpoint { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

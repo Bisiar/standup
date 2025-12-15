@@ -155,7 +155,24 @@ public class GitHubSourceProvider : ISourceProvider
 
     private async Task<GitHubClient> CreateClientAsync(SourceRepository repository)
     {
-        var client = new GitHubClient(new ProductHeaderValue("Standup-App"));
+        GitHubClient client;
+
+        // Check if this is GitHub Enterprise (has a custom API endpoint)
+        if (!string.IsNullOrEmpty(repository.ApiEndpoint))
+        {
+            // GitHub Enterprise uses /api/v3 suffix
+            var enterpriseUrl = repository.ApiEndpoint.TrimEnd('/');
+            if (!enterpriseUrl.EndsWith("/api/v3", StringComparison.OrdinalIgnoreCase))
+            {
+                enterpriseUrl = $"{enterpriseUrl}/api/v3";
+            }
+
+            client = new GitHubClient(new ProductHeaderValue("Standup-App"), new Uri(enterpriseUrl));
+        }
+        else
+        {
+            client = new GitHubClient(new ProductHeaderValue("Standup-App"));
+        }
 
         if (!string.IsNullOrEmpty(repository.EncryptedPat))
         {
