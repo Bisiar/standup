@@ -92,4 +92,19 @@ public interface ILocalStandupService
         SummaryType summaryType = SummaryType.Technical,
         IProgress<(double Progress, string Message)>? progress = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Regenerates summaries for all summary types on an existing report.
+    /// Preserves all summaries in the AllSummaries dictionary.
+    /// </summary>
+    /// <param name="existingReport">The existing report with data to summarize.</param>
+    /// <param name="summaryTypes">The summary types to generate. Defaults to all types.</param>
+    /// <param name="progress">Optional progress reporter for status updates.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The report with all requested summary types generated.</returns>
+    Task<GroupedStandupReportDto> GenerateAllSummaryTypesAsync(
+        GroupedStandupReportDto existingReport,
+        IEnumerable<SummaryType>? summaryTypes = null,
+        IProgress<(double Progress, string Message)>? progress = null,
+        CancellationToken cancellationToken = default);
 }

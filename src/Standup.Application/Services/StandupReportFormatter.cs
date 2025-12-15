@@ -139,12 +139,95 @@ public static class StandupReportFormatter
         foreach (var section in report.Sections)
         {
             var quickSummary = GetQuickSummary(section);
-            sb.AppendLine($"**{section.ClientCode}** ({section.CommitCount} commits) - {quickSummary}");
+            var statusIndicator = GetSourceStatusMarkdown(section.SourceStatus);
+            sb.AppendLine($"**{section.ClientCode}** ({section.CommitCount} commits, {section.PullRequestCount} PRs){statusIndicator} - {quickSummary}");
         }
 
         sb.AppendLine();
         sb.AppendLine("---");
         sb.AppendLine();
+    }
+
+    private static string GetSourceStatusMarkdown(DataSourceStatus? status)
+    {
+        if (status == null)
+        {
+            return string.Empty;
+        }
+
+        var indicators = new List<string>();
+
+        if (status.CommitsStatus == FetchStatus.Error)
+        {
+            indicators.Add("⚠️ commits");
+        }
+
+        if (status.PullRequestsStatus == FetchStatus.Error)
+        {
+            indicators.Add("⚠️ PRs");
+        }
+        else if (status.PullRequestsStatus == FetchStatus.NoPat)
+        {
+            indicators.Add("🔒 PRs");
+        }
+
+        if (status.WorkItemsStatus == FetchStatus.Error)
+        {
+            indicators.Add("⚠️ work items");
+        }
+        else if (status.WorkItemsStatus == FetchStatus.NoPat)
+        {
+            indicators.Add("🔒 work items");
+        }
+
+        return indicators.Count > 0 ? $" [{string.Join(", ", indicators)}]" : string.Empty;
+    }
+
+    private static string GetSourceStatusHtml(DataSourceStatus? status)
+    {
+        if (status == null)
+        {
+            return string.Empty;
+        }
+
+        var indicators = new List<string>();
+
+        if (status.CommitsStatus == FetchStatus.Error)
+        {
+            indicators.Add("<span style=\"color: #dc3545;\" title=\"Error fetching commits\">⚠️</span>");
+        }
+        else if (status.CommitsStatus == FetchStatus.Success)
+        {
+            indicators.Add("<span style=\"color: #28a745;\" title=\"Commits fetched\">✅</span>");
+        }
+
+        if (status.PullRequestsStatus == FetchStatus.Error)
+        {
+            indicators.Add("<span style=\"color: #dc3545;\" title=\"Error fetching PRs\">⚠️</span>");
+        }
+        else if (status.PullRequestsStatus == FetchStatus.NoPat)
+        {
+            indicators.Add("<span style=\"color: #6c757d;\" title=\"No PAT - PRs unavailable\">🔒</span>");
+        }
+        else if (status.PullRequestsStatus == FetchStatus.Success)
+        {
+            indicators.Add("<span style=\"color: #28a745;\" title=\"PRs fetched\">✅</span>");
+        }
+
+        if (status.WorkItemsStatus == FetchStatus.Error)
+        {
+            indicators.Add("<span style=\"color: #dc3545;\" title=\"Error fetching work items\">⚠️</span>");
+        }
+        else if (status.WorkItemsStatus == FetchStatus.NoPat)
+        {
+            indicators.Add("<span style=\"color: #6c757d;\" title=\"No PAT - work items unavailable\">🔒</span>");
+        }
+        else if (status.WorkItemsStatus == FetchStatus.Success)
+        {
+            indicators.Add("<span style=\"color: #28a745;\" title=\"Work items fetched\">✅</span>");
+        }
+
+        return indicators.Count > 0 ? $" <span style=\"font-size: 0.8em;\">{string.Join(" ", indicators)}</span>" : string.Empty;
     }
 
     private static void AppendTechnicalDetailsMarkdown(StringBuilder sb, GroupedStandupReportDto report)
@@ -256,17 +339,51 @@ public static class StandupReportFormatter
         // Remove markdown headers and bold markers
         var cleaned = Regex.Replace(text, @"^#+\s*", string.Empty, RegexOptions.Multiline);
         cleaned = Regex.Replace(cleaned, @"\*\*([^*]+)\*\*", "$1");
+
+        // Remove common section headers like "Code Changes:", "Standup Update:", etc.
+        cleaned = Regex.Replace(cleaned, @"^(Code Changes|Standup Update|Summary|Overview|Changes):\s*", string.Empty, RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+        // Remove numbered list prefixes like "1. ", "2. ", etc.
+        cleaned = Regex.Replace(cleaned, @"^\d+\.\s*", string.Empty, RegexOptions.Multiline);
+
+        // Remove bullet points
+        cleaned = Regex.Replace(cleaned, @"^[-*•]\s*", string.Empty, RegexOptions.Multiline);
+
+        // Remove empty lines and trim
+        cleaned = Regex.Replace(cleaned, @"\n\s*\n", "\n");
         cleaned = cleaned.Trim();
 
-        // Find first sentence (ending with . ! or ?)
-        var match = Regex.Match(cleaned, @"^[^.!?]+[.!?]");
-        if (match.Success)
+        // Skip lines that are just section headers or very short
+        var lines = cleaned.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
         {
-            var sentence = match.Value.Trim();
-            return sentence.Length > 120 ? sentence[..117] + "..." : sentence;
+            var trimmedLine = line.Trim();
+
+            // Skip empty or very short lines
+            if (trimmedLine.Length < 10)
+            {
+                continue;
+            }
+
+            // Skip lines that look like headers (end with colon)
+            if (trimmedLine.EndsWith(':'))
+            {
+                continue;
+            }
+
+            // Found a good line - extract first sentence
+            var match = Regex.Match(trimmedLine, @"^[^.!?]+[.!?]");
+            if (match.Success)
+            {
+                var sentence = match.Value.Trim();
+                return sentence.Length > 120 ? sentence[..117] + "..." : sentence;
+            }
+
+            // No sentence ending, use the whole line
+            return trimmedLine.Length > 120 ? trimmedLine[..117] + "..." : trimmedLine;
         }
 
-        // No sentence ending found, take first line
+        // Fallback: take first non-empty content
         var firstLine = cleaned.Split('\n')[0].Trim();
         return firstLine.Length > 120 ? firstLine[..117] + "..." : firstLine;
     }
@@ -279,7 +396,8 @@ public static class StandupReportFormatter
         foreach (var section in report.Sections)
         {
             var quickSummary = GetQuickSummary(section);
-            sb.AppendLine($"<p style=\"margin: 8px 0;\"><strong>{HtmlEncode(section.ClientCode)}</strong> <span style=\"color: #666;\">({section.CommitCount} commits)</span> - {HtmlEncode(quickSummary)}</p>");
+            var statusIndicator = GetSourceStatusHtml(section.SourceStatus);
+            sb.AppendLine($"<p style=\"margin: 8px 0;\"><strong>{HtmlEncode(section.ClientCode)}</strong> <span style=\"color: #666;\">({section.CommitCount} commits, {section.PullRequestCount} PRs)</span>{statusIndicator} - {HtmlEncode(quickSummary)}</p>");
         }
 
         sb.AppendLine("</div>");

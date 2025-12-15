@@ -13,7 +13,8 @@ public record ClientCodeSection(
     List<CommitInfo> Commits,
     List<PullRequestInfo> PullRequests,
     List<WorkItemInfo> WorkItems,
-    Dictionary<SummaryType, string>? AllSummaries = null)
+    Dictionary<SummaryType, string>? AllSummaries = null,
+    DataSourceStatus? SourceStatus = null)
 {
     public int CommitCount => Commits.Count;
     public int PullRequestCount => PullRequests.Count;
