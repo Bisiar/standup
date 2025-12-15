@@ -1,9 +1,9 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Standup.Application.DTOs;
 using Standup.Application.Features.ConfigureRepository;
 using Standup.Application.Features.GenerateStandup;
 using Standup.Application.Interfaces;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 
 namespace Standup.Infrastructure.Http;
 

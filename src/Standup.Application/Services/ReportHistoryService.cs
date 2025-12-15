@@ -31,6 +31,10 @@ public sealed class ReportHistoryService
     /// <summary>
     /// Saves a grouped standup report to history.
     /// </summary>
+    /// <param name="report">The grouped standup report to save.</param>
+    /// <param name="reportContent">The formatted report content.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The saved report history entry.</returns>
     public async Task<ReportHistory> SaveReportAsync(
         GroupedStandupReportDto report,
         string reportContent,

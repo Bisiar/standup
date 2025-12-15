@@ -1,6 +1,8 @@
-using Microsoft.Extensions.Logging;
-using Standup.Domain.Enums;
 using System.Text.RegularExpressions;
+
+using Microsoft.Extensions.Logging;
+
+using Standup.Domain.Enums;
 
 namespace Standup.Infrastructure.Git;
 
@@ -52,8 +54,8 @@ public class GitConfigParser
     /// <summary>
     /// Parses a local git repository directory to extract remote information.
     /// </summary>
-    /// <param name="localPath">Path to the repository root (containing .git folder)</param>
-    /// <returns>Parsed configuration info, or null if parsing fails</returns>
+    /// <param name="localPath">Path to the repository root (containing .git folder).</param>
+    /// <returns>Parsed configuration info, or null if parsing fails.</returns>
     public GitConfigInfo? ParseRepository(string localPath)
     {
         var gitConfigPath = Path.Combine(localPath, ".git", "config");
@@ -79,6 +81,8 @@ public class GitConfigParser
     /// <summary>
     /// Parses git config content to extract remote URL.
     /// </summary>
+    /// <param name="configContent">The content of the git config file.</param>
+    /// <returns>Parsed configuration info, or null if parsing fails.</returns>
     public GitConfigInfo? ParseConfigContent(string configContent)
     {
         // Look for [remote "origin"] section and extract url
@@ -100,10 +104,14 @@ public class GitConfigParser
     /// <summary>
     /// Parses a remote URL to extract repository information.
     /// </summary>
+    /// <param name="remoteUrl">The remote URL to parse.</param>
+    /// <returns>Parsed configuration info, or null if parsing fails.</returns>
     public GitConfigInfo? ParseRemoteUrl(string remoteUrl)
     {
         if (string.IsNullOrWhiteSpace(remoteUrl))
+        {
             return null;
+        }
 
         // Try Azure DevOps patterns
         var adoHttps = AzureDevOpsHttpsPattern.Match(remoteUrl);
@@ -169,6 +177,8 @@ public class GitConfigParser
     /// <summary>
     /// Checks if a directory is a valid git repository.
     /// </summary>
+    /// <param name="path">The directory path to check.</param>
+    /// <returns>True if the directory contains a .git folder, false otherwise.</returns>
     public bool IsGitRepository(string path)
     {
         var gitDir = Path.Combine(path, ".git");

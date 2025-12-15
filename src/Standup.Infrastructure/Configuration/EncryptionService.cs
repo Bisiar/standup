@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Options;
-using Standup.Application.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Options;
+using Standup.Application.Interfaces;
 
 namespace Standup.Infrastructure.Configuration;
 

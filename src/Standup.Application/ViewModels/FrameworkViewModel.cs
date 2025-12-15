@@ -25,7 +25,7 @@ public partial class FrameworkViewModel : ObservableObject
     private string _selectedTabTitle = string.Empty;
 
     /// <summary>
-    /// Whether the Report tab should be visible (true after a report is generated).
+    /// Gets or sets a value indicating whether the Report tab should be visible (true after a report is generated).
     /// </summary>
     [ObservableProperty]
     private bool _showReportTab;
@@ -56,6 +56,25 @@ public partial class FrameworkViewModel : ObservableObject
         GroupsVm.OnBrowseForFolder += BrowseForFolderAsync;
 
         Log.Information("FrameworkViewModel initialized with all child ViewModels");
+    }
+
+    /// <summary>
+    /// Shows the Report tab with the generated report data.
+    /// Called programmatically after report generation, not via command binding.
+    /// </summary>
+    /// <param name="report">The generated report data.</param>
+    /// <param name="sourceGroup">The group used to generate the report.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public async Task ShowReportAsync(GroupedStandupReportDto report, RepositoryGroup sourceGroup)
+    {
+        Log.Information("ShowReportAsync called for group: {GroupName}", sourceGroup.Name);
+
+        // Set the report data on the ReportViewModel
+        ReportVm.SetReport(report, sourceGroup);
+
+        // Show the Report tab and switch to it
+        ShowReportTab = true;
+        await SelectTabAsync(4);
     }
 
     /// <summary>
@@ -163,24 +182,6 @@ public partial class FrameworkViewModel : ObservableObject
     {
         Log.Information("BrowseForFolderAsync called via FrameworkViewModel");
         return await _folderPickerService.BrowseForRepositoryFolderAsync();
-    }
-
-    /// <summary>
-    /// Shows the Report tab with the generated report data.
-    /// Called programmatically after report generation, not via command binding.
-    /// </summary>
-    /// <param name="report">The generated report data.</param>
-    /// <param name="sourceGroup">The group used to generate the report.</param>
-    public async Task ShowReportAsync(GroupedStandupReportDto report, RepositoryGroup sourceGroup)
-    {
-        Log.Information("ShowReportAsync called for group: {GroupName}", sourceGroup.Name);
-
-        // Set the report data on the ReportViewModel
-        ReportVm.SetReport(report, sourceGroup);
-
-        // Show the Report tab and switch to it
-        ShowReportTab = true;
-        await SelectTabAsync(4);
     }
 
     /// <summary>

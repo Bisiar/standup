@@ -1,7 +1,7 @@
 namespace Standup.Domain.ValueObjects;
 
 /// <summary>
-/// Represents a date/time range for standup data queries
+/// Represents a date/time range for standup data queries.
 /// </summary>
 public record DateRange(DateTimeOffset Start, DateTimeOffset End)
 {
@@ -20,14 +20,14 @@ public record DateRange(DateTimeOffset Start, DateTimeOffset End)
             {
                 previousDay = today.AddDays(-3);
             }
-            // If today is Sunday, go back to Friday
             else if (today.DayOfWeek == DayOfWeek.Sunday)
             {
+                // If today is Sunday, go back to Friday
                 previousDay = today.AddDays(-2);
             }
-            // If today is Saturday, go back to Friday
             else if (today.DayOfWeek == DayOfWeek.Saturday)
             {
+                // If today is Saturday, go back to Friday
                 previousDay = today.AddDays(-1);
             }
         }

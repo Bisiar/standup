@@ -13,6 +13,14 @@ public interface ILocalStandupService
     /// <summary>
     /// Generates a standup report from a remote repository using API access.
     /// </summary>
+    /// <param name="sourceType">The type of source control system.</param>
+    /// <param name="organization">The organization name.</param>
+    /// <param name="project">The project name.</param>
+    /// <param name="repository">The repository name.</param>
+    /// <param name="pat">The personal access token.</param>
+    /// <param name="authorIdentifier">Optional author filter.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The generated standup report.</returns>
     Task<StandupReportDto> GenerateStandupAsync(
         SourceType sourceType,
         string organization,
@@ -27,6 +35,15 @@ public interface ILocalStandupService
     /// No PAT required for commits - reads directly from git log.
     /// Optional PAT enables PR and work item fetching from remote.
     /// </summary>
+    /// <param name="localPath">The local path to the git repository.</param>
+    /// <param name="sourceType">The type of source control system.</param>
+    /// <param name="organization">The organization name.</param>
+    /// <param name="project">The project name.</param>
+    /// <param name="repository">The repository name.</param>
+    /// <param name="pat">Optional personal access token for PR/work item access.</param>
+    /// <param name="authorIdentifier">Optional author filter.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The generated standup report.</returns>
     Task<StandupReportDto> GenerateStandupFromLocalAsync(
         string localPath,
         SourceType sourceType,
@@ -40,6 +57,13 @@ public interface ILocalStandupService
     /// <summary>
     /// Validates connection to a remote repository.
     /// </summary>
+    /// <param name="sourceType">The type of source control system.</param>
+    /// <param name="organization">The organization name.</param>
+    /// <param name="project">The project name.</param>
+    /// <param name="repository">The repository name.</param>
+    /// <param name="pat">The personal access token.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if connection is valid, false otherwise.</returns>
     Task<bool> ValidateConnectionAsync(
         SourceType sourceType,
         string organization,

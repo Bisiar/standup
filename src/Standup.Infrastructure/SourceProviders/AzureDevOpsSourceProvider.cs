@@ -32,7 +32,9 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         var repo = repos.FirstOrDefault(r => r.Name.Equals(repository.Repository, StringComparison.OrdinalIgnoreCase));
 
         if (repo == null)
+        {
             return Enumerable.Empty<CommitInfo>();
+        }
 
         // Only filter by author if specified, no date range - get most recent commits
         var searchCriteria = new GitQueryCommitsCriteria
@@ -84,7 +86,9 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         var repo = repos.FirstOrDefault(r => r.Name.Equals(repository.Repository, StringComparison.OrdinalIgnoreCase));
 
         if (repo == null)
+        {
             return Enumerable.Empty<PullRequestInfo>();
+        }
 
         var searchCriteria = new GitPullRequestSearchCriteria
         {
@@ -127,7 +131,9 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         var repo = repos.FirstOrDefault(r => r.Name.Equals(repository.Repository, StringComparison.OrdinalIgnoreCase));
 
         if (repo == null)
+        {
             return Enumerable.Empty<PullRequestInfo>();
+        }
 
         var searchCriteria = new GitPullRequestSearchCriteria
         {
@@ -215,6 +221,18 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         }
     }
 
+    private static WorkItemStatus MapWorkItemStatus(string? state)
+    {
+        return state?.ToLowerInvariant() switch
+        {
+            "new" => WorkItemStatus.New,
+            "active" or "in progress" or "doing" => WorkItemStatus.InProgress,
+            "resolved" => WorkItemStatus.Resolved,
+            "closed" or "done" => WorkItemStatus.Closed,
+            _ => WorkItemStatus.Active
+        };
+    }
+
     private async Task<VssConnection> CreateConnectionAsync(SourceRepository repository)
     {
         var orgUrl = new Uri($"https://dev.azure.com/{repository.Organization}");
@@ -239,7 +257,9 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         var result = await client.QueryByWiqlAsync(wiql, cancellationToken: cancellationToken);
 
         if (result.WorkItems == null || !result.WorkItems.Any())
+        {
             return Enumerable.Empty<WorkItemInfo>();
+        }
 
         var ids = result.WorkItems.Select(wi => wi.Id).ToArray();
         var workItems = await client.GetWorkItemsAsync(
@@ -248,7 +268,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
             cancellationToken: cancellationToken);
 
         return workItems.Select(wi => new WorkItemInfo(
-            Id: wi.Id.ToString(),
+            Id: wi.Id?.ToString() ?? string.Empty,
             Title: wi.Fields.GetValueOrDefault("System.Title")?.ToString() ?? string.Empty,
             Type: wi.Fields.GetValueOrDefault("System.WorkItemType")?.ToString() ?? string.Empty,
             Status: MapWorkItemStatus(wi.Fields.GetValueOrDefault("System.State")?.ToString()),
@@ -257,17 +277,5 @@ public class AzureDevOpsSourceProvider : ISourceProvider
             AssignedTo: wi.Fields.GetValueOrDefault("System.AssignedTo")?.ToString(),
             ParentId: wi.Fields.GetValueOrDefault("System.Parent")?.ToString(),
             Tags: wi.Fields.GetValueOrDefault("System.Tags")?.ToString()?.Split(';').ToList()));
-    }
-
-    private static WorkItemStatus MapWorkItemStatus(string? state)
-    {
-        return state?.ToLowerInvariant() switch
-        {
-            "new" => WorkItemStatus.New,
-            "active" or "in progress" or "doing" => WorkItemStatus.InProgress,
-            "resolved" => WorkItemStatus.Resolved,
-            "closed" or "done" => WorkItemStatus.Closed,
-            _ => WorkItemStatus.Active
-        };
     }
 }

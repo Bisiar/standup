@@ -1,7 +1,7 @@
 namespace Standup.Domain.Enums;
 
 /// <summary>
-/// Represents the notification delivery channels
+/// Represents the notification delivery channels.
 /// </summary>
 public enum NotificationChannel
 {

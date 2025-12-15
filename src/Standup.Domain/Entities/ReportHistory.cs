@@ -19,17 +19,17 @@ public class ReportHistory
     public int TotalWorkItems { get; set; }
 
     /// <summary>
-    /// The full markdown content of the report.
+    /// Gets or sets the full markdown content of the report.
     /// </summary>
     public string ReportContent { get; set; } = string.Empty;
 
     /// <summary>
-    /// Client codes included in this report.
+    /// Gets or sets the client codes included in this report.
     /// </summary>
     public List<string> ClientCodes { get; set; } = new();
 
     /// <summary>
-    /// Display string for the report (e.g., "Dec 7 - Dec 14: 20 commits, 2 PRs")
+    /// Gets the display string for the report (e.g., "Dec 7 - Dec 14: 20 commits, 2 PRs").
     /// </summary>
     public string DisplaySummary => $"{PeriodStart:MMM d} - {PeriodEnd:MMM d}: {TotalCommits} commits, {TotalPullRequests} PRs";
 }

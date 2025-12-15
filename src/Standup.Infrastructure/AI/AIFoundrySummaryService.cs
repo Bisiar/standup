@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
@@ -7,7 +8,6 @@ using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
 using Standup.Infrastructure.Configuration;
-using System.Text.Json;
 
 namespace Standup.Infrastructure.AI;
 
@@ -51,20 +51,6 @@ public class AIFoundrySummaryService : IAISummaryService
         return completion.Value.Content[0].Text;
     }
 
-    private AzureOpenAIClient CreateClient()
-    {
-        if (_options.UseAzureIdentity)
-        {
-            return new AzureOpenAIClient(
-                new Uri(_options.Endpoint),
-                new DefaultAzureCredential());
-        }
-
-        return new AzureOpenAIClient(
-            new Uri(_options.Endpoint),
-            new AzureKeyCredential(_options.ApiKey!));
-    }
-
     private static string BuildSystemPrompt(SummaryOptions options)
     {
         var toneDescription = options.Tone switch
@@ -106,8 +92,8 @@ Structure the update as:
 1. **Code Changes** - Summarize commits with technical details: what was changed, which modules/components, APIs affected
 2. **Pull Requests** - Status of PRs with technical context (what problem they solve, approach taken)
 3. **Work Items** - Technical tasks and their implementation status
-{(options.IncludeBlockers ? "4. **Blockers** - Technical blockers, dependencies waiting, or code review feedback needed" : "")}
-{(options.IncludeNextSteps ? "5. **Next Steps** - Planned technical work, refactoring, or features to implement" : "")}
+{(options.IncludeBlockers ? "4. **Blockers** - Technical blockers, dependencies waiting, or code review feedback needed" : string.Empty)}
+{(options.IncludeNextSteps ? "5. **Next Steps** - Planned technical work, refactoring, or features to implement" : string.Empty)}
 
 Use technical terminology appropriate for developers. Include file names, method names, and specific technical details when relevant.";
     }
@@ -128,8 +114,8 @@ Structure the update as:
 1. **Delivered Value** - What features or capabilities were completed? What business problems do they solve?
 2. **In Progress** - What's being worked on? Expected completion timeframes?
 3. **Project Health** - Overall status, any concerns about timelines or scope
-{(options.IncludeBlockers ? "4. **Risks & Blockers** - What could delay the project? What decisions are needed?" : "")}
-{(options.IncludeNextSteps ? "5. **Upcoming** - What's planned next? Any dependencies on other teams or decisions?" : "")}
+{(options.IncludeBlockers ? "4. **Risks & Blockers** - What could delay the project? What decisions are needed?" : string.Empty)}
+{(options.IncludeNextSteps ? "5. **Upcoming** - What's planned next? Any dependencies on other teams or decisions?" : string.Empty)}
 
 Avoid technical jargon. Translate code changes into business outcomes (e.g., 'fixed login bug' becomes 'improved user authentication reliability').
 Keep it high-level and focused on what matters to business stakeholders.";
@@ -153,8 +139,8 @@ Structure the update as:
 2. **Code Quality** - Code complexity, duplication, naming conventions, error handling
 3. **Architecture Impact** - Do changes align with architecture? Any concerning patterns?
 4. **Test Coverage** - Are changes adequately tested? Missing test scenarios?
-{(options.IncludeBlockers ? "5. **Action Items** - Specific issues that should be addressed before merging" : "")}
-{(options.IncludeNextSteps ? "6. **Recommendations** - Suggestions for improvement, refactoring opportunities" : "")}
+{(options.IncludeBlockers ? "5. **Action Items** - Specific issues that should be addressed before merging" : string.Empty)}
+{(options.IncludeNextSteps ? "6. **Recommendations** - Suggestions for improvement, refactoring opportunities" : string.Empty)}
 
 Be specific about concerns and provide actionable feedback. Reference specific commits or changes when noting issues.
 Prioritize security and reliability concerns over style preferences.";
@@ -176,5 +162,19 @@ Prioritize security and reliability concerns over style preferences.";
 {JsonSerializer.Serialize(data.WorkItems.Select(wi => new { wi.Title, wi.Type, wi.Status }), jsonOptions)}
 
 Please generate my standup update.";
+    }
+
+    private AzureOpenAIClient CreateClient()
+    {
+        if (_options.UseAzureIdentity)
+        {
+            return new AzureOpenAIClient(
+                new Uri(_options.Endpoint),
+                new DefaultAzureCredential());
+        }
+
+        return new AzureOpenAIClient(
+            new Uri(_options.Endpoint),
+            new AzureKeyCredential(_options.ApiKey!));
     }
 }

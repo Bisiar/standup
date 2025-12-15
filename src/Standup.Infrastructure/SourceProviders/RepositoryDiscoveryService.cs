@@ -87,6 +87,14 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
         }
     }
 
+    private static GitHubClient CreateGitHubClient(string pat)
+    {
+        return new GitHubClient(new ProductHeaderValue("Standup-App"))
+        {
+            Credentials = new Credentials(pat)
+        };
+    }
+
     private async Task<IEnumerable<DiscoveredRepository>> GetGitHubRepositoriesAsync(
         string organization,
         string pat,
@@ -161,6 +169,7 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
                     _logger.Warning(ex, "Failed to get repos for project {Project}", proj.Name);
                 }
             }
+
             repos = allRepos;
         }
 
@@ -201,6 +210,7 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
             using var connection = new VssConnection(orgUrl, credentials);
 
             var projectClient = connection.GetClient<ProjectHttpClient>();
+
             // Just try to get projects - if it works, the PAT is valid
             await projectClient.GetProjects(top: 1);
             return true;
@@ -209,13 +219,5 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
         {
             return false;
         }
-    }
-
-    private static GitHubClient CreateGitHubClient(string pat)
-    {
-        return new GitHubClient(new ProductHeaderValue("Standup-App"))
-        {
-            Credentials = new Credentials(pat)
-        };
     }
 }

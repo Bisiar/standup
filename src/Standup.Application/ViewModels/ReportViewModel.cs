@@ -20,108 +20,108 @@ public partial class ReportViewModel : ObservableObject
     private readonly ReportHistoryService _reportHistoryService;
 
     /// <summary>
-    /// The grouped report data containing all sections.
+    /// Gets or sets the grouped report data containing all sections.
     /// </summary>
     [ObservableProperty]
     private GroupedStandupReportDto? _report;
 
     /// <summary>
-    /// The group used to generate the report (needed for lazy generation).
+    /// Gets or sets the group used to generate the report (needed for lazy generation).
     /// </summary>
     [ObservableProperty]
     private RepositoryGroup? _sourceGroup;
 
     /// <summary>
-    /// Main executive summary content (for team standup).
+    /// Gets or sets the main executive summary content (for team standup).
     /// </summary>
     [ObservableProperty]
     private string _executiveSummary = string.Empty;
 
     /// <summary>
-    /// Technical details content (lazy-loaded on expand).
+    /// Gets or sets the technical details content (lazy-loaded on expand).
     /// </summary>
     [ObservableProperty]
     private string _technicalDetails = string.Empty;
 
     /// <summary>
-    /// Code review content (lazy-loaded on expand).
+    /// Gets or sets the code review content (lazy-loaded on expand).
     /// </summary>
     [ObservableProperty]
     private string _codeReviewDetails = string.Empty;
 
     /// <summary>
-    /// Whether the Technical section is expanded.
+    /// Gets or sets a value indicating whether the Technical section is expanded.
     /// </summary>
     [ObservableProperty]
     private bool _isTechnicalExpanded;
 
     /// <summary>
-    /// Whether the Code Review section is expanded.
+    /// Gets or sets a value indicating whether the Code Review section is expanded.
     /// </summary>
     [ObservableProperty]
     private bool _isCodeReviewExpanded;
 
     /// <summary>
-    /// Whether Technical details have been generated.
+    /// Gets or sets a value indicating whether Technical details have been generated.
     /// </summary>
     [ObservableProperty]
     private bool _hasTechnicalGenerated;
 
     /// <summary>
-    /// Whether Code Review details have been generated.
+    /// Gets or sets a value indicating whether Code Review details have been generated.
     /// </summary>
     [ObservableProperty]
     private bool _hasCodeReviewGenerated;
 
     /// <summary>
-    /// Whether Technical section is currently generating.
+    /// Gets or sets a value indicating whether Technical section is currently generating.
     /// </summary>
     [ObservableProperty]
     private bool _isGeneratingTechnical;
 
     /// <summary>
-    /// Whether Code Review section is currently generating.
+    /// Gets or sets a value indicating whether Code Review section is currently generating.
     /// </summary>
     [ObservableProperty]
     private bool _isGeneratingCodeReview;
 
     /// <summary>
-    /// Status message for the report view.
+    /// Gets or sets the status message for the report view.
     /// </summary>
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
     /// <summary>
-    /// Whether there is a report to display.
+    /// Gets a value indicating whether there is a report to display.
     /// </summary>
     public bool HasReport => Report != null;
 
     /// <summary>
-    /// Report title/header info.
+    /// Gets or sets the report title/header info.
     /// </summary>
     [ObservableProperty]
     private string _reportTitle = string.Empty;
 
     /// <summary>
-    /// Report period display string.
+    /// Gets or sets the report period display string.
     /// </summary>
     [ObservableProperty]
     private string _reportPeriod = string.Empty;
 
     /// <summary>
-    /// Total commits in the report.
+    /// Gets or sets the total commits in the report.
     /// </summary>
     [ObservableProperty]
     private int _totalCommits;
 
     /// <summary>
-    /// Total PRs in the report.
+    /// Gets or sets the total PRs in the report.
     /// </summary>
     [ObservableProperty]
     private int _totalPRs;
 
     /// <summary>
-    /// Total work items in the report.
+    /// Gets or sets the total work items in the report.
     /// </summary>
     [ObservableProperty]
     private int _totalWorkItems;
@@ -141,6 +141,8 @@ public partial class ReportViewModel : ObservableObject
     /// <summary>
     /// Sets the report data after generation from StandupViewModel.
     /// </summary>
+    /// <param name="report">The generated report data.</param>
+    /// <param name="sourceGroup">The group used to generate the report.</param>
     public void SetReport(GroupedStandupReportDto report, RepositoryGroup sourceGroup)
     {
         Report = report;

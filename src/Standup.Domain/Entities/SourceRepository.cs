@@ -3,7 +3,7 @@ using Standup.Domain.Enums;
 namespace Standup.Domain.Entities;
 
 /// <summary>
-/// Represents a source code repository configuration for a user
+/// Represents a source code repository configuration for a user.
 /// </summary>
 public class SourceRepository
 {
@@ -12,37 +12,37 @@ public class SourceRepository
     public SourceType SourceType { get; set; }
 
     /// <summary>
-    /// Organization name (GitHub org or Azure DevOps org)
+    /// Gets or sets the organization name (GitHub org or Azure DevOps org).
     /// </summary>
     public string Organization { get; set; } = string.Empty;
 
     /// <summary>
-    /// Project name (Azure DevOps only, null for GitHub)
+    /// Gets or sets the project name (Azure DevOps only, null for GitHub).
     /// </summary>
     public string? Project { get; set; }
 
     /// <summary>
-    /// Repository name
+    /// Gets or sets the repository name.
     /// </summary>
     public string Repository { get; set; } = string.Empty;
 
     /// <summary>
-    /// Display name for the repository
+    /// Gets or sets the display name for the repository.
     /// </summary>
     public string? DisplayName { get; set; }
 
     /// <summary>
-    /// Username to filter commits by (e.g., GitHub username or Azure DevOps email)
+    /// Gets or sets the username to filter commits by (e.g., GitHub username or Azure DevOps email).
     /// </summary>
     public string AuthorIdentifier { get; set; } = string.Empty;
 
     /// <summary>
-    /// Encrypted Personal Access Token
+    /// Gets or sets the encrypted Personal Access Token.
     /// </summary>
     public string? EncryptedPat { get; set; }
 
     /// <summary>
-    /// Default branch to track
+    /// Gets or sets the default branch to track.
     /// </summary>
     public string DefaultBranch { get; set; } = "main";
 
@@ -52,7 +52,7 @@ public class SourceRepository
     public User? User { get; set; }
 
     /// <summary>
-    /// Gets the full repository path identifier
+    /// Gets the full repository path identifier.
     /// </summary>
     public string FullPath => SourceType == SourceType.AzureDevOps
         ? $"{Organization}/{Project}/{Repository}"

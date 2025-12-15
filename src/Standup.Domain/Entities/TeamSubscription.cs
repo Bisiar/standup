@@ -1,7 +1,7 @@
 namespace Standup.Domain.Entities;
 
 /// <summary>
-/// Represents a user's subscription to post standups to a Teams channel
+/// Represents a user's subscription to post standups to a Teams channel.
 /// </summary>
 public class TeamSubscription
 {
@@ -10,27 +10,27 @@ public class TeamSubscription
     public string TenantId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Teams team ID
+    /// Gets or sets the Teams team ID.
     /// </summary>
     public string TeamId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Teams channel ID
+    /// Gets or sets the Teams channel ID.
     /// </summary>
     public string ChannelId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Display name of the channel
+    /// Gets or sets the display name of the channel.
     /// </summary>
     public string ChannelName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Whether to auto-post standups to this channel
+    /// Gets or sets a value indicating whether to auto-post standups to this channel.
     /// </summary>
     public bool AutoPost { get; set; } = true;
 
     /// <summary>
-    /// Whether this subscription is active
+    /// Gets or sets a value indicating whether this subscription is active.
     /// </summary>
     public bool IsActive { get; set; } = true;
 

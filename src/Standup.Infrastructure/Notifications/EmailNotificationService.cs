@@ -24,7 +24,9 @@ public class EmailNotificationService : INotificationService
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(user.Email))
+        {
             return false;
+        }
 
         try
         {

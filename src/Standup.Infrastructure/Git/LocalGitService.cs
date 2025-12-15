@@ -1,5 +1,6 @@
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+
+using Microsoft.Extensions.Logging;
 
 namespace Standup.Infrastructure.Git;
 
@@ -31,12 +32,12 @@ public class LocalGitService
     /// <summary>
     /// Gets commits from local git repository for a specific author within a date range.
     /// </summary>
-    /// <param name="localPath">Path to the git repository</param>
-    /// <param name="authorIdentifier">Author name or email to filter by (optional)</param>
-    /// <param name="since">Start date for commits</param>
-    /// <param name="until">End date for commits</param>
-    /// <param name="maxCount">Maximum number of commits to return</param>
-    /// <returns>List of commits matching the criteria</returns>
+    /// <param name="localPath">Path to the git repository.</param>
+    /// <param name="authorIdentifier">Author name or email to filter by (optional).</param>
+    /// <param name="since">Start date for commits.</param>
+    /// <param name="until">End date for commits.</param>
+    /// <param name="maxCount">Maximum number of commits to return.</param>
+    /// <returns>List of commits matching the criteria.</returns>
     public async Task<List<LocalCommit>> GetCommitsAsync(
         string localPath,
         string? authorIdentifier = null,
@@ -116,6 +117,8 @@ public class LocalGitService
     /// <summary>
     /// Gets the current HEAD commit SHA.
     /// </summary>
+    /// <param name="localPath">Path to the local git repository.</param>
+    /// <returns>The HEAD commit SHA, or null if it cannot be determined.</returns>
     public async Task<string?> GetHeadShaAsync(string localPath)
     {
         try
@@ -133,6 +136,8 @@ public class LocalGitService
     /// <summary>
     /// Gets the current branch name.
     /// </summary>
+    /// <param name="localPath">Path to the local git repository.</param>
+    /// <returns>The current branch name, or null if it cannot be determined.</returns>
     public async Task<string?> GetCurrentBranchAsync(string localPath)
     {
         try
@@ -150,7 +155,9 @@ public class LocalGitService
     /// <summary>
     /// Checks if the local repository is in sync with the remote.
     /// </summary>
-    /// <returns>True if local is at same commit as remote, false otherwise</returns>
+    /// <param name="localPath">Path to the local git repository.</param>
+    /// <param name="remoteName">Name of the remote to check against.</param>
+    /// <returns>True if local is at same commit as remote, false otherwise.</returns>
     public async Task<bool> IsInSyncWithRemoteAsync(string localPath, string remoteName = "origin")
     {
         try
@@ -162,7 +169,9 @@ public class LocalGitService
             var branch = await GetCurrentBranchAsync(localPath);
 
             if (string.IsNullOrEmpty(localHead) || string.IsNullOrEmpty(branch))
+            {
                 return false;
+            }
 
             // Get the remote tracking branch SHA
             var remoteRef = $"{remoteName}/{branch}";
@@ -180,6 +189,8 @@ public class LocalGitService
     /// <summary>
     /// Gets a list of unique authors who committed to this repository.
     /// </summary>
+    /// <param name="localPath">Path to the local git repository.</param>
+    /// <returns>A list of tuples containing author name and email.</returns>
     public async Task<List<(string Name, string Email)>> GetAuthorsAsync(string localPath)
     {
         var authors = new List<(string Name, string Email)>();
@@ -212,6 +223,8 @@ public class LocalGitService
     /// <summary>
     /// Gets the repository name from the local path (folder name).
     /// </summary>
+    /// <param name="localPath">Path to the local git repository.</param>
+    /// <returns>The repository name (directory name).</returns>
     public string GetRepositoryName(string localPath)
     {
         return new DirectoryInfo(localPath).Name;

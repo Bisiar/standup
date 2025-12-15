@@ -45,19 +45,19 @@ public partial class StandupViewModel : ObservableObject
     private bool _useGroupMode = true;
 
     /// <summary>
-    /// Toggle to generate Executive summary (business-focused, for stakeholders).
+    /// Gets or sets a value indicating whether to generate Executive summary (business-focused, for stakeholders).
     /// </summary>
     [ObservableProperty]
     private bool _generateExecutive = true;
 
     /// <summary>
-    /// Toggle to generate Technical summary (developer-focused, code details).
+    /// Gets or sets a value indicating whether to generate Technical summary (developer-focused, code details).
     /// </summary>
     [ObservableProperty]
     private bool _generateTechnical;
 
     /// <summary>
-    /// Toggle to generate Code Review summary (security, quality, testing).
+    /// Gets or sets a value indicating whether to generate Code Review summary (security, quality, testing).
     /// </summary>
     [ObservableProperty]
     private bool _generateCodeReview;
@@ -75,32 +75,32 @@ public partial class StandupViewModel : ObservableObject
     private string _reportContent = string.Empty;
 
     /// <summary>
-    /// HTML-formatted report content for WebView display.
+    /// Gets or sets the HTML-formatted report content for WebView display.
     /// </summary>
     [ObservableProperty]
     private string _htmlReportContent = string.Empty;
 
     /// <summary>
-    /// Whether to display the report as rendered HTML (true) or raw markdown (false).
+    /// Gets or sets a value indicating whether to display the report as rendered HTML (true) or raw markdown (false).
     /// Defaults to true for better visual presentation.
     /// </summary>
     [ObservableProperty]
     private bool _showAsHtml = true;
 
     /// <summary>
-    /// Current view mode within the Standup tab.
-    /// 0 = Config (group selection), 1 = Report summary, 2 = Commits, 3 = PRs, 4 = Work Items
+    /// Gets or sets the current view mode within the Standup tab.
+    /// 0 = Config (group selection), 1 = Report summary, 2 = Commits, 3 = PRs, 4 = Work Items.
     /// </summary>
     [ObservableProperty]
     private int _currentViewMode;
 
     /// <summary>
-    /// Whether we have a report generated (to show internal tabs).
+    /// Gets a value indicating whether we have a report generated (to show internal tabs).
     /// </summary>
     public bool HasReport => GroupedReport != null;
 
     /// <summary>
-    /// All commits from the current report, flattened across all sections.
+    /// Gets all commits from the current report, flattened across all sections.
     /// </summary>
     public IReadOnlyList<CommitInfo> AllCommits => GroupedReport?.Sections
         .SelectMany(s => s.Commits)
@@ -108,14 +108,14 @@ public partial class StandupViewModel : ObservableObject
         .ToList() ?? [];
 
     /// <summary>
-    /// All pull requests from the current report, flattened across all sections.
+    /// Gets all pull requests from the current report, flattened across all sections.
     /// </summary>
     public IReadOnlyList<PullRequestInfo> AllPullRequests => GroupedReport?.Sections
         .SelectMany(s => s.PullRequests)
         .ToList() ?? [];
 
     /// <summary>
-    /// All work items from the current report, flattened across all sections.
+    /// Gets all work items from the current report, flattened across all sections.
     /// </summary>
     public IReadOnlyList<WorkItemInfo> AllWorkItems => GroupedReport?.Sections
         .SelectMany(s => s.WorkItems)
@@ -141,6 +141,24 @@ public partial class StandupViewModel : ObservableObject
         _clipboardService = clipboardService;
         _groupService = groupService;
         _reportHistoryService = reportHistoryService;
+    }
+
+    /// <summary>
+    /// Gets which summary types are available in the current report.
+    /// </summary>
+    /// <returns>Available summary types in the current report.</returns>
+    public IEnumerable<SummaryType> GetAvailableSummaryTypesInReport()
+    {
+        if (GroupedReport == null)
+        {
+            return [];
+        }
+
+        return GroupedReport.Sections
+            .Where(s => s.AllSummaries != null)
+            .SelectMany(s => s.AllSummaries!.Keys)
+            .Distinct()
+            .OrderBy(t => t);
     }
 
     [RelayCommand]
@@ -452,23 +470,6 @@ public partial class StandupViewModel : ObservableObject
 
         UpdateReportDisplay(GroupedReport);
         StatusMessage = $"Switched to {summaryType} summary.";
-    }
-
-    /// <summary>
-    /// Gets which summary types are available in the current report.
-    /// </summary>
-    public IEnumerable<SummaryType> GetAvailableSummaryTypesInReport()
-    {
-        if (GroupedReport == null)
-        {
-            return [];
-        }
-
-        return GroupedReport.Sections
-            .Where(s => s.AllSummaries != null)
-            .SelectMany(s => s.AllSummaries!.Keys)
-            .Distinct()
-            .OrderBy(t => t);
     }
 
     [RelayCommand]

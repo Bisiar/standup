@@ -20,7 +20,7 @@ public class MauiFolderPickerService : IFolderPickerService
             var page = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page;
             if (page != null)
             {
-                await page.DisplayAlert(
+                await page.DisplayAlertAsync(
                     "Select Repository",
                     "Please navigate to your git repository folder and select the '.git/config' file.\n\nTip: Press Cmd+Shift+. to show hidden files in the file picker.",
                     "OK");

@@ -54,9 +54,7 @@
             {
               Log.LogError("  - " + v);
             }
-            return false;
           }
-          return true;
         ]]>
       </Code>
     </Task>
