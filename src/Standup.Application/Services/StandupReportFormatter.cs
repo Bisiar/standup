@@ -14,6 +14,9 @@ public static class StandupReportFormatter
         sb.AppendLine($"**Period:** {report.PeriodStart:MMM dd} - {report.PeriodEnd:MMM dd, yyyy}");
         sb.AppendLine();
 
+        // Section 0: Consolidated Standup (quick highlights across all projects)
+        AppendConsolidatedStandupMarkdown(sb, report);
+
         // Section 1: Team Standup Quick Overview (for team meetings)
         AppendTeamOverviewMarkdown(sb, report);
 
@@ -35,6 +38,9 @@ public static class StandupReportFormatter
 
         sb.AppendLine($"<h1>Standup Report - {HtmlEncode(report.GroupName)}</h1>");
         sb.AppendLine($"<p class=\"meta\"><strong>Period:</strong> {report.PeriodStart:MMM dd} - {report.PeriodEnd:MMM dd, yyyy}</p>");
+
+        // Section 0: Consolidated Standup (quick highlights across all projects)
+        AppendConsolidatedStandupHtml(sb, report);
 
         // Section 1: Team Standup Quick Overview
         AppendTeamOverviewHtml(sb, report);
@@ -140,6 +146,154 @@ public static class StandupReportFormatter
             .Replace(">", "&gt;")
             .Replace("\"", "&quot;")
             .Replace("'", "&#39;");
+    }
+
+    private static void AppendConsolidatedStandupMarkdown(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        sb.AppendLine("## 📋 Today's Standup");
+        sb.AppendLine();
+
+        var highlights = GetConsolidatedHighlights(report);
+
+        if (highlights.Count == 0)
+        {
+            sb.AppendLine("*No significant updates for this period.*");
+        }
+        else
+        {
+            foreach (var highlight in highlights)
+            {
+                sb.AppendLine($"- **{highlight.ClientCode}** - {highlight.Highlight}");
+            }
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("---");
+        sb.AppendLine();
+    }
+
+    private static void AppendConsolidatedStandupHtml(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        sb.AppendLine("<div class=\"consolidated-standup\" style=\"background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px;\">");
+        sb.AppendLine("<h2 style=\"color: white; margin-top: 0; border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px;\">📋 Today's Standup</h2>");
+
+        var highlights = GetConsolidatedHighlights(report);
+
+        if (highlights.Count == 0)
+        {
+            sb.AppendLine("<p style=\"font-style: italic; opacity: 0.8;\">No significant updates for this period.</p>");
+        }
+        else
+        {
+            sb.AppendLine("<ul style=\"list-style: none; padding: 0; margin: 0;\">");
+            foreach (var highlight in highlights)
+            {
+                sb.AppendLine($"<li style=\"margin: 10px 0; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 6px; border-left: 4px solid rgba(255,255,255,0.5);\">");
+                sb.AppendLine($"<strong style=\"color: #ffd700;\">{HtmlEncode(highlight.ClientCode)}</strong> - {HtmlEncode(highlight.Highlight)}");
+                sb.AppendLine("</li>");
+            }
+            sb.AppendLine("</ul>");
+        }
+
+        sb.AppendLine("</div>");
+    }
+
+    private static List<(string ClientCode, string Highlight)> GetConsolidatedHighlights(GroupedStandupReportDto report)
+    {
+        var highlights = new List<(string ClientCode, string Highlight)>();
+
+        foreach (var section in report.Sections.Where(s => s.Commits.Count > 0 || s.PullRequests.Count > 0 || s.WorkItems.Count > 0))
+        {
+            var sectionHighlights = ExtractHighlightsFromSection(section);
+            foreach (var highlight in sectionHighlights.Take(2))
+            {
+                highlights.Add((section.ClientCode, highlight));
+            }
+        }
+
+        return highlights;
+    }
+
+    private static List<string> ExtractHighlightsFromSection(ClientCodeSection section)
+    {
+        var highlights = new List<string>();
+
+        // Try Technical summary first
+        if (section.AllSummaries?.TryGetValue(SummaryType.Technical, out var techSummary) == true)
+        {
+            highlights.AddRange(ExtractBulletPoints(techSummary));
+        }
+
+        // Fall back to Executive summary
+        if (highlights.Count == 0 && section.AllSummaries?.TryGetValue(SummaryType.Executive, out var execSummary) == true)
+        {
+            highlights.AddRange(ExtractBulletPoints(execSummary));
+        }
+
+        // Fall back to generic summary
+        if (highlights.Count == 0 && !string.IsNullOrEmpty(section.Summary))
+        {
+            highlights.AddRange(ExtractBulletPoints(section.Summary));
+        }
+
+        // Last resort: use commit messages
+        if (highlights.Count == 0 && section.Commits.Count > 0)
+        {
+            var commitHighlights = section.Commits
+                .Select(c => c.Message.Split('\n')[0])
+                .Where(m => m.Length > 10 && !m.StartsWith("Merge", StringComparison.OrdinalIgnoreCase))
+                .Take(2)
+                .Select(m => m.Length > 80 ? m[..77] + "..." : m);
+            highlights.AddRange(commitHighlights);
+        }
+
+        if (highlights.Count == 0)
+        {
+            highlights.Add($"{section.CommitCount} commits, {section.PullRequestCount} PRs");
+        }
+
+        return highlights;
+    }
+
+    private static List<string> ExtractBulletPoints(string text)
+    {
+        var highlights = new List<string>();
+        if (string.IsNullOrEmpty(text)) return highlights;
+
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith('#') || trimmed.Length < 10 || trimmed.EndsWith(':'))
+                continue;
+
+            var isBullet = trimmed.StartsWith('-') || trimmed.StartsWith('*') || trimmed.StartsWith('•');
+            var isNumbered = Regex.IsMatch(trimmed, @"^\d+\.");
+
+            if (isBullet || isNumbered)
+            {
+                var content = Regex.Replace(trimmed, @"^[-*•]\s*|^\d+\.\s*", string.Empty).Trim();
+                content = Regex.Replace(content, @"\*\*([^*]+)\*\*", "$1");
+                content = Regex.Replace(content, @"\*([^*]+)\*", "$1");
+
+                if (content.Length >= 10 && !content.EndsWith(':'))
+                {
+                    highlights.Add(content.Length > 100 ? content[..97] + "..." : content);
+                }
+            }
+        }
+
+        if (highlights.Count == 0)
+        {
+            var firstSentence = ExtractFirstSentence(text);
+            if (!string.IsNullOrEmpty(firstSentence) && firstSentence.Length >= 10)
+            {
+                highlights.Add(firstSentence);
+            }
+        }
+
+        return highlights;
     }
 
     private static void AppendTeamOverviewMarkdown(StringBuilder sb, GroupedStandupReportDto report)
