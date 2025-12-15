@@ -25,6 +25,7 @@ public interface IReportCacheService
     /// <param name="groupId">The repository group ID.</param>
     /// <param name="report">The report to cache.</param>
     /// <param name="expiration">Optional expiration time. Defaults to 1 hour.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task CacheReportAsync(
         string groupId,
         GroupedStandupReportDto report,
@@ -34,24 +35,18 @@ public interface IReportCacheService
     /// Invalidates cached reports for a specific group.
     /// </summary>
     /// <param name="groupId">The repository group ID.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task InvalidateCacheAsync(string groupId);
 
     /// <summary>
     /// Invalidates all cached reports.
     /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task InvalidateAllAsync();
 
     /// <summary>
     /// Gets cache statistics.
     /// </summary>
+    /// <returns>Current cache statistics.</returns>
     CacheStats GetStats();
 }
-
-/// <summary>
-/// Statistics about the cache.
-/// </summary>
-public record CacheStats(
-    int CachedReports,
-    int CacheHits,
-    int CacheMisses,
-    long ApproximateSizeBytes);
