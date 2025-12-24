@@ -45,7 +45,25 @@ public static class StandupHtmlBuilder
         sb.AppendLine(".status-active, .status-inprogress { background: #cce5ff; color: #004085; }");
         sb.AppendLine(".totals { background: #e9ecef; padding: 15px; border-radius: 8px; margin-top: 30px; }");
         sb.AppendLine(".footer { color: #999; font-size: 0.8em; margin-top: 20px; text-align: center; }");
-        sb.AppendLine("</style></head><body>");
+
+        // Collapsible section styles
+        sb.AppendLine(".section-toggle { display: none; }");
+        sb.AppendLine(".section-header { cursor: pointer; user-select: none; }");
+        sb.AppendLine(".section-header::before { content: '▼ '; font-size: 0.8em; transition: transform 0.2s; display: inline-block; }");
+        sb.AppendLine(".section-toggle:not(:checked) + .section-header::before { content: '▶ '; }");
+        sb.AppendLine(".section-content { max-height: 5000px; overflow: hidden; transition: max-height 0.3s ease-in-out; }");
+        sb.AppendLine(".section-toggle:not(:checked) ~ .section-content { max-height: 0; padding: 0 20px; }");
+        sb.AppendLine(".collapse-all-btn { background: #6b7280; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-right: 10px; font-size: 0.9em; }");
+        sb.AppendLine(".collapse-all-btn:hover { background: #4b5563; }");
+        sb.AppendLine("</style>");
+
+        // JavaScript for collapse/expand all
+        sb.AppendLine("<script>");
+        sb.AppendLine("function toggleAll(expand) {");
+        sb.AppendLine("  document.querySelectorAll('.section-toggle').forEach(function(cb) { cb.checked = expand; });");
+        sb.AppendLine("}");
+        sb.AppendLine("</script>");
+        sb.AppendLine("</head><body>");
     }
 
     /// <summary>
@@ -81,8 +99,10 @@ public static class StandupHtmlBuilder
             sb.AppendLine("<ul style=\"list-style: none; padding: 0; margin: 0;\">");
             foreach (var highlight in highlights)
             {
+                // Use "General" for empty client codes (defensive fallback)
+                var displayCode = string.IsNullOrWhiteSpace(highlight.ClientCode) ? "General" : highlight.ClientCode;
                 sb.AppendLine("<li style=\"margin: 10px 0; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 6px; border-left: 4px solid rgba(255,255,255,0.5);\">");
-                sb.AppendLine($"<strong style=\"color: #ffd700;\">{StandupReportFormatter.HtmlEncode(highlight.ClientCode)}</strong> - {StandupReportFormatter.HtmlEncode(highlight.Highlight)}");
+                sb.AppendLine($"<strong style=\"color: #ffd700;\">{StandupReportFormatter.HtmlEncode(displayCode)}</strong> - {StandupReportFormatter.HtmlEncode(highlight.Highlight)}");
                 sb.AppendLine("</li>");
             }
 
@@ -106,11 +126,12 @@ public static class StandupHtmlBuilder
         sb.AppendLine("<h2 style=\"color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 5px;\">Team Standup Overview</h2>");
         sb.AppendLine("<div class=\"overview-section\" style=\"background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;\">");
 
-        foreach (var section in report.Sections)
+        // Only show sections with commits
+        foreach (var section in report.Sections.Where(s => s.Commits.Count > 0))
         {
             var quickSummary = getQuickSummary(section);
             var statusIndicator = GetSourceStatusIndicator(section.SourceStatus);
-            sb.AppendLine($"<p style=\"margin: 8px 0;\"><strong>{StandupReportFormatter.HtmlEncode(section.ClientCode)}</strong> <span style=\"color: #666;\">({section.CommitCount} commits, {section.PullRequestCount} PRs)</span>{statusIndicator} - {StandupReportFormatter.HtmlEncode(quickSummary)}</p>");
+            sb.AppendLine($"<p style=\"margin: 8px 0;\"><strong>{StandupReportFormatter.HtmlEncode(StandupReportFormatter.GetDisplayClientCode(section.ClientCode))}</strong> <span style=\"color: #666;\">({section.CommitCount} commits, {section.PullRequestCount} PRs)</span>{statusIndicator} - {StandupReportFormatter.HtmlEncode(quickSummary)}</p>");
         }
 
         sb.AppendLine("</div>");
@@ -123,19 +144,35 @@ public static class StandupHtmlBuilder
     /// <param name="report">The report data.</param>
     public static void AppendTechnicalDetails(StringBuilder sb, GroupedStandupReportDto report)
     {
-        sb.AppendLine("<h2 style=\"color: #10B981; margin-top: 40px;\">Technical Details</h2>");
+        sb.AppendLine("<h2 style=\"color: #10B981; margin-top: 40px; display: inline-block;\">Technical Details</h2>");
 
-        for (var i = 0; i < report.Sections.Count; i++)
+        // Expand/Collapse all buttons
+        sb.AppendLine("<span style=\"margin-left: 20px;\">");
+        sb.AppendLine("<button class=\"collapse-all-btn\" onclick=\"toggleAll(true)\">Expand All</button>");
+        sb.AppendLine("<button class=\"collapse-all-btn\" onclick=\"toggleAll(false)\">Collapse All</button>");
+        sb.AppendLine("</span>");
+
+        // Only show sections with commits
+        var sectionsWithCommits = report.Sections.Where(s => s.Commits.Count > 0).ToList();
+        for (var i = 0; i < sectionsWithCommits.Count; i++)
         {
-            var section = report.Sections[i];
+            var section = sectionsWithCommits[i];
             var color = GetProjectColor(i);
+            var sectionId = $"section-{i}";
 
             sb.AppendLine($"<div style=\"border: 2px solid {color}; border-radius: 12px; margin: 20px 0; overflow: hidden;\">");
-            sb.AppendLine($"<div style=\"background: {color}; color: white; padding: 15px 20px;\">");
-            sb.AppendLine($"<h3 style=\"color: white; margin: 0; font-size: 1.3em;\">📁 {StandupReportFormatter.HtmlEncode(section.ClientCode)}</h3>");
+
+            // Collapsible toggle (checkbox hidden, starts collapsed)
+            sb.AppendLine($"<input type=\"checkbox\" class=\"section-toggle\" id=\"{sectionId}\">");
+
+            // Clickable header
+            sb.AppendLine($"<label class=\"section-header\" for=\"{sectionId}\" style=\"display: block; background: {color}; color: white; padding: 15px 20px;\">");
+            sb.AppendLine($"<h3 style=\"color: white; margin: 0; font-size: 1.3em; display: inline;\">📁 {StandupReportFormatter.HtmlEncode(StandupReportFormatter.GetDisplayClientCode(section.ClientCode))}</h3>");
             sb.AppendLine($"<p style=\"margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9em;\">{section.CommitCount} commits | {section.PullRequestCount} PRs | {section.WorkItemCount} work items</p>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("<div style=\"padding: 15px 20px;\">");
+            sb.AppendLine("</label>");
+
+            // Collapsible content
+            sb.AppendLine("<div class=\"section-content\" style=\"padding: 15px 20px;\">");
 
             if (section.AllSummaries?.TryGetValue(SummaryType.Technical, out var techSummary) == true)
             {
@@ -187,7 +224,7 @@ public static class StandupHtmlBuilder
         {
             if (section.AllSummaries?.TryGetValue(SummaryType.Executive, out var execSummary) == true)
             {
-                sb.AppendLine($"<h3>{StandupReportFormatter.HtmlEncode(section.ClientCode)}</h3>");
+                sb.AppendLine($"<h3>{StandupReportFormatter.HtmlEncode(StandupReportFormatter.GetDisplayClientCode(section.ClientCode))}</h3>");
                 sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid #3B82F6; background: #f0f7ff;\">{StandupReportFormatter.ConvertMarkdownToHtml(execSummary)}</div>");
             }
         }
@@ -255,11 +292,6 @@ public static class StandupHtmlBuilder
         foreach (var commit in section.Commits.Take(10))
         {
             var message = commit.Message.Split('\n')[0];
-            if (message.Length > 80)
-            {
-                message = message[..77] + "...";
-            }
-
             sb.AppendLine($"<li>{StandupReportFormatter.HtmlEncode(message)}</li>");
         }
 

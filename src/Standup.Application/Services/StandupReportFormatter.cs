@@ -7,6 +7,16 @@ namespace Standup.Application.Services;
 
 public static class StandupReportFormatter
 {
+    /// <summary>
+    /// Gets the display name for a ClientCode, defaulting to "General" if empty.
+    /// </summary>
+    /// <param name="clientCode">The client code to display.</param>
+    /// <returns>The client code or "General" if empty.</returns>
+    public static string GetDisplayClientCode(string? clientCode)
+    {
+        return string.IsNullOrWhiteSpace(clientCode) ? "General" : clientCode;
+    }
+
     public static string BuildGroupedReportMarkdown(GroupedStandupReportDto report)
     {
         var sb = new StringBuilder();
@@ -66,7 +76,7 @@ public static class StandupReportFormatter
 
         foreach (var section in report.Sections)
         {
-            sb.AppendLine($"## {section.ClientCode}");
+            sb.AppendLine($"## {GetDisplayClientCode(section.ClientCode)}");
             sb.AppendLine();
 
             if (section.AllSummaries != null && section.AllSummaries.Count > 0)
@@ -164,7 +174,9 @@ public static class StandupReportFormatter
         {
             foreach (var highlight in highlights)
             {
-                sb.AppendLine($"- **{highlight.ClientCode}** - {highlight.Highlight}");
+                // Use "General" for empty client codes (defensive fallback)
+                var displayCode = string.IsNullOrWhiteSpace(highlight.ClientCode) ? "General" : highlight.ClientCode;
+                sb.AppendLine($"- **{displayCode}** - {highlight.Highlight}");
             }
         }
 
@@ -175,12 +187,24 @@ public static class StandupReportFormatter
 
     private static List<(string ClientCode, string Highlight)> GetConsolidatedHighlights(GroupedStandupReportDto report)
     {
+        const int maxTotalHighlights = 6;
         var highlights = new List<(string ClientCode, string Highlight)>();
 
-        foreach (var section in report.Sections.Where(s => s.Commits.Count > 0 || s.PullRequests.Count > 0 || s.WorkItems.Count > 0))
+        // Filter sections with activity (ClientCode is optional - will show as "General" if empty)
+        var activeSections = report.Sections
+            .Where(s => s.Commits.Count > 0 || s.PullRequests.Count > 0 || s.WorkItems.Count > 0)
+            .ToList();
+
+        foreach (var section in activeSections)
         {
+            if (highlights.Count >= maxTotalHighlights)
+            {
+                break;
+            }
+
             var sectionHighlights = ExtractHighlightsFromSection(section);
-            foreach (var highlight in sectionHighlights.Take(2))
+            var highlight = sectionHighlights.FirstOrDefault();
+            if (!string.IsNullOrEmpty(highlight))
             {
                 highlights.Add((section.ClientCode, highlight));
             }
@@ -230,6 +254,26 @@ public static class StandupReportFormatter
         return highlights;
     }
 
+    private static readonly HashSet<string> GenericTermBlacklist = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Code Changes",
+        "Standup Update",
+        "Pull Requests",
+        "Work Items",
+        "Blockers",
+        "Next Steps",
+        "Summary",
+        "Overview",
+        "Changes",
+        "Updates",
+        "Tasks",
+        "Items",
+        "Notes",
+        "Details",
+        "Description",
+        "Repository",
+    };
+
     private static List<string> ExtractBulletPoints(string text)
     {
         var highlights = new List<string>();
@@ -254,12 +298,23 @@ public static class StandupReportFormatter
             if (isBullet || isNumbered)
             {
                 var content = Regex.Replace(trimmed, @"^[-*•]\s*|^\d+\.\s*", string.Empty).Trim();
+
+                // Remove markdown bold markers (handles **text** and *text*)
                 content = Regex.Replace(content, @"\*\*([^*]+)\*\*", "$1");
                 content = Regex.Replace(content, @"\*([^*]+)\*", "$1");
 
+                // Remove any trailing/leading asterisks that weren't matched
+                content = content.Trim('*', ' ');
+
+                // Skip generic section headers
+                if (IsGenericTerm(content))
+                {
+                    continue;
+                }
+
                 if (content.Length >= 10 && !content.EndsWith(':'))
                 {
-                    highlights.Add(content.Length > 100 ? content[..97] + "..." : content);
+                    highlights.Add(content);
                 }
             }
         }
@@ -267,13 +322,41 @@ public static class StandupReportFormatter
         if (highlights.Count == 0)
         {
             var firstSentence = ExtractFirstSentence(text);
-            if (!string.IsNullOrEmpty(firstSentence) && firstSentence.Length >= 10)
+            if (!string.IsNullOrEmpty(firstSentence) && firstSentence.Length >= 10 && !IsGenericTerm(firstSentence))
             {
                 highlights.Add(firstSentence);
             }
         }
 
         return highlights;
+    }
+
+    private static bool IsGenericTerm(string content)
+    {
+        // Check exact match (case-insensitive)
+        if (GenericTermBlacklist.Contains(content))
+        {
+            return true;
+        }
+
+        // Check if it's just a generic term followed by a colon or asterisk
+        var normalized = content.TrimEnd(':', '*', ' ');
+        if (GenericTermBlacklist.Contains(normalized))
+        {
+            return true;
+        }
+
+        // Check if it starts with a generic term followed by colon (e.g., "Repository: some-repo")
+        foreach (var term in GenericTermBlacklist)
+        {
+            if (content.StartsWith(term + ":", StringComparison.OrdinalIgnoreCase) ||
+                content.StartsWith(term + " ", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void AppendTeamOverviewMarkdown(StringBuilder sb, GroupedStandupReportDto report)
@@ -285,7 +368,7 @@ public static class StandupReportFormatter
         {
             var quickSummary = GetQuickSummary(section);
             var statusIndicator = GetSourceStatusMarkdown(section.SourceStatus);
-            sb.AppendLine($"**{section.ClientCode}** ({section.CommitCount} commits, {section.PullRequestCount} PRs){statusIndicator} - {quickSummary}");
+            sb.AppendLine($"**{GetDisplayClientCode(section.ClientCode)}** ({section.CommitCount} commits, {section.PullRequestCount} PRs){statusIndicator} - {quickSummary}");
         }
 
         sb.AppendLine();
@@ -335,7 +418,7 @@ public static class StandupReportFormatter
 
         foreach (var section in report.Sections)
         {
-            sb.AppendLine($"### {section.ClientCode}");
+            sb.AppendLine($"### {GetDisplayClientCode(section.ClientCode)}");
             sb.AppendLine();
 
             // Show Technical summary if available
@@ -389,7 +472,7 @@ public static class StandupReportFormatter
         {
             if (section.AllSummaries?.TryGetValue(SummaryType.Executive, out var execSummary) == true)
             {
-                sb.AppendLine($"### {section.ClientCode}");
+                sb.AppendLine($"### {GetDisplayClientCode(section.ClientCode)}");
                 sb.AppendLine();
                 sb.AppendLine(execSummary);
                 sb.AppendLine();
