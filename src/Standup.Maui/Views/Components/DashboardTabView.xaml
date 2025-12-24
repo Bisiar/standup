@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             xmlns:entities="clr-namespace:Standup.Domain.Entities;assembly=Standup.Domain"
+             x:Class="Standup.Maui.Views.Components.DashboardTabView"
+             x:DataType="viewModels:DashboardViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="20">
+
+        <!-- Header with Group Selector -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <VerticalStackLayout Grid.Column="0" Spacing="5">
+                <Label Text="Code Activity Dashboard"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#1F2937, Dark=#F9FAFB}" />
+                <Label Text="{Binding PeriodDisplay}"
+                       FontSize="14"
+                       TextColor="{AppThemeBinding Light=#6B7280, Dark=#9CA3AF}" />
+            </VerticalStackLayout>
+
+            <!-- Group Selector -->
+            <Border Grid.Column="1"
+                    BackgroundColor="{AppThemeBinding Light=#F3F4F6, Dark=#374151}"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="10,5"
+                    VerticalOptions="Center">
+                <Picker ItemsSource="{Binding Groups}"
+                        SelectedItem="{Binding SelectedGroup}"
+                        ItemDisplayBinding="{Binding Name}"
+                        Title="Select Group"
+                        FontSize="14"
+                        TextColor="{AppThemeBinding Light=#1F2937, Dark=#F9FAFB}"
+                        TitleColor="{AppThemeBinding Light=#6B7280, Dark=#9CA3AF}"
+                        MinimumWidthRequest="150" />
+            </Border>
+        </Grid>
+
+        <!-- Time Period Selector -->
+        <Border Grid.Row="1"
+                BackgroundColor="{AppThemeBinding Light=#F3F4F6, Dark=#1F2937}"
+                StrokeShape="RoundRectangle 8"
+                Padding="5"
+                Margin="0,15,0,15">
+            <HorizontalStackLayout Spacing="5" HorizontalOptions="Center">
+                <Button Text="Yesterday"
+                        Command="{Binding SelectYesterdayCommand}"
+                        FontSize="13"
+                        Padding="15,8"
+                        TextColor="White">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="0">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="1">
+                            <Setter Property="BackgroundColor" Value="#6B7280" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="2">
+                            <Setter Property="BackgroundColor" Value="#6B7280" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Today"
+                        Command="{Binding SelectTodayCommand}"
+                        FontSize="13"
+                        Padding="15,8"
+                        TextColor="White">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="1">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="0">
+                            <Setter Property="BackgroundColor" Value="#6B7280" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="2">
+                            <Setter Property="BackgroundColor" Value="#6B7280" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Week"
+                        Command="{Binding SelectWeekCommand}"
+                        FontSize="13"
+                        Padding="15,8"
+                        TextColor="White">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="2">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="0">
+                            <Setter Property="BackgroundColor" Value="#6B7280" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriodIndex}" Value="1">
+                            <Setter Property="BackgroundColor" Value="#6B7280" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </HorizontalStackLayout>
+        </Border>
+
+        <!-- Chart Area -->
+        <Grid Grid.Row="2">
+            <!-- No Data Message -->
+            <VerticalStackLayout IsVisible="{Binding HasData, Converter={StaticResource InvertedBoolConverter}}"
+                                 VerticalOptions="Center"
+                                 HorizontalOptions="Center"
+                                 Spacing="10">
+                <Label Text="📊" FontSize="48" HorizontalOptions="Center" />
+                <Label Text="No data available"
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center"
+                       TextColor="{AppThemeBinding Light=#6B7280, Dark=#9CA3AF}" />
+                <Label Text="Generate a standup report to see your code activity"
+                       FontSize="14"
+                       HorizontalOptions="Center"
+                       TextColor="{AppThemeBinding Light=#9CA3AF, Dark=#6B7280}" />
+            </VerticalStackLayout>
+
+            <!-- Charts Container -->
+            <Grid IsVisible="{Binding HasData}" RowDefinitions="*,Auto">
+
+                <!-- Line Chart (Week View) -->
+                <telerik:RadCartesianChart x:Name="LineChart"
+                                           IsVisible="{Binding IsWeekView}"
+                                           Margin="0,0,0,20">
+                    <telerik:RadCartesianChart.HorizontalAxis>
+                        <telerik:DateTimeContinuousAxis LabelFitMode="Rotate"
+                                                        MajorStepUnit="Day"
+                                                        MajorStep="1"
+                                                        LabelFormat="MMM dd" />
+                    </telerik:RadCartesianChart.HorizontalAxis>
+
+                    <telerik:RadCartesianChart.VerticalAxis>
+                        <telerik:NumericalAxis />
+                    </telerik:RadCartesianChart.VerticalAxis>
+
+                    <telerik:RadCartesianChart.Series>
+                        <!-- Lines Added (Green) -->
+                        <telerik:LineSeries ValueBinding="Additions"
+                                            CategoryBinding="Date"
+                                            ItemsSource="{Binding DailyMetrics}"
+                                            Stroke="#10B981"
+                                            StrokeThickness="3"
+                                            DisplayName="Lines Added" />
+
+                        <!-- Lines Deleted (Red) -->
+                        <telerik:LineSeries ValueBinding="Deletions"
+                                            CategoryBinding="Date"
+                                            ItemsSource="{Binding DailyMetrics}"
+                                            Stroke="#EF4444"
+                                            StrokeThickness="3"
+                                            DisplayName="Lines Deleted" />
+                    </telerik:RadCartesianChart.Series>
+
+                    <telerik:RadCartesianChart.ChartBehaviors>
+                        <telerik:ChartTooltipBehavior TriggerMode="Tap" />
+                    </telerik:RadCartesianChart.ChartBehaviors>
+                </telerik:RadCartesianChart>
+
+                <!-- Bar Chart (Day View) -->
+                <telerik:RadCartesianChart x:Name="BarChart"
+                                           IsVisible="{Binding IsWeekView, Converter={StaticResource InvertedBoolConverter}}"
+                                           Margin="0,0,0,20">
+                    <telerik:RadCartesianChart.HorizontalAxis>
+                        <telerik:CategoricalAxis LabelFitMode="Rotate" />
+                    </telerik:RadCartesianChart.HorizontalAxis>
+
+                    <telerik:RadCartesianChart.VerticalAxis>
+                        <telerik:NumericalAxis />
+                    </telerik:RadCartesianChart.VerticalAxis>
+
+                    <telerik:RadCartesianChart.Palette>
+                        <telerik:ChartPalette>
+                            <telerik:ChartPalette.Entries>
+                                <!-- Green for Lines Added -->
+                                <telerik:PaletteEntry FillColor="#10B981" StrokeColor="#10B981" />
+                                <!-- Red for Lines Deleted -->
+                                <telerik:PaletteEntry FillColor="#EF4444" StrokeColor="#EF4444" />
+                            </telerik:ChartPalette.Entries>
+                        </telerik:ChartPalette>
+                    </telerik:RadCartesianChart.Palette>
+
+                    <telerik:RadCartesianChart.Series>
+                        <!-- Lines Added (Green Bars) -->
+                        <telerik:BarSeries ValueBinding="Additions"
+                                           CategoryBinding="ShortName"
+                                           ItemsSource="{Binding RepositoryMetrics}"
+                                           DisplayName="Lines Added" />
+
+                        <!-- Lines Deleted (Red Bars) -->
+                        <telerik:BarSeries ValueBinding="Deletions"
+                                           CategoryBinding="ShortName"
+                                           ItemsSource="{Binding RepositoryMetrics}"
+                                           DisplayName="Lines Deleted" />
+                    </telerik:RadCartesianChart.Series>
+
+                    <telerik:RadCartesianChart.ChartBehaviors>
+                        <telerik:ChartTooltipBehavior TriggerMode="Tap" />
+                    </telerik:RadCartesianChart.ChartBehaviors>
+                </telerik:RadCartesianChart>
+
+                <!-- Legend -->
+                <HorizontalStackLayout Grid.Row="1"
+                                       HorizontalOptions="Center"
+                                       Spacing="20"
+                                       Margin="0,10">
+                    <HorizontalStackLayout Spacing="5">
+                        <BoxView WidthRequest="16" HeightRequest="16" Color="#10B981" />
+                        <Label Text="Lines Added"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light=#374151, Dark=#D1D5DB}" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="5">
+                        <BoxView WidthRequest="16" HeightRequest="16" Color="#EF4444" />
+                        <Label Text="Lines Deleted"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light=#374151, Dark=#D1D5DB}" />
+                    </HorizontalStackLayout>
+                </HorizontalStackLayout>
+            </Grid>
+        </Grid>
+
+        <!-- Summary Stats -->
+        <Border Grid.Row="3"
+                BackgroundColor="{AppThemeBinding Light=#F9FAFB, Dark=#111827}"
+                StrokeShape="RoundRectangle 8"
+                Padding="15"
+                Margin="0,10,0,0">
+            <Grid ColumnDefinitions="*,*,*">
+                <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center">
+                    <Label Text="{Binding TotalCommits}"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center"
+                           TextColor="{AppThemeBinding Light=#1F2937, Dark=#F9FAFB}" />
+                    <Label Text="Commits"
+                           FontSize="12"
+                           HorizontalOptions="Center"
+                           TextColor="{AppThemeBinding Light=#6B7280, Dark=#9CA3AF}" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center">
+                    <Label FontSize="24"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center"
+                           TextColor="#10B981">
+                        <Label.Text>
+                            <Binding Path="TotalAdditions" StringFormat="+{0}" />
+                        </Label.Text>
+                    </Label>
+                    <Label Text="Lines Added"
+                           FontSize="12"
+                           HorizontalOptions="Center"
+                           TextColor="{AppThemeBinding Light=#6B7280, Dark=#9CA3AF}" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center">
+                    <Label FontSize="24"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center"
+                           TextColor="#EF4444">
+                        <Label.Text>
+                            <Binding Path="TotalDeletions" StringFormat="-{0}" />
+                        </Label.Text>
+                    </Label>
+                    <Label Text="Lines Deleted"
+                           FontSize="12"
+                           HorizontalOptions="Center"
+                           TextColor="{AppThemeBinding Light=#6B7280, Dark=#9CA3AF}" />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentView>
