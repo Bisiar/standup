@@ -60,6 +60,19 @@
                                                 <Label Text="{Binding Description}" FontSize="12" TextColor="DimGray"
                                                        IsVisible="{Binding Description, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
                                             </HorizontalStackLayout>
+                                            <!-- Include in Generation Toggle -->
+                                            <HorizontalStackLayout Spacing="5" Margin="0,5,0,0">
+                                                <HorizontalStackLayout.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=ToggleIncludeInGenerationCommand}"
+                                                        CommandParameter="{Binding .}" />
+                                                </HorizontalStackLayout.GestureRecognizers>
+                                                <Label Text="✓" FontSize="14" TextColor="#10B981" VerticalOptions="Center"
+                                                       IsVisible="{Binding IncludeInGeneration}" FontAttributes="Bold" />
+                                                <Label Text="✗" FontSize="14" TextColor="#EF4444" VerticalOptions="Center"
+                                                       IsVisible="{Binding IncludeInGeneration, Converter={StaticResource InvertedBoolConverter}}" FontAttributes="Bold" />
+                                                <Label Text="Include in Generation" FontSize="11" TextColor="Gray" VerticalOptions="Center" />
+                                            </HorizontalStackLayout>
                                         </VerticalStackLayout>
 
                                         <!-- Edit Button -->

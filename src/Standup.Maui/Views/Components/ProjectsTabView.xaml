@@ -67,6 +67,15 @@
                                        IsVisible="{Binding SourcePat, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
                                 <Label Text="⚠ No PAT - Click Edit" FontSize="11" TextColor="Orange"
                                        IsVisible="{Binding SourcePat, Converter={StaticResource IsNullOrEmptyConverter}}" />
+                                <!-- CRM Link Indicator -->
+                                <Label FontSize="11" TextColor="#8B5CF6"
+                                       IsVisible="{Binding CrmProjectId, Converter={StaticResource IsNotNullOrEmptyConverter}}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="🔗 CRM Linked" FontAttributes="Bold" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
                                 <!-- Latest Commit Info -->
                                 <HorizontalStackLayout Spacing="5" IsVisible="{Binding LastCommitHash, Converter={StaticResource IsNotNullOrEmptyConverter}}">
                                     <Label Text="📝" FontSize="11" />
@@ -146,6 +155,24 @@
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Author Identifier (optional)" FontSize="12" TextColor="Gray" />
                     <Entry Text="{Binding EditAuthorIdentifier}" Placeholder="Email or username to filter commits" />
+                </VerticalStackLayout>
+
+                <!-- CRM Project Linking -->
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Link to CRM Project (optional)" FontSize="12" TextColor="Gray" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Picker Grid.Column="0"
+                                ItemsSource="{Binding AvailableCrmProjects}"
+                                SelectedItem="{Binding SelectedCrmProject}"
+                                ItemDisplayBinding="{Binding ProjectName}"
+                                Title="Select CRM Project..." />
+                        <ActivityIndicator Grid.Column="1" IsRunning="{Binding IsLoadingCrmProjects}"
+                                          IsVisible="{Binding IsLoadingCrmProjects}"
+                                          WidthRequest="20" HeightRequest="20"
+                                          Margin="10,0,0,0" Color="#3B82F6" />
+                    </Grid>
+                    <Label Text="Links this project to a Dynamics 365 CRM project for timeline and milestone tracking"
+                           FontSize="10" TextColor="DimGray" />
                 </VerticalStackLayout>
 
                 <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,10,0,0">

@@ -1,5 +1,6 @@
 using Serilog;
 using Standup.Application.ViewModels;
+using Standup.Domain.Interfaces;
 
 namespace Standup.Maui.Views;
 
@@ -15,7 +16,7 @@ public partial class MainTabbedPage : ContentPage
 {
     private readonly FrameworkViewModel _viewModel;
 
-    public MainTabbedPage(FrameworkViewModel viewModel)
+    public MainTabbedPage(FrameworkViewModel viewModel, IAISummaryService? aiService = null)
     {
         Log.Information("MainTabbedPage constructor starting");
 
@@ -23,6 +24,9 @@ public partial class MainTabbedPage : ContentPage
         BindingContext = _viewModel;
 
         InitializeComponent();
+
+        // Wire up AI service for validation in Settings tab
+        SettingsTab.SetAIService(aiService);
 
         Log.Information("MainTabbedPage InitializeComponent completed");
     }

@@ -9,6 +9,7 @@ using Standup.Application.Services;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
+using CrmProject = Standup.Domain.Entities.CrmProject;
 
 namespace Standup.Application.ViewModels;
 
@@ -19,6 +20,7 @@ public partial class ProjectListViewModel : ObservableObject
     private readonly ReportHistoryService _reportHistoryService;
     private readonly ISourceProviderFactory? _sourceProviderFactory;
     private readonly IEncryptionService? _encryptionService;
+    private readonly ICrmProjectService? _crmProjectService;
 
     /// <summary>
     /// Event raised when a report is generated for a project.
@@ -87,18 +89,32 @@ public partial class ProjectListViewModel : ObservableObject
     [ObservableProperty]
     private string _editAuthorIdentifier = string.Empty;
 
+    [ObservableProperty]
+    private string _editCrmProjectId = string.Empty;
+
+    [ObservableProperty]
+    private ObservableCollection<CrmProject> _availableCrmProjects = new();
+
+    [ObservableProperty]
+    private CrmProject? _selectedCrmProject;
+
+    [ObservableProperty]
+    private bool _isLoadingCrmProjects;
+
     public ProjectListViewModel(
         IProjectService projectService,
         ILocalStandupService localStandupService,
         ReportHistoryService reportHistoryService,
         ISourceProviderFactory? sourceProviderFactory = null,
-        IEncryptionService? encryptionService = null)
+        IEncryptionService? encryptionService = null,
+        ICrmProjectService? crmProjectService = null)
     {
         _projectService = projectService;
         _localStandupService = localStandupService;
         _reportHistoryService = reportHistoryService;
         _sourceProviderFactory = sourceProviderFactory;
         _encryptionService = encryptionService;
+        _crmProjectService = crmProjectService;
     }
 
     [RelayCommand]
@@ -171,14 +187,59 @@ public partial class ProjectListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EditProject(ProjectInstance project)
+    private async Task EditProjectAsync(ProjectInstance project)
     {
         EditingProject = project;
         EditProjectName = project.Name;
         EditTenantName = project.TenantName;
         EditSourcePat = project.SourcePat ?? string.Empty;
         EditAuthorIdentifier = project.AuthorIdentifier ?? string.Empty;
+        EditCrmProjectId = project.CrmProjectId ?? string.Empty;
         IsEditingProject = true;
+
+        // Load CRM projects for dropdown
+        await LoadCrmProjectsAsync();
+
+        // Select the current CRM project if set
+        if (!string.IsNullOrEmpty(project.CrmProjectId))
+        {
+            SelectedCrmProject = AvailableCrmProjects.FirstOrDefault(p => p.CrmProjectId == project.CrmProjectId);
+        }
+        else
+        {
+            SelectedCrmProject = null;
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadCrmProjectsAsync()
+    {
+        if (_crmProjectService == null)
+        {
+            Log.Debug("CRM service not available");
+            return;
+        }
+
+        IsLoadingCrmProjects = true;
+        try
+        {
+            var projects = await _crmProjectService.GetAllProjectsAsync();
+            AvailableCrmProjects.Clear();
+            foreach (var project in projects)
+            {
+                AvailableCrmProjects.Add(project);
+            }
+
+            Log.Information("Loaded {Count} CRM projects for dropdown", projects.Count);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load CRM projects: {ErrorMessage}", ex.Message);
+        }
+        finally
+        {
+            IsLoadingCrmProjects = false;
+        }
     }
 
     [RelayCommand]
@@ -195,7 +256,8 @@ public partial class ProjectListViewModel : ObservableObject
             Name = EditProjectName,
             TenantName = EditTenantName,
             SourcePat = string.IsNullOrWhiteSpace(EditSourcePat) ? null : EditSourcePat,
-            AuthorIdentifier = string.IsNullOrWhiteSpace(EditAuthorIdentifier) ? null : EditAuthorIdentifier
+            AuthorIdentifier = string.IsNullOrWhiteSpace(EditAuthorIdentifier) ? null : EditAuthorIdentifier,
+            CrmProjectId = SelectedCrmProject?.CrmProjectId
         };
 
         await _projectService.UpdateProjectAsync(updatedProject);
@@ -209,6 +271,8 @@ public partial class ProjectListViewModel : ObservableObject
 
         IsEditingProject = false;
         EditingProject = null;
+        SelectedCrmProject = null;
+        AvailableCrmProjects.Clear();
     }
 
     [RelayCommand]
@@ -220,6 +284,9 @@ public partial class ProjectListViewModel : ObservableObject
         EditTenantName = string.Empty;
         EditSourcePat = string.Empty;
         EditAuthorIdentifier = string.Empty;
+        EditCrmProjectId = string.Empty;
+        SelectedCrmProject = null;
+        AvailableCrmProjects.Clear();
     }
 
     /// <summary>
