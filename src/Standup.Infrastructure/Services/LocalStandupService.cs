@@ -14,7 +14,7 @@ namespace Standup.Infrastructure.Services;
 /// Local standup generation using Infrastructure source providers directly.
 /// Supports both remote API access and local git log reading.
 /// </summary>
-public sealed class LocalStandupService : ILocalStandupService
+public sealed partial class LocalStandupService : ILocalStandupService
 {
     private readonly IEncryptionService _encryptionService;
     private readonly IAISummaryService? _aiSummaryService;
@@ -63,7 +63,7 @@ public sealed class LocalStandupService : ILocalStandupService
             EncryptedPat = _encryptionService.Encrypt(pat)
         };
 
-        var since = DateTimeOffset.UtcNow.AddDays(-7);
+        var since = DateTimeOffset.UtcNow.AddDays(-1);
         var until = DateTimeOffset.UtcNow;
 
         try
@@ -138,7 +138,7 @@ public sealed class LocalStandupService : ILocalStandupService
             project,
             repository);
 
-        var since = DateTimeOffset.UtcNow.AddDays(-7);
+        var since = DateTimeOffset.UtcNow.AddDays(-1);
         var until = DateTimeOffset.UtcNow;
 
         try
@@ -285,7 +285,7 @@ public sealed class LocalStandupService : ILocalStandupService
             group.Repositories.Count,
             summaryType);
 
-        var activeRepos = group.Repositories.Where(r => r.IsActive).ToList();
+        var activeRepos = group.Repositories.Where(r => r.IsActive && r.IncludeInGeneration).ToList();
 
         // Progress allocation:
         // - Fetching repos: 0% - 50%
@@ -325,6 +325,7 @@ public sealed class LocalStandupService : ILocalStandupService
         progress?.Report((fetchWeight, "Processing commits and work items..."));
 
         // Group results by client code, aggregating source status
+        // Skip sections with no commits for the date range
         var sections = repoData
             .GroupBy(r => r.ClientCode)
             .Select(g => new ClientCodeSection(
@@ -335,6 +336,7 @@ public sealed class LocalStandupService : ILocalStandupService
                 WorkItems: g.SelectMany(r => r.WorkItems).DistinctBy(w => w.Id).ToList(),
                 AllSummaries: null,
                 SourceStatus: DataSourceStatusAggregator.Aggregate(g.Select(r => r.SourceStatus).ToList())))
+            .Where(s => s.Commits.Count > 0)
             .OrderBy(s => s.ClientCode)
             .ToList();
 
@@ -559,6 +561,8 @@ public sealed class LocalStandupService : ILocalStandupService
                     Repository: repo.Repository,
                     SourceType: repo.SourceType,
                     CommittedAt: c.CommitDate,
+                    Additions: c.Additions,
+                    Deletions: c.Deletions,
                     Branch: currentBranch,
                     Author: c.AuthorName,
                     AuthorEmail: c.AuthorEmail)).ToList();

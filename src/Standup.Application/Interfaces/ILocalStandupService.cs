@@ -107,4 +107,19 @@ public interface ILocalStandupService
         IEnumerable<SummaryType>? summaryTypes = null,
         IProgress<(double Progress, string Message)>? progress = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets commits from local repositories without generating a full report.
+    /// Lightweight method for Dashboard metrics display.
+    /// </summary>
+    /// <param name="repositories">The repositories to fetch commits from.</param>
+    /// <param name="since">Start date for commits.</param>
+    /// <param name="until">End date for commits.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of commits from all repositories with local paths.</returns>
+    Task<IReadOnlyList<CommitInfo>> GetLocalCommitsAsync(
+        IEnumerable<GroupedRepository> repositories,
+        DateTimeOffset since,
+        DateTimeOffset until,
+        CancellationToken cancellationToken = default);
 }
