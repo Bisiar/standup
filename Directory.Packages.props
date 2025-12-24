@@ -8,6 +8,7 @@
     <PackageVersion Include="Azure.AI.OpenAI" Version="2.1.0" />
     <!-- Microsoft Graph -->
     <PackageVersion Include="Microsoft.Graph" Version="5.98.0" />
+    <PackageVersion Include="Microsoft.Identity.Client" Version="4.78.0" />
     <!-- Azure Data -->
     <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.56.0" />
     <!-- Teams -->
@@ -36,6 +37,8 @@
     <PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.11" />
     <PackageVersion Include="CommunityToolkit.Maui" Version="13.0.0" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- Telerik UI for MAUI -->
+    <PackageVersion Include="Telerik.UI.for.Maui" Version="12.1.0" />
     <!-- Logging -->
     <PackageVersion Include="Serilog" Version="4.3.0" />
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />

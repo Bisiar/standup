@@ -10,6 +10,11 @@
     <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- StyleCop configuration file -->
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
+  </ItemGroup>
+
   <!-- Line Limit Check -->
   <PropertyGroup>
     <MaxLinesPerFile>750</MaxLinesPerFile>
@@ -25,7 +30,7 @@
       MaxLines="$(MaxLinesPerFile)" />
   </Target>
 
-  <UsingTask TaskName="CheckFileLength" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+  <UsingTask TaskName="CheckFileLength" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
       <MaxLines ParameterType="System.Int32" Required="true" />
