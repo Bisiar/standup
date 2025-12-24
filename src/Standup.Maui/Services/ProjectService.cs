@@ -2,6 +2,7 @@ using System.Text.Json;
 using Serilog;
 using Standup.Application.Interfaces;
 using Standup.Application.Models;
+using Standup.Maui.Json;
 
 namespace Standup.Maui.Services;
 
@@ -71,7 +72,7 @@ public class ProjectService : IProjectService
             Log.Information("Deserializing projects from Preferences, JSON length: {Length}", json.Length);
             try
             {
-                _cachedProjects = JsonSerializer.Deserialize<List<ProjectInstance>>(json) ?? new();
+                _cachedProjects = JsonSerializer.Deserialize(json, MauiJsonContext.Default.ListProjectInstance) ?? new();
                 Log.Information("Deserialized {Count} projects", _cachedProjects.Count);
 
                 foreach (var p in _cachedProjects)
@@ -230,7 +231,7 @@ public class ProjectService : IProjectService
             return Task.CompletedTask;
         }
 
-        var json = JsonSerializer.Serialize(_cachedProjects);
+        var json = JsonSerializer.Serialize(_cachedProjects, MauiJsonContext.Default.ListProjectInstance);
         Log.Information("Saving {Count} projects to Preferences, JSON length: {Length}", _cachedProjects.Count, json.Length);
 
         try

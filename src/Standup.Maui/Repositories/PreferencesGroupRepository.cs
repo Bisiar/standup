@@ -2,6 +2,7 @@ using System.Text.Json;
 using Serilog;
 using Standup.Application.Interfaces;
 using Standup.Domain.Entities;
+using Standup.Maui.Json;
 
 namespace Standup.Maui.Repositories;
 
@@ -33,7 +34,7 @@ public sealed class PreferencesGroupRepository : IGroupRepository
             }
             else
             {
-                _cachedGroups = JsonSerializer.Deserialize<List<RepositoryGroup>>(json) ?? new();
+                _cachedGroups = JsonSerializer.Deserialize(json, MauiJsonContext.Default.ListRepositoryGroup) ?? new();
                 Log.Debug("Loaded {Count} groups from Preferences", _cachedGroups.Count);
             }
         }
@@ -151,7 +152,7 @@ public sealed class PreferencesGroupRepository : IGroupRepository
             return;
         }
 
-        var json = JsonSerializer.Serialize(_cachedGroups);
+        var json = JsonSerializer.Serialize(_cachedGroups, MauiJsonContext.Default.ListRepositoryGroup);
         Preferences.Default.Set(GroupsKey, json);
         Log.Debug("Saved {Count} groups to Preferences", _cachedGroups.Count);
     }

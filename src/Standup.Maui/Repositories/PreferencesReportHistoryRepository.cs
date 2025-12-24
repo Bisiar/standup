@@ -2,6 +2,7 @@ using System.Text.Json;
 using Serilog;
 using Standup.Application.Interfaces;
 using Standup.Domain.Entities;
+using Standup.Maui.Json;
 
 namespace Standup.Maui.Repositories;
 
@@ -101,7 +102,7 @@ public sealed class PreferencesReportHistoryRepository : IReportHistoryRepositor
             }
             else
             {
-                _cachedHistory = JsonSerializer.Deserialize<List<ReportHistory>>(json) ?? new();
+                _cachedHistory = JsonSerializer.Deserialize(json, MauiJsonContext.Default.ListReportHistory) ?? new();
                 Log.Debug("Loaded {Count} history entries from Preferences", _cachedHistory.Count);
             }
         }
@@ -121,7 +122,7 @@ public sealed class PreferencesReportHistoryRepository : IReportHistoryRepositor
             return;
         }
 
-        var json = JsonSerializer.Serialize(_cachedHistory);
+        var json = JsonSerializer.Serialize(_cachedHistory, MauiJsonContext.Default.ListReportHistory);
         Preferences.Default.Set(HistoryKey, json);
         Log.Debug("Saved {Count} history entries to Preferences", _cachedHistory.Count);
     }

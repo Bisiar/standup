@@ -21,6 +21,7 @@
             <global:IntEqualsToBoolConverter x:Key="IntEqualsToBoolConverter" />
             <global:EnumToBoolConverter x:Key="EnumToBoolConverter" />
             <global:BoolToTextConverter x:Key="BoolToTextConverter" />
+            <global:BoolToColorConverter x:Key="BoolToColorConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

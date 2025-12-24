@@ -3,6 +3,7 @@ using Serilog;
 using Standup.Application.Interfaces;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
+using Standup.Maui.Json;
 
 namespace Standup.Maui.Repositories;
 
@@ -33,7 +34,7 @@ public sealed class PreferencesCredentialRepository : ICredentialRepository
             }
             else
             {
-                _cachedCredentials = JsonSerializer.Deserialize<List<OrgCredential>>(json) ?? new();
+                _cachedCredentials = JsonSerializer.Deserialize(json, MauiJsonContext.Default.ListOrgCredential) ?? new();
                 Log.Debug("Loaded {Count} credentials from Preferences", _cachedCredentials.Count);
             }
         }
@@ -99,7 +100,7 @@ public sealed class PreferencesCredentialRepository : ICredentialRepository
             return;
         }
 
-        var json = JsonSerializer.Serialize(_cachedCredentials);
+        var json = JsonSerializer.Serialize(_cachedCredentials, MauiJsonContext.Default.ListOrgCredential);
         Preferences.Default.Set(CredentialsKey, json);
         Log.Debug("Saved {Count} credentials to Preferences", _cachedCredentials.Count);
     }

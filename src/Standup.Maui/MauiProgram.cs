@@ -10,11 +10,13 @@ using Standup.Infrastructure.AI;
 using Standup.Infrastructure.Configuration;
 using Standup.Infrastructure.Git;
 using Standup.Infrastructure.Http;
+using Standup.Infrastructure.Integrations;
 using Standup.Infrastructure.Services;
 using Standup.Infrastructure.SourceProviders;
 using Standup.Maui.Repositories;
 using Standup.Maui.Services;
 using Standup.Maui.Views;
+using Telerik.Maui.Controls.Compatibility;
 #if MACCATALYST
 using Standup.Maui.Platforms.MacCatalyst.Helpers;
 #endif
@@ -54,6 +56,7 @@ public static class MauiProgram
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
+                .UseTelerik()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -86,6 +89,23 @@ public static class MauiProgram
                     options.UseAzureIdentity);
             });
             builder.Services.AddSingleton<IAISummaryService, AIFoundrySummaryService>();
+
+            // Dynamics 365 CRM Integration - using JTP CRM instance
+            builder.Services.Configure<DynamicsCrmOptions>(options =>
+            {
+                options.InstanceUrl = Preferences.Get("DynamicsCrm__InstanceUrl", "***REMOVED***");
+                options.TenantId = Preferences.Get("DynamicsCrm__TenantId", "***REMOVED***");
+                options.ClientId = Preferences.Get("DynamicsCrm__ClientId", string.Empty);
+                options.ClientSecret = Preferences.Get("DynamicsCrm__ClientSecret", string.Empty);
+                options.Enabled = Preferences.Get("DynamicsCrm__Enabled", false);
+
+                Log.Information(
+                    "Dynamics CRM configured: InstanceUrl={InstanceUrl}, TenantId={TenantId}, Enabled={Enabled}",
+                    options.InstanceUrl,
+                    options.TenantId,
+                    options.Enabled);
+            });
+            builder.Services.AddHttpClient<ICrmProjectService, DynamicsCrmService>();
 
             // LocalStandupService depends on IAISummaryService (must be registered after)
             builder.Services.AddSingleton<ILocalStandupService, LocalStandupService>();
@@ -127,6 +147,7 @@ public static class MauiProgram
             builder.Services.AddTransient<ProjectListViewModel>();
             builder.Services.AddTransient<GroupListViewModel>();
             builder.Services.AddTransient<StandupViewModel>();
+            builder.Services.AddTransient<DashboardViewModel>();
             builder.Services.AddTransient<SettingsViewModel>();
             builder.Services.AddTransient<RepositoryConfigViewModel>();
             builder.Services.AddTransient<DocumentsViewModel>();

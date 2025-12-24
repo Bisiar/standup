@@ -224,10 +224,38 @@ Prioritize security and reliability concerns over style preferences.";
 Please generate my standup update.";
     }
 
+    private static void EnsureAzureCliInPath()
+    {
+        var currentPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+
+        // Common locations for az CLI on Mac/Linux
+        var additionalPaths = new[]
+        {
+            "/opt/homebrew/bin",      // Homebrew on Apple Silicon
+            "/usr/local/bin",         // Homebrew on Intel Mac
+            "/usr/bin",               // System location
+            "/home/linuxbrew/.linuxbrew/bin", // Linux Homebrew
+        };
+
+        var pathsToAdd = additionalPaths
+            .Where(p => !currentPath.Contains(p) && Directory.Exists(p))
+            .ToList();
+
+        if (pathsToAdd.Count > 0)
+        {
+            var newPath = string.Join(Path.PathSeparator.ToString(), pathsToAdd) + Path.PathSeparator + currentPath;
+            Environment.SetEnvironmentVariable("PATH", newPath);
+            Log.Debug("Updated PATH for Azure CLI discovery: added {Paths}", string.Join(", ", pathsToAdd));
+        }
+    }
+
     private AzureOpenAIClient CreateClient()
     {
         if (_options.UseAzureIdentity)
         {
+            // Ensure Azure CLI is findable on Mac (GUI apps don't inherit terminal PATH)
+            EnsureAzureCliInPath();
+
             return new AzureOpenAIClient(
                 new Uri(_options.Endpoint),
                 new DefaultAzureCredential());
