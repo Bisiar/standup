@@ -27,7 +27,9 @@ public class LocalGitService
         string AuthorEmail,
         DateTimeOffset CommitDate,
         string Subject,
-        string Body);
+        string Body,
+        int Additions = 0,
+        int Deletions = 0);
 
     /// <summary>
     /// Gets commits from local git repository for a specific author within a date range.
@@ -56,9 +58,10 @@ public class LocalGitService
         try
         {
             // Build git log command with custom format for easy parsing
-            // Format: SHA%x00ShortSHA%x00AuthorName%x00AuthorEmail%x00Date%x00Subject%x00Body%x00%x01
-            var format = "%H%x00%h%x00%an%x00%ae%x00%aI%x00%s%x00%b%x00%x01";
-            var args = $"log --format=\"{format}\" -n {maxCount}";
+            // Use COMMIT_START marker at beginning so shortstat stays with its commit
+            // Format: COMMIT_START%x01SHA%x00ShortSHA%x00AuthorName%x00AuthorEmail%x00Date%x00Subject%x00Body
+            var format = "COMMIT_START%x01%H%x00%h%x00%an%x00%ae%x00%aI%x00%s%x00%b";
+            var args = $"log --format=\"{format}\" --shortstat -n {maxCount}";
 
             if (!string.IsNullOrEmpty(authorIdentifier))
             {
@@ -83,14 +86,51 @@ public class LocalGitService
                 return commits;
             }
 
-            // Parse the output - commits are separated by \x01
-            var commitStrings = output.Split('\x01', StringSplitOptions.RemoveEmptyEntries);
+            // Parse the output - commits are separated by "COMMIT_START\x01"
+            // Each block contains: metadata line, optional empty lines, shortstat line
+            var commitStrings = output.Split("COMMIT_START\x01", StringSplitOptions.RemoveEmptyEntries);
 
             foreach (var commitStr in commitStrings)
             {
-                var parts = commitStr.Trim().Split('\x00');
+                var lines = commitStr.Trim().Split('\n');
+                if (lines.Length == 0)
+                {
+                    continue;
+                }
+
+                // First line is the metadata (SHA|short|author|email|date|subject|body)
+                var metadataLine = lines[0];
+                var parts = metadataLine.Split('\x00');
+
                 if (parts.Length >= 6)
                 {
+                    // Parse shortstat from remaining lines
+                    int additions = 0;
+                    int deletions = 0;
+
+                    foreach (var line in lines.Skip(1))
+                    {
+                        // shortstat format: " 3 files changed, 45 insertions(+), 12 deletions(-)"
+                        var statLine = line.Trim();
+                        if (statLine.Contains("insertion") || statLine.Contains("deletion"))
+                        {
+                            var insertMatch = System.Text.RegularExpressions.Regex.Match(statLine, @"(\d+) insertion");
+                            var deleteMatch = System.Text.RegularExpressions.Regex.Match(statLine, @"(\d+) deletion");
+
+                            if (insertMatch.Success)
+                            {
+                                additions = int.Parse(insertMatch.Groups[1].Value);
+                            }
+
+                            if (deleteMatch.Success)
+                            {
+                                deletions = int.Parse(deleteMatch.Groups[1].Value);
+                            }
+
+                            break; // Found the shortstat line
+                        }
+                    }
+
                     var commit = new LocalCommit(
                         Sha: parts[0],
                         ShortSha: parts[1],
@@ -98,7 +138,9 @@ public class LocalGitService
                         AuthorEmail: parts[3],
                         CommitDate: DateTimeOffset.Parse(parts[4]),
                         Subject: parts[5],
-                        Body: parts.Length > 6 ? parts[6].Trim() : string.Empty);
+                        Body: parts.Length > 6 ? parts[6].Trim() : string.Empty,
+                        Additions: additions,
+                        Deletions: deletions);
 
                     commits.Add(commit);
                 }
