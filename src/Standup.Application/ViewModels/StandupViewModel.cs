@@ -36,10 +36,16 @@ public partial class StandupViewModel : ObservableObject
     private RepositoryGroup? _selectedGroup;
 
     [ObservableProperty]
-    private DateTimeOffset _periodStart = DateTimeOffset.UtcNow.AddDays(-7);
+    private DateTimeOffset _periodStart = DateTimeOffset.UtcNow.AddDays(-1);
 
     [ObservableProperty]
     private DateTimeOffset _periodEnd = DateTimeOffset.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the selected period preset (0=Yesterday, 1=Today, 2=Week).
+    /// </summary>
+    [ObservableProperty]
+    private int _selectedPeriod;
 
     [ObservableProperty]
     private bool _useGroupMode = true;
@@ -177,6 +183,28 @@ public partial class StandupViewModel : ObservableObject
             .OrderBy(t => t);
     }
 
+    /// <summary>
+    /// Called when a repository's IncludeInGeneration property changes (from Switch binding).
+    /// Saves the group and triggers on-the-fly generation if needed.
+    /// </summary>
+    /// <param name="repo">The repository whose inclusion changed.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    public async Task OnRepoInclusionChangedAsync(GroupedRepository? repo)
+    {
+        if (SelectedGroup == null || repo == null)
+        {
+            return;
+        }
+
+        await _groupService.UpdateGroupAsync(SelectedGroup);
+        OnPropertyChanged(nameof(SelectedGroup));
+        OnPropertyChanged(nameof(SelectedGroupReposSummary));
+        if (repo.IncludeInGeneration && HasReport && GroupedReport != null)
+        {
+            await GenerateRepoOnTheFlyAsync(repo);
+        }
+    }
+
     [RelayCommand]
     private async Task LoadAsync()
     {
@@ -244,29 +272,96 @@ public partial class StandupViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void SelectGroup(RepositoryGroup group)
+    private void SetPeriodYesterday() => (PeriodStart, PeriodEnd, SelectedPeriod) = (DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow, 0);
+
+    [RelayCommand]
+    private void SetPeriodToday() => (PeriodStart, PeriodEnd, SelectedPeriod) = (DateTimeOffset.UtcNow.Date, DateTimeOffset.UtcNow, 1);
+
+    [RelayCommand]
+    private void SetPeriodWeek() => (PeriodStart, PeriodEnd, SelectedPeriod) = (DateTimeOffset.UtcNow.AddDays(-7), DateTimeOffset.UtcNow, 2);
+
+    [RelayCommand]
+    private void SelectGroup(RepositoryGroup group) => SelectedGroup = group;
+
+    [RelayCommand]
+    private async Task ToggleRepoInclusionAsync(GroupedRepository? repo)
     {
-        SelectedGroup = group;
+        if (SelectedGroup == null || repo == null)
+        {
+            return;
+        }
+
+        repo.IncludeInGeneration = !repo.IncludeInGeneration;
+        await OnRepoInclusionChangedAsync(repo);
     }
 
-    /// <summary>
-    /// Switch the internal view mode.
-    /// 0 = Config, 1 = Report, 2 = Commits, 3 = PRs, 4 = Work Items.
-    /// </summary>
-    [RelayCommand]
-    private void SwitchView(int viewMode)
+    private async Task GenerateRepoOnTheFlyAsync(GroupedRepository repo)
     {
-        CurrentViewMode = viewMode;
+        IsGenerating = true;
+        StatusMessage = $"Generating for {repo.ClientCode}/{repo.Repository}...";
+
+        try
+        {
+            var tempGroup = new RepositoryGroup
+            {
+                Id = "temp-single-repo",
+                Name = "Temp",
+                Repositories = new List<GroupedRepository> { repo },
+            };
+
+            var summaryTypes = GetAvailableSummaryTypesInReport().ToList();
+            if (summaryTypes.Count == 0)
+            {
+                summaryTypes = GetSelectedSummaryTypes().ToList();
+            }
+
+            var singleRepoReport = await _localStandupService.GenerateGroupedStandupAsync(
+                tempGroup,
+                async r => await _groupService.GetDecryptedPatForRepositoryAsync(r),
+                PeriodStart,
+                PeriodEnd,
+                summaryTypes.FirstOrDefault());
+
+            foreach (var summaryType in summaryTypes.Skip(1))
+            {
+                var additionalReport = await _localStandupService.GenerateGroupedStandupAsync(
+                    tempGroup,
+                    async r => await _groupService.GetDecryptedPatForRepositoryAsync(r),
+                    PeriodStart,
+                    PeriodEnd,
+                    summaryType);
+
+                var mergedSections = singleRepoReport.Sections.Select(s =>
+                {
+                    var newSection = additionalReport.Sections.FirstOrDefault(n => n.ClientCode == s.ClientCode);
+                    return newSection == null ? s : ReportMergeService.MergeSummaries(s, newSection);
+                }).ToList();
+
+                singleRepoReport = singleRepoReport with { Sections = mergedSections };
+            }
+
+            GroupedReport = ReportMergeService.MergeReports(GroupedReport!, singleRepoReport);
+            UpdateReportDisplay(GroupedReport);
+            OnPropertyChanged(nameof(AllCommits));
+            OnPropertyChanged(nameof(AllPullRequests));
+            OnPropertyChanged(nameof(AllWorkItems));
+            StatusMessage = $"Added {repo.ClientCode}/{repo.Repository} to report";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error generating: {ex.Message}";
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
     }
 
-    /// <summary>
-    /// Go back to the configuration/group selection view.
-    /// </summary>
     [RelayCommand]
-    private void BackToConfig()
-    {
-        CurrentViewMode = 0;
-    }
+    private void SwitchView(int viewMode) => CurrentViewMode = viewMode;
+
+    [RelayCommand]
+    private void BackToConfig() => CurrentViewMode = 0;
 
     [RelayCommand]
     private async Task GenerateStandupAsync()
@@ -365,27 +460,10 @@ public partial class StandupViewModel : ObservableObject
                 progress);
 
             // Merge the new summaries into existing sections
-            var mergedSections = GroupedReport.Sections.Select(existingSection =>
+            var mergedSections = GroupedReport.Sections.Select(s =>
             {
-                var newSection = additionalReport.Sections.FirstOrDefault(s => s.ClientCode == existingSection.ClientCode);
-                if (newSection == null)
-                {
-                    return existingSection;
-                }
-
-                var mergedSummaries = existingSection.AllSummaries != null
-                    ? new Dictionary<SummaryType, string>(existingSection.AllSummaries)
-                    : new Dictionary<SummaryType, string>();
-
-                if (newSection.AllSummaries != null)
-                {
-                    foreach (var kvp in newSection.AllSummaries)
-                    {
-                        mergedSummaries[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                return existingSection with { AllSummaries = mergedSummaries };
+                var newSection = additionalReport.Sections.FirstOrDefault(n => n.ClientCode == s.ClientCode);
+                return newSection == null ? s : ReportMergeService.MergeSummaries(s, newSection);
             }).ToList();
 
             GroupedReport = GroupedReport with { Sections = mergedSections };
@@ -589,7 +667,7 @@ public partial class StandupViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void LoadHistoryItem(ReportHistory item)
+    private void LoadHistoryItem(ReportHistory? item)
     {
         if (item == null)
         {
@@ -602,7 +680,7 @@ public partial class StandupViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task DeleteHistoryItemAsync(ReportHistory item)
+    private async Task DeleteHistoryItemAsync(ReportHistory? item)
     {
         if (item == null)
         {

@@ -393,6 +393,28 @@ public partial class GroupListViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ToggleIncludeInGenerationAsync(RepositoryGroup group)
+    {
+        try
+        {
+            group.IncludeInGeneration = !group.IncludeInGeneration;
+            await _groupService.UpdateGroupAsync(group);
+            Log.Information(
+                "Toggled IncludeInGeneration for group {GroupName} to {Value}",
+                group.Name,
+                group.IncludeInGeneration);
+
+            // Reload to refresh UI bindings
+            await LoadGroupsAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to toggle IncludeInGeneration for group {GroupId}", group.Id);
+            StatusMessage = $"Error: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
     private void ShowAddRepository(RepositoryGroup group)
     {
         Log.Information("ShowAddRepository called for group: {GroupId} - {GroupName}", group.Id, group.Name);

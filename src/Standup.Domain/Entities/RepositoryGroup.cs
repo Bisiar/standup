@@ -9,6 +9,7 @@ public class RepositoryGroup
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsDefault { get; set; }
+    public bool IncludeInGeneration { get; set; } = true;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public List<GroupedRepository> Repositories { get; set; } = new();
 }

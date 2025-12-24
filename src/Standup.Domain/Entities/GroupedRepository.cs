@@ -24,4 +24,10 @@ public class GroupedRepository
     public string? ApiEndpoint { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this repository is included in standup generation.
+    /// Allows temporarily excluding repos without removing them from the group.
+    /// </summary>
+    public bool IncludeInGeneration { get; set; } = true;
 }

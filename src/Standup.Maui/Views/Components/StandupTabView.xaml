@@ -136,6 +136,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <!-- Header -->
@@ -152,13 +153,124 @@
                                     VerticalOptions="Center" />
                         </HorizontalStackLayout>
 
-                        <Label Text="{Binding SelectedGroupReposSummary}"
-                               FontSize="12"
-                               TextColor="DimGray" />
+                        <!-- Quick Date Range Selection (segmented control style) -->
+                        <HorizontalStackLayout Spacing="0" Margin="0,10,0,0">
+                            <Label Text="Period:" FontSize="14" VerticalOptions="Center" Margin="0,0,10,0" />
+                            <Border StrokeShape="RoundRectangle 6" Stroke="#3B82F6" StrokeThickness="1" Padding="0">
+                                <HorizontalStackLayout Spacing="0">
+                                    <Button Text="Yesterday"
+                                            Command="{Binding SetPeriodYesterdayCommand}"
+                                            FontSize="12"
+                                            Padding="14,8"
+                                            CornerRadius="0"
+                                            BorderWidth="0">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
+                                                <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                                <Setter Property="TextColor" Value="White" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
+                                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                                <Setter Property="TextColor" Value="#3B82F6" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
+                                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                                <Setter Property="TextColor" Value="#3B82F6" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                    <BoxView WidthRequest="1" BackgroundColor="#3B82F6" />
+                                    <Button Text="Today"
+                                            Command="{Binding SetPeriodTodayCommand}"
+                                            FontSize="12"
+                                            Padding="14,8"
+                                            CornerRadius="0"
+                                            BorderWidth="0">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
+                                                <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                                <Setter Property="TextColor" Value="White" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
+                                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                                <Setter Property="TextColor" Value="#3B82F6" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
+                                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                                <Setter Property="TextColor" Value="#3B82F6" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                    <BoxView WidthRequest="1" BackgroundColor="#3B82F6" />
+                                    <Button Text="Week"
+                                            Command="{Binding SetPeriodWeekCommand}"
+                                            FontSize="12"
+                                            Padding="14,8"
+                                            CornerRadius="0"
+                                            BorderWidth="0">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
+                                                <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                                <Setter Property="TextColor" Value="White" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
+                                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                                <Setter Property="TextColor" Value="#3B82F6" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
+                                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                                <Setter Property="TextColor" Value="#3B82F6" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                </HorizontalStackLayout>
+                            </Border>
+                        </HorizontalStackLayout>
+
                     </VerticalStackLayout>
 
+                    <!-- Repository Toggles -->
+                    <Border Grid.Row="1" Margin="0,15" Padding="15" StrokeShape="RoundRectangle 8"
+                            IsVisible="{Binding SelectedGroup.Repositories.Count, Converter={StaticResource IntToBoolConverter}}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="Include Repositories" FontSize="14" FontAttributes="Bold" />
+                            <CollectionView ItemsSource="{Binding SelectedGroup.Repositories}" SelectionMode="None">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="entities:GroupedRepository">
+                                        <Grid ColumnDefinitions="85,*,Auto" Padding="5,8">
+                                            <!-- Source type on left -->
+                                            <Label Grid.Column="0" Text="{Binding SourceType}" FontSize="10"
+                                                   TextColor="DimGray" VerticalOptions="Center" />
+                                            <!-- Repo name in middle: show ClientCode/Repo or just Repo -->
+                                            <Label Grid.Column="1" VerticalOptions="Center"
+                                                   Text="{Binding Repository}"
+                                                   IsVisible="{Binding ClientCode, Converter={StaticResource IsNullOrEmptyConverter}}" />
+                                            <Label Grid.Column="1" VerticalOptions="Center"
+                                                   IsVisible="{Binding ClientCode, Converter={StaticResource IsNotNullOrEmptyConverter}}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding ClientCode}" FontAttributes="Bold" TextColor="#10B981" />
+                                                        <Span Text="/" TextColor="Gray" />
+                                                        <Span Text="{Binding Repository}" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                            <!-- Toggle switch on right -->
+                                            <Switch Grid.Column="2"
+                                                    IsToggled="{Binding IncludeInGeneration}"
+                                                    OnColor="#10B981"
+                                                    ThumbColor="White"
+                                                    VerticalOptions="Center"
+                                                    Toggled="OnRepoInclusionToggled" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+
                     <!-- Section Toggles -->
-                    <Border Grid.Row="1" Margin="0,15" Padding="15" StrokeShape="RoundRectangle 8">
+                    <Border Grid.Row="2" Margin="0,15" Padding="15" StrokeShape="RoundRectangle 8">
                         <VerticalStackLayout Spacing="15">
                             <Label Text="Include Sections" FontSize="14" FontAttributes="Bold" />
 
@@ -204,30 +316,49 @@
                     </Border>
 
                     <!-- Generate Button -->
-                    <VerticalStackLayout Grid.Row="2" Spacing="10">
-                        <Button Text="Generate Standup"
-                                Command="{Binding GenerateStandupCommand}"
-                                IsEnabled="{Binding IsGenerating, Converter={StaticResource InvertedBoolConverter}}"
+                    <VerticalStackLayout Grid.Row="3" Spacing="10">
+                        <!-- Button with inline progress -->
+                        <Border StrokeShape="RoundRectangle 8"
                                 BackgroundColor="#3B82F6"
-                                TextColor="White"
                                 WidthRequest="200"
-                                HorizontalOptions="Center" />
+                                HeightRequest="44"
+                                HorizontalOptions="Center">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding GenerateStandupCommand}" />
+                            </Border.GestureRecognizers>
+                            <Grid>
+                                <!-- Normal state: Text -->
+                                <Label Text="Generate Standup"
+                                       TextColor="White"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       IsVisible="{Binding IsGenerating, Converter={StaticResource InvertedBoolConverter}}" />
 
-                        <!-- Progress Bar (visible during generation) -->
+                                <!-- Generating state: Spinner + Percent -->
+                                <HorizontalStackLayout HorizontalOptions="Center"
+                                                       VerticalOptions="Center"
+                                                       Spacing="8"
+                                                       IsVisible="{Binding IsGenerating}">
+                                    <ActivityIndicator IsRunning="{Binding IsGenerating}"
+                                                       WidthRequest="18"
+                                                       HeightRequest="18"
+                                                       Color="White" />
+                                    <Label Text="{Binding GenerationProgress, StringFormat='{0:P0}'}"
+                                           FontSize="14"
+                                           TextColor="White"
+                                           FontAttributes="Bold"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Border>
+
+                        <!-- Progress Bar and Status (visible during generation) -->
                         <VerticalStackLayout Spacing="5" IsVisible="{Binding IsGenerating}" HorizontalOptions="Center" WidthRequest="350">
                             <ProgressBar Progress="{Binding GenerationProgress}"
                                          ProgressColor="#3B82F6"
                                          HeightRequest="8" />
-                            <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
-                                <ActivityIndicator IsRunning="{Binding IsGenerating}"
-                                                   WidthRequest="16"
-                                                   HeightRequest="16"
-                                                   Color="#3B82F6" />
-                                <Label Text="{Binding GenerationProgress, StringFormat='{0:P0}'}"
-                                       FontSize="12"
-                                       TextColor="#3B82F6"
-                                       FontAttributes="Bold" />
-                            </HorizontalStackLayout>
                             <Label Text="{Binding StatusMessage}"
                                    FontSize="11"
                                    TextColor="Gray"
@@ -245,7 +376,7 @@
                     </VerticalStackLayout>
 
                     <!-- Report History -->
-                    <Border Grid.Row="3" Margin="0,15,0,0" Padding="15" StrokeShape="RoundRectangle 8"
+                    <Border Grid.Row="4" Margin="0,15,0,0" Padding="15" StrokeShape="RoundRectangle 8"
                             BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#1A1A1A}"
                             IsVisible="{Binding ReportHistory.Count, Converter={StaticResource IntToBoolConverter}}">
                         <VerticalStackLayout Spacing="10">
