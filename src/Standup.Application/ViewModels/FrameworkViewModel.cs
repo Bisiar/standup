@@ -35,6 +35,7 @@ public partial class FrameworkViewModel : ObservableObject
     public StandupViewModel StandupVm { get; }
     public GroupListViewModel GroupsVm { get; }
     public ProjectListViewModel ProjectsVm { get; }
+    public DashboardViewModel DashboardVm { get; }
     public SettingsViewModel SettingsVm { get; }
     public ReportViewModel ReportVm { get; }
 
@@ -42,13 +43,16 @@ public partial class FrameworkViewModel : ObservableObject
         StandupViewModel standupVm,
         GroupListViewModel groupsVm,
         ProjectListViewModel projectsVm,
+        DashboardViewModel dashboardVm,
         SettingsViewModel settingsVm,
         ReportViewModel reportVm,
-        IFolderPickerService folderPickerService)
+        IFolderPickerService folderPickerService,
+        IReportCacheService? cacheService = null)
     {
         StandupVm = standupVm;
         GroupsVm = groupsVm;
         ProjectsVm = projectsVm;
+        DashboardVm = dashboardVm;
         SettingsVm = settingsVm;
         ReportVm = reportVm;
         _folderPickerService = folderPickerService;
@@ -59,6 +63,9 @@ public partial class FrameworkViewModel : ObservableObject
         // Wire up project report events
         ProjectsVm.OnProjectReportGenerated += HandleProjectReportGeneratedAsync;
         ProjectsVm.OnViewProjectReport += HandleViewProjectReportAsync;
+
+        // Provide cache service to settings for cache management UI
+        SettingsVm.SetCacheService(cacheService);
 
         Log.Information("FrameworkViewModel initialized with all child ViewModels");
     }
@@ -77,9 +84,12 @@ public partial class FrameworkViewModel : ObservableObject
         // Set the report data on the ReportViewModel
         ReportVm.SetReport(report, sourceGroup);
 
+        // Also update DashboardViewModel with the report data
+        DashboardVm.SetReport(report);
+
         // Show the Report tab and switch to it
         ShowReportTab = true;
-        await SelectTabAsync(4);
+        await SelectTabAsync(5);
     }
 
     /// <summary>
@@ -104,17 +114,18 @@ public partial class FrameworkViewModel : ObservableObject
 
     /// <summary>
     /// Select a tab by index and trigger its load command.
+    /// Tab indexes: 0=Standup, 1=Groups, 2=Projects, 3=Dashboard, 4=Settings, 5=Report (dynamic).
     /// </summary>
     [RelayCommand]
     private async Task SelectTabAsync(int index)
     {
-        // Allow 0-3 always, 4 (Report) only if ShowReportTab is true
-        if (index < 0 || index > 4)
+        // Allow 0-4 always, 5 (Report) only if ShowReportTab is true
+        if (index < 0 || index > 5)
         {
             return;
         }
 
-        if (index == 4 && !ShowReportTab)
+        if (index == 5 && !ShowReportTab)
         {
             return;
         }
@@ -125,8 +136,9 @@ public partial class FrameworkViewModel : ObservableObject
             0 => "Standup",
             1 => "Groups",
             2 => "Projects",
-            3 => "Settings",
-            4 => "Report",
+            3 => "Dashboard",
+            4 => "Settings",
+            5 => "Report",
             _ => string.Empty,
         };
 
@@ -152,6 +164,10 @@ public partial class FrameworkViewModel : ObservableObject
                     await ProjectsVm.LoadProjectsCommand.ExecuteAsync(null);
                     break;
                 case 3:
+                    // Dashboard auto-fetches from local repos if no report is loaded
+                    await DashboardVm.LoadCommand.ExecuteAsync(null);
+                    break;
+                case 4:
                     await SettingsVm.LoadCommand.ExecuteAsync(null);
                     break;
             }
@@ -199,7 +215,7 @@ public partial class FrameworkViewModel : ObservableObject
         ReportVm.ClearReportCommand.Execute(null);
 
         // If currently on Report tab, go back to Standup
-        if (SelectedTabIndex == 4)
+        if (SelectedTabIndex == 5)
         {
             _ = SelectTabAsync(0);
         }
@@ -223,8 +239,9 @@ public partial class FrameworkViewModel : ObservableObject
 
         // Set the report and show the tab
         ReportVm.SetReport(report, tempGroup);
+        DashboardVm.SetReport(report);
         ShowReportTab = true;
-        await SelectTabAsync(4);
+        await SelectTabAsync(5);
     }
 
     /// <summary>
@@ -234,9 +251,10 @@ public partial class FrameworkViewModel : ObservableObject
     {
         Log.Information("Viewing saved report for project: {ProjectName}", project.Name);
 
-        // Set the report from history
+        // Set the report from history (Dashboard won't have data for history views)
         ReportVm.SetReportFromHistory(history, project.Name);
+        DashboardVm.SetReport(null);
         ShowReportTab = true;
-        await SelectTabAsync(4);
+        await SelectTabAsync(5);
     }
 }
