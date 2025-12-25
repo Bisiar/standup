@@ -127,6 +127,66 @@ public partial class DashboardViewModel : ObservableObject
     private bool _isLoading;
 
     /// <summary>
+    /// Gets or sets the client code metrics for horizontal bar chart and donut chart.
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<ClientCodeMetrics> _clientCodeMetrics = new();
+
+    /// <summary>
+    /// Gets or sets the critical warnings (fetch errors).
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<GroupWarning> _criticalWarnings = new();
+
+    /// <summary>
+    /// Gets or sets the configuration warnings (missing PAT, etc.).
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<GroupWarning> _warnings = new();
+
+    /// <summary>
+    /// Gets or sets the informational warnings (no activity, etc.).
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<GroupWarning> _infoWarnings = new();
+
+    /// <summary>
+    /// Gets or sets the recent commits for the activity timeline.
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<CommitInfo> _recentCommits = new();
+
+    /// <summary>
+    /// Gets the net change (additions - deletions).
+    /// </summary>
+    public int NetChange => TotalAdditions - TotalDeletions;
+
+    /// <summary>
+    /// Gets the number of active projects with commits in the period.
+    /// </summary>
+    public int ActiveProjectCount => ClientCodeMetrics.Count;
+
+    /// <summary>
+    /// Gets the total warning count (critical + warnings, excluding info).
+    /// </summary>
+    public int TotalWarningCount => CriticalWarnings.Count + Warnings.Count;
+
+    /// <summary>
+    /// Gets a value indicating whether there are any critical warnings.
+    /// </summary>
+    public bool HasCriticalWarnings => CriticalWarnings.Count > 0;
+
+    /// <summary>
+    /// Gets a value indicating whether there are any warnings to display.
+    /// </summary>
+    public bool HasAnyWarnings => CriticalWarnings.Count > 0 || Warnings.Count > 0 || InfoWarnings.Count > 0;
+
+    /// <summary>
+    /// Gets a value indicating whether the group is healthy (no critical or warning issues).
+    /// </summary>
+    public bool IsGroupHealthy => CriticalWarnings.Count == 0 && Warnings.Count == 0;
+
+    /// <summary>
     /// Gets all commits - from Report if available, otherwise from local repos.
     /// </summary>
     public IReadOnlyList<CommitInfo> AllCommits
@@ -339,10 +399,14 @@ public partial class DashboardViewModel : ObservableObject
             DailyMetrics.Clear();
             RepositoryMetrics.Clear();
             ClientMetrics.Clear();
+            ClientCodeMetrics.Clear();
+            RecentCommits.Clear();
             TotalAdditions = 0;
             TotalDeletions = 0;
             TotalCommits = 0;
             StatusMessage = "No data available";
+            RefreshWarnings();
+            NotifyCalculatedPropertiesChanged();
             return;
         }
 
@@ -356,7 +420,11 @@ public partial class DashboardViewModel : ObservableObject
             HasData = false;
             DailyMetrics.Clear();
             RepositoryMetrics.Clear();
+            ClientCodeMetrics.Clear();
+            RecentCommits.Clear();
             StatusMessage = $"No commits found for {PeriodDisplay}";
+            RefreshWarnings();
+            NotifyCalculatedPropertiesChanged();
             return;
         }
 
@@ -398,6 +466,17 @@ public partial class DashboardViewModel : ObservableObject
 
         RepositoryMetrics = new ObservableCollection<RepositoryMetrics>(repoData);
 
+        // Generate client code metrics (grouped by client code from repo config or report sections)
+        RefreshClientCodeMetrics(filteredCommits);
+
+        // Populate recent commits (last 5 for timeline)
+        var recentCommitData = filteredCommits
+            .OrderByDescending(c => c.CommittedAt)
+            .Take(5)
+            .ToList();
+
+        RecentCommits = new ObservableCollection<CommitInfo>(recentCommitData);
+
         // Generate client metrics (only if we have report data with sections)
         if (Report?.Sections != null && Report.Sections.Count > 0)
         {
@@ -427,5 +506,186 @@ public partial class DashboardViewModel : ObservableObject
         }
 
         StatusMessage = $"{TotalCommits} commits, +{TotalAdditions}/-{TotalDeletions} lines";
+
+        // Refresh warnings and notify UI
+        RefreshWarnings();
+        NotifyCalculatedPropertiesChanged();
+    }
+
+    private void RefreshClientCodeMetrics(List<CommitInfo> filteredCommits)
+    {
+        // Try to get client code from report sections first
+        if (Report?.Sections != null && Report.Sections.Count > 0)
+        {
+            var clientCodeData = Report.Sections
+                .Select(s => new ClientCodeMetrics
+                {
+                    ClientCode = string.IsNullOrWhiteSpace(s.ClientCode) ? "General" : s.ClientCode,
+                    Additions = s.Commits
+                        .Where(c => c.CommittedAt >= PeriodStart && c.CommittedAt <= PeriodEnd)
+                        .Sum(c => c.Additions),
+                    Deletions = s.Commits
+                        .Where(c => c.CommittedAt >= PeriodStart && c.CommittedAt <= PeriodEnd)
+                        .Sum(c => c.Deletions),
+                    CommitCount = s.Commits
+                        .Count(c => c.CommittedAt >= PeriodStart && c.CommittedAt <= PeriodEnd),
+                })
+                .Where(c => c.CommitCount > 0)
+                .OrderByDescending(c => c.CommitCount)
+                .ToList();
+
+            ClientCodeMetrics = new ObservableCollection<ClientCodeMetrics>(clientCodeData);
+        }
+        else if (SelectedGroup?.Repositories != null)
+        {
+            // Fall back to grouping by client code from repository configuration
+            var repoClientCodes = SelectedGroup.Repositories
+                .ToDictionary(r => r.Repository, r => string.IsNullOrWhiteSpace(r.ClientCode) ? "General" : r.ClientCode);
+
+            var clientCodeData = filteredCommits
+                .GroupBy(c => repoClientCodes.TryGetValue(c.Repository, out var code) ? code : "General")
+                .Select(g => new ClientCodeMetrics
+                {
+                    ClientCode = g.Key,
+                    Additions = g.Sum(c => c.Additions),
+                    Deletions = g.Sum(c => c.Deletions),
+                    CommitCount = g.Count(),
+                })
+                .OrderByDescending(c => c.CommitCount)
+                .ToList();
+
+            ClientCodeMetrics = new ObservableCollection<ClientCodeMetrics>(clientCodeData);
+        }
+        else
+        {
+            ClientCodeMetrics.Clear();
+        }
+    }
+
+    private void RefreshWarnings()
+    {
+        CriticalWarnings.Clear();
+        Warnings.Clear();
+        InfoWarnings.Clear();
+
+        // Check report sections for fetch errors
+        if (Report?.Sections != null)
+        {
+            foreach (var section in Report.Sections)
+            {
+                var status = section.SourceStatus;
+                if (status == null)
+                {
+                    continue;
+                }
+
+                var clientCode = string.IsNullOrWhiteSpace(section.ClientCode) ? "General" : section.ClientCode;
+
+                // Critical: Fetch errors
+                if (status.CommitsStatus == FetchStatus.Error)
+                {
+                    CriticalWarnings.Add(new GroupWarning
+                    {
+                        Severity = WarningSeverity.Critical,
+                        ClientCode = clientCode,
+                        Message = "Commit fetch failed",
+                        Details = status.CommitsError ?? "Unknown error",
+                        FixTarget = "Groups",
+                    });
+                }
+
+                if (status.PullRequestsStatus == FetchStatus.Error)
+                {
+                    CriticalWarnings.Add(new GroupWarning
+                    {
+                        Severity = WarningSeverity.Critical,
+                        ClientCode = clientCode,
+                        Message = "PR fetch failed",
+                        Details = status.PullRequestsError ?? "Unknown error",
+                        FixTarget = "Settings",
+                    });
+                }
+
+                // Warning: No PAT (consolidate PRs and Work Items)
+                if (status.PullRequestsStatus == FetchStatus.NoPat || status.WorkItemsStatus == FetchStatus.NoPat)
+                {
+                    var missingFor = new List<string>();
+                    if (status.PullRequestsStatus == FetchStatus.NoPat)
+                    {
+                        missingFor.Add("PRs");
+                    }
+
+                    if (status.WorkItemsStatus == FetchStatus.NoPat)
+                    {
+                        missingFor.Add("Work Items");
+                    }
+
+                    Warnings.Add(new GroupWarning
+                    {
+                        Severity = WarningSeverity.Warning,
+                        ClientCode = clientCode,
+                        Message = "No PAT configured",
+                        Details = $"{string.Join(" and ", missingFor)} unavailable",
+                        FixTarget = "Settings",
+                    });
+                }
+
+                // Info: No activity in period
+                if (section.CommitCount == 0 && section.PullRequestCount == 0)
+                {
+                    InfoWarnings.Add(new GroupWarning
+                    {
+                        Severity = WarningSeverity.Info,
+                        ClientCode = clientCode,
+                        Message = "No activity",
+                        Details = "0 commits in selected period",
+                    });
+                }
+            }
+        }
+
+        // Check repository configuration issues from selected group
+        if (SelectedGroup?.Repositories != null)
+        {
+            foreach (var repo in SelectedGroup.Repositories)
+            {
+                var clientCode = string.IsNullOrWhiteSpace(repo.ClientCode) ? "General" : repo.ClientCode;
+
+                if (string.IsNullOrEmpty(repo.LocalPath))
+                {
+                    Warnings.Add(new GroupWarning
+                    {
+                        Severity = WarningSeverity.Warning,
+                        ClientCode = clientCode,
+                        RepositoryName = repo.Repository,
+                        Message = "No local path configured",
+                        Details = repo.Repository,
+                        FixTarget = "Groups",
+                    });
+                }
+
+                if (!repo.IsActive)
+                {
+                    InfoWarnings.Add(new GroupWarning
+                    {
+                        Severity = WarningSeverity.Info,
+                        ClientCode = clientCode,
+                        RepositoryName = repo.Repository,
+                        Message = "Repository disabled",
+                        Details = repo.Repository,
+                    });
+                }
+            }
+        }
+    }
+
+    private void NotifyCalculatedPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(NetChange));
+        OnPropertyChanged(nameof(ActiveProjectCount));
+        OnPropertyChanged(nameof(TotalWarningCount));
+        OnPropertyChanged(nameof(HasCriticalWarnings));
+        OnPropertyChanged(nameof(HasAnyWarnings));
+        OnPropertyChanged(nameof(IsGroupHealthy));
     }
 }

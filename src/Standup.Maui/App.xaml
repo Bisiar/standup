@@ -22,6 +22,7 @@
             <global:EnumToBoolConverter x:Key="EnumToBoolConverter" />
             <global:BoolToTextConverter x:Key="BoolToTextConverter" />
             <global:BoolToColorConverter x:Key="BoolToColorConverter" />
+            <global:PercentToWidthConverter x:Key="PercentToWidthConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

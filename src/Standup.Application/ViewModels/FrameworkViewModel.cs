@@ -89,7 +89,7 @@ public partial class FrameworkViewModel : ObservableObject
 
         // Show the Report tab and switch to it
         ShowReportTab = true;
-        await SelectTabAsync(5);
+        await SelectTabAsync(2);
     }
 
     /// <summary>
@@ -114,18 +114,18 @@ public partial class FrameworkViewModel : ObservableObject
 
     /// <summary>
     /// Select a tab by index and trigger its load command.
-    /// Tab indexes: 0=Standup, 1=Groups, 2=Projects, 3=Dashboard, 4=Settings, 5=Report (dynamic).
+    /// Tab indexes: 0=Dashboard, 1=Standup, 2=Report (dynamic), 3=Groups, 4=Projects, 5=Settings.
     /// </summary>
     [RelayCommand]
     private async Task SelectTabAsync(int index)
     {
-        // Allow 0-4 always, 5 (Report) only if ShowReportTab is true
+        // Allow 0-1, 3-5 always, 2 (Report) only if ShowReportTab is true
         if (index < 0 || index > 5)
         {
             return;
         }
 
-        if (index == 5 && !ShowReportTab)
+        if (index == 2 && !ShowReportTab)
         {
             return;
         }
@@ -133,12 +133,12 @@ public partial class FrameworkViewModel : ObservableObject
         SelectedTabIndex = index;
         SelectedTabTitle = index switch
         {
-            0 => "Standup",
-            1 => "Groups",
-            2 => "Projects",
-            3 => "Dashboard",
-            4 => "Settings",
-            5 => "Report",
+            0 => "Dashboard",
+            1 => "Standup",
+            2 => "Report",
+            3 => "Groups",
+            4 => "Projects",
+            5 => "Settings",
             _ => string.Empty,
         };
 
@@ -155,19 +155,19 @@ public partial class FrameworkViewModel : ObservableObject
             switch (tabIndex)
             {
                 case 0:
-                    await StandupVm.LoadCommand.ExecuteAsync(null);
-                    break;
-                case 1:
-                    await GroupsVm.LoadGroupsCommand.ExecuteAsync(null);
-                    break;
-                case 2:
-                    await ProjectsVm.LoadProjectsCommand.ExecuteAsync(null);
-                    break;
-                case 3:
                     // Dashboard auto-fetches from local repos if no report is loaded
                     await DashboardVm.LoadCommand.ExecuteAsync(null);
                     break;
+                case 1:
+                    await StandupVm.LoadCommand.ExecuteAsync(null);
+                    break;
+                case 3:
+                    await GroupsVm.LoadGroupsCommand.ExecuteAsync(null);
+                    break;
                 case 4:
+                    await ProjectsVm.LoadProjectsCommand.ExecuteAsync(null);
+                    break;
+                case 5:
                     await SettingsVm.LoadCommand.ExecuteAsync(null);
                     break;
             }
@@ -187,8 +187,8 @@ public partial class FrameworkViewModel : ObservableObject
     {
         Log.Information("Navigating to Standup tab with group: {GroupId}", groupId);
 
-        // First select the standup tab
-        await SelectTabAsync(0);
+        // First select the standup tab (index 1)
+        await SelectTabAsync(1);
 
         // Then select the group in StandupViewModel
         // Note: StandupViewModel needs a method to select a group by ID
@@ -214,8 +214,8 @@ public partial class FrameworkViewModel : ObservableObject
         ShowReportTab = false;
         ReportVm.ClearReportCommand.Execute(null);
 
-        // If currently on Report tab, go back to Standup
-        if (SelectedTabIndex == 5)
+        // If currently on Report tab, go back to Dashboard
+        if (SelectedTabIndex == 2)
         {
             _ = SelectTabAsync(0);
         }
@@ -241,7 +241,7 @@ public partial class FrameworkViewModel : ObservableObject
         ReportVm.SetReport(report, tempGroup);
         DashboardVm.SetReport(report);
         ShowReportTab = true;
-        await SelectTabAsync(5);
+        await SelectTabAsync(2);
     }
 
     /// <summary>
@@ -255,6 +255,6 @@ public partial class FrameworkViewModel : ObservableObject
         ReportVm.SetReportFromHistory(history, project.Name);
         DashboardVm.SetReport(null);
         ShowReportTab = true;
-        await SelectTabAsync(5);
+        await SelectTabAsync(2);
     }
 }

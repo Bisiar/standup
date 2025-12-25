@@ -18,30 +18,30 @@
         </Grid.RowDefinitions>
 
         <!-- Tab Content Area -->
+        <components:DashboardTabView Grid.Row="0"
+                                      BindingContext="{Binding DashboardVm}"
+                                      IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0}" />
+
         <components:StandupTabView Grid.Row="0"
                                     BindingContext="{Binding StandupVm}"
-                                    IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0}" />
+                                    IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}" />
+
+        <components:ReportTabView Grid.Row="0"
+                                   BindingContext="{Binding ReportVm}"
+                                   IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}" />
 
         <components:GroupsTabView Grid.Row="0"
                                    BindingContext="{Binding GroupsVm}"
-                                   IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}" />
+                                   IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3}" />
 
         <components:ProjectsTabView Grid.Row="0"
                                      BindingContext="{Binding ProjectsVm}"
-                                     IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}" />
-
-        <components:DashboardTabView Grid.Row="0"
-                                      BindingContext="{Binding DashboardVm}"
-                                      IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3}" />
+                                     IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=4}" />
 
         <components:SettingsTabView x:Name="SettingsTab"
                                      Grid.Row="0"
                                      BindingContext="{Binding SettingsVm}"
-                                     IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=4}" />
-
-        <components:ReportTabView Grid.Row="0"
-                                   BindingContext="{Binding ReportVm}"
-                                   IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=5}" />
+                                     IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=5}" />
 
 
         <!-- Tab Bar -->
@@ -51,7 +51,7 @@
                 <Shadow Brush="Black" Offset="0,-2" Radius="4" Opacity="0.1" />
             </Border.Shadow>
             <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
-                <Button Text="Standup"
+                <Button Text="Dashboard"
                         Command="{Binding SelectTabCommand}"
                         CommandParameter="{x:Int32 0}"
                         WidthRequest="100"
@@ -60,7 +60,7 @@
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex}"
                                      Value="0">
-                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                            <Setter Property="BackgroundColor" Value="#10B981" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0}"
@@ -70,7 +70,7 @@
                     </Button.Triggers>
                 </Button>
 
-                <Button Text="Groups"
+                <Button Text="Standup"
                         Command="{Binding SelectTabCommand}"
                         CommandParameter="{x:Int32 1}"
                         WidthRequest="100"
@@ -89,16 +89,18 @@
                     </Button.Triggers>
                 </Button>
 
-                <Button Text="Projects"
+                <!-- Report tab (only visible when ShowReportTab is true) -->
+                <Button Text="Report"
                         Command="{Binding SelectTabCommand}"
                         CommandParameter="{x:Int32 2}"
                         WidthRequest="100"
-                        TextColor="White">
+                        TextColor="White"
+                        IsVisible="{Binding ShowReportTab}">
                     <Button.Triggers>
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex}"
                                      Value="2">
-                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                            <Setter Property="BackgroundColor" Value="#8B5CF6" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}"
@@ -108,7 +110,7 @@
                     </Button.Triggers>
                 </Button>
 
-                <Button Text="Dashboard"
+                <Button Text="Groups"
                         Command="{Binding SelectTabCommand}"
                         CommandParameter="{x:Int32 3}"
                         WidthRequest="100"
@@ -117,7 +119,7 @@
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex}"
                                      Value="3">
-                            <Setter Property="BackgroundColor" Value="#10B981" />
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3}"
@@ -127,7 +129,7 @@
                     </Button.Triggers>
                 </Button>
 
-                <Button Text="Settings"
+                <Button Text="Projects"
                         Command="{Binding SelectTabCommand}"
                         CommandParameter="{x:Int32 4}"
                         WidthRequest="100"
@@ -146,18 +148,16 @@
                     </Button.Triggers>
                 </Button>
 
-                <!-- Report tab (only visible when ShowReportTab is true) -->
-                <Button Text="Report"
+                <Button Text="Settings"
                         Command="{Binding SelectTabCommand}"
                         CommandParameter="{x:Int32 5}"
                         WidthRequest="100"
-                        TextColor="White"
-                        IsVisible="{Binding ShowReportTab}">
+                        TextColor="White">
                     <Button.Triggers>
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex}"
                                      Value="5">
-                            <Setter Property="BackgroundColor" Value="#8B5CF6" />
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=5}"
