@@ -93,8 +93,8 @@ public static class MauiProgram
             // Dynamics 365 CRM Integration - using JTP CRM instance
             builder.Services.Configure<DynamicsCrmOptions>(options =>
             {
-                options.InstanceUrl = Preferences.Get("DynamicsCrm__InstanceUrl", "***REMOVED***");
-                options.TenantId = Preferences.Get("DynamicsCrm__TenantId", "***REMOVED***");
+                options.InstanceUrl = Preferences.Get("DynamicsCrm__InstanceUrl", "string.Empty");
+                options.TenantId = Preferences.Get("DynamicsCrm__TenantId", "string.Empty");
                 options.ClientId = Preferences.Get("DynamicsCrm__ClientId", string.Empty);
                 options.ClientSecret = Preferences.Get("DynamicsCrm__ClientSecret", string.Empty);
                 options.Enabled = Preferences.Get("DynamicsCrm__Enabled", false);
