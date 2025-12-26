@@ -18,6 +18,12 @@ public partial class DashboardViewModel : ObservableObject
 {
     private readonly IGroupRepository _groupRepository;
     private readonly ILocalStandupService _standupService;
+    private readonly IProjectService _projectService;
+
+    /// <summary>
+    /// Mapping from SourceRepository name to Project display name.
+    /// </summary>
+    private Dictionary<string, string> _repoToProjectName = new();
 
     /// <summary>
     /// Commits loaded directly from local repos (independent of Report).
@@ -47,6 +53,13 @@ public partial class DashboardViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     private ObservableCollection<DailyCodeMetrics> _dailyMetrics = new();
+
+    /// <summary>
+    /// Gets or sets the per-project daily activity data for multi-line trend chart.
+    /// Key is project name, value is the daily activity data for that project.
+    /// </summary>
+    [ObservableProperty]
+    private Dictionary<string, ObservableCollection<ProjectDailyActivity>> _projectDailyActivities = new();
 
     /// <summary>
     /// Gets or sets the repository metrics for bar charts (day view).
@@ -167,6 +180,52 @@ public partial class DashboardViewModel : ObservableObject
     public int ActiveProjectCount => ClientCodeMetrics.Count;
 
     /// <summary>
+    /// Gets a value indicating whether "All" is selected.
+    /// </summary>
+    public bool IsAllSelected => SelectedGroup?.Id == AllGroupId;
+
+    /// <summary>
+    /// The special ID for the "All" group.
+    /// </summary>
+    public const string AllGroupId = "__all__";
+
+    /// <summary>
+    /// Gets the groups with "All" option prepended.
+    /// </summary>
+    public ObservableCollection<RepositoryGroup> GroupsWithAll
+    {
+        get
+        {
+            var result = new ObservableCollection<RepositoryGroup>();
+
+            // Add "All" option first
+            var allGroup = new RepositoryGroup { Id = AllGroupId, Name = "All" };
+
+            // Populate "All" with repos from all groups
+            foreach (var group in Groups)
+            {
+                foreach (var repo in group.Repositories)
+                {
+                    if (!allGroup.Repositories.Any(r => r.Id == repo.Id))
+                    {
+                        allGroup.Repositories.Add(repo);
+                    }
+                }
+            }
+
+            result.Add(allGroup);
+
+            // Add all regular groups
+            foreach (var group in Groups)
+            {
+                result.Add(group);
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
     /// Gets the total warning count (critical + warnings, excluding info).
     /// </summary>
     public int TotalWarningCount => CriticalWarnings.Count + Warnings.Count;
@@ -212,10 +271,12 @@ public partial class DashboardViewModel : ObservableObject
     /// </summary>
     /// <param name="groupRepository">Repository for accessing groups.</param>
     /// <param name="standupService">Service for fetching local commits.</param>
-    public DashboardViewModel(IGroupRepository groupRepository, ILocalStandupService standupService)
+    /// <param name="projectService">Service for accessing projects.</param>
+    public DashboardViewModel(IGroupRepository groupRepository, ILocalStandupService standupService, IProjectService projectService)
     {
         _groupRepository = groupRepository;
         _standupService = standupService;
+        _projectService = projectService;
 
         // Default to week view (most likely to have data)
         SetPeriodWeek();
@@ -233,6 +294,15 @@ public partial class DashboardViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Called when Groups collection changes - notify GroupsWithAll.
+    /// </summary>
+    /// <param name="value">The new groups collection.</param>
+    partial void OnGroupsChanged(ObservableCollection<RepositoryGroup> value)
+    {
+        OnPropertyChanged(nameof(GroupsWithAll));
+    }
+
+    /// <summary>
     /// Called when SelectedGroup changes - triggers a reload.
     /// </summary>
     /// <param name="value">The new selected group.</param>
@@ -242,6 +312,7 @@ public partial class DashboardViewModel : ObservableObject
         {
             // Clear report data so we use local fetch
             Report = null;
+            OnPropertyChanged(nameof(IsAllSelected));
             _localCommits.Clear();
 
             // Trigger reload with new group
@@ -274,6 +345,15 @@ public partial class DashboardViewModel : ObservableObject
             {
                 var groups = (await _groupRepository.GetAllAsync()).ToList();
                 Groups = new ObservableCollection<RepositoryGroup>(groups);
+
+                // Load project name mapping (repo name -> project display name)
+                var projects = await _projectService.GetProjectsAsync();
+                _repoToProjectName = projects
+                    .Where(p => !string.IsNullOrEmpty(p.SourceRepository))
+                    .ToDictionary(
+                        p => p.SourceRepository!,
+                        p => p.Name,
+                        StringComparer.OrdinalIgnoreCase);
 
                 // Set default group if none selected
                 if (SelectedGroup == null && groups.Count > 0)
@@ -450,6 +530,9 @@ public partial class DashboardViewModel : ObservableObject
 
         DailyMetrics = new ObservableCollection<DailyCodeMetrics>(dailyData);
 
+        // Generate per-project daily activity (for multi-line trend chart)
+        GenerateProjectDailyActivities(filteredCommits);
+
         // Generate repository metrics (for bar chart in day view)
         var repoData = filteredCommits
             .GroupBy(c => c.Repository)
@@ -510,182 +593,5 @@ public partial class DashboardViewModel : ObservableObject
         // Refresh warnings and notify UI
         RefreshWarnings();
         NotifyCalculatedPropertiesChanged();
-    }
-
-    private void RefreshClientCodeMetrics(List<CommitInfo> filteredCommits)
-    {
-        // Try to get client code from report sections first
-        if (Report?.Sections != null && Report.Sections.Count > 0)
-        {
-            var clientCodeData = Report.Sections
-                .Select(s => new ClientCodeMetrics
-                {
-                    ClientCode = string.IsNullOrWhiteSpace(s.ClientCode) ? "General" : s.ClientCode,
-                    Additions = s.Commits
-                        .Where(c => c.CommittedAt >= PeriodStart && c.CommittedAt <= PeriodEnd)
-                        .Sum(c => c.Additions),
-                    Deletions = s.Commits
-                        .Where(c => c.CommittedAt >= PeriodStart && c.CommittedAt <= PeriodEnd)
-                        .Sum(c => c.Deletions),
-                    CommitCount = s.Commits
-                        .Count(c => c.CommittedAt >= PeriodStart && c.CommittedAt <= PeriodEnd),
-                })
-                .Where(c => c.CommitCount > 0)
-                .OrderByDescending(c => c.CommitCount)
-                .ToList();
-
-            ClientCodeMetrics = new ObservableCollection<ClientCodeMetrics>(clientCodeData);
-        }
-        else if (SelectedGroup?.Repositories != null)
-        {
-            // Fall back to grouping by client code from repository configuration
-            var repoClientCodes = SelectedGroup.Repositories
-                .ToDictionary(r => r.Repository, r => string.IsNullOrWhiteSpace(r.ClientCode) ? "General" : r.ClientCode);
-
-            var clientCodeData = filteredCommits
-                .GroupBy(c => repoClientCodes.TryGetValue(c.Repository, out var code) ? code : "General")
-                .Select(g => new ClientCodeMetrics
-                {
-                    ClientCode = g.Key,
-                    Additions = g.Sum(c => c.Additions),
-                    Deletions = g.Sum(c => c.Deletions),
-                    CommitCount = g.Count(),
-                })
-                .OrderByDescending(c => c.CommitCount)
-                .ToList();
-
-            ClientCodeMetrics = new ObservableCollection<ClientCodeMetrics>(clientCodeData);
-        }
-        else
-        {
-            ClientCodeMetrics.Clear();
-        }
-    }
-
-    private void RefreshWarnings()
-    {
-        CriticalWarnings.Clear();
-        Warnings.Clear();
-        InfoWarnings.Clear();
-
-        // Check report sections for fetch errors
-        if (Report?.Sections != null)
-        {
-            foreach (var section in Report.Sections)
-            {
-                var status = section.SourceStatus;
-                if (status == null)
-                {
-                    continue;
-                }
-
-                var clientCode = string.IsNullOrWhiteSpace(section.ClientCode) ? "General" : section.ClientCode;
-
-                // Critical: Fetch errors
-                if (status.CommitsStatus == FetchStatus.Error)
-                {
-                    CriticalWarnings.Add(new GroupWarning
-                    {
-                        Severity = WarningSeverity.Critical,
-                        ClientCode = clientCode,
-                        Message = "Commit fetch failed",
-                        Details = status.CommitsError ?? "Unknown error",
-                        FixTarget = "Groups",
-                    });
-                }
-
-                if (status.PullRequestsStatus == FetchStatus.Error)
-                {
-                    CriticalWarnings.Add(new GroupWarning
-                    {
-                        Severity = WarningSeverity.Critical,
-                        ClientCode = clientCode,
-                        Message = "PR fetch failed",
-                        Details = status.PullRequestsError ?? "Unknown error",
-                        FixTarget = "Settings",
-                    });
-                }
-
-                // Warning: No PAT (consolidate PRs and Work Items)
-                if (status.PullRequestsStatus == FetchStatus.NoPat || status.WorkItemsStatus == FetchStatus.NoPat)
-                {
-                    var missingFor = new List<string>();
-                    if (status.PullRequestsStatus == FetchStatus.NoPat)
-                    {
-                        missingFor.Add("PRs");
-                    }
-
-                    if (status.WorkItemsStatus == FetchStatus.NoPat)
-                    {
-                        missingFor.Add("Work Items");
-                    }
-
-                    Warnings.Add(new GroupWarning
-                    {
-                        Severity = WarningSeverity.Warning,
-                        ClientCode = clientCode,
-                        Message = "No PAT configured",
-                        Details = $"{string.Join(" and ", missingFor)} unavailable",
-                        FixTarget = "Settings",
-                    });
-                }
-
-                // Info: No activity in period
-                if (section.CommitCount == 0 && section.PullRequestCount == 0)
-                {
-                    InfoWarnings.Add(new GroupWarning
-                    {
-                        Severity = WarningSeverity.Info,
-                        ClientCode = clientCode,
-                        Message = "No activity",
-                        Details = "0 commits in selected period",
-                    });
-                }
-            }
-        }
-
-        // Check repository configuration issues from selected group
-        if (SelectedGroup?.Repositories != null)
-        {
-            foreach (var repo in SelectedGroup.Repositories)
-            {
-                var clientCode = string.IsNullOrWhiteSpace(repo.ClientCode) ? "General" : repo.ClientCode;
-
-                if (string.IsNullOrEmpty(repo.LocalPath))
-                {
-                    Warnings.Add(new GroupWarning
-                    {
-                        Severity = WarningSeverity.Warning,
-                        ClientCode = clientCode,
-                        RepositoryName = repo.Repository,
-                        Message = "No local path configured",
-                        Details = repo.Repository,
-                        FixTarget = "Groups",
-                    });
-                }
-
-                if (!repo.IsActive)
-                {
-                    InfoWarnings.Add(new GroupWarning
-                    {
-                        Severity = WarningSeverity.Info,
-                        ClientCode = clientCode,
-                        RepositoryName = repo.Repository,
-                        Message = "Repository disabled",
-                        Details = repo.Repository,
-                    });
-                }
-            }
-        }
-    }
-
-    private void NotifyCalculatedPropertiesChanged()
-    {
-        OnPropertyChanged(nameof(NetChange));
-        OnPropertyChanged(nameof(ActiveProjectCount));
-        OnPropertyChanged(nameof(TotalWarningCount));
-        OnPropertyChanged(nameof(HasCriticalWarnings));
-        OnPropertyChanged(nameof(HasAnyWarnings));
-        OnPropertyChanged(nameof(IsGroupHealthy));
     }
 }
