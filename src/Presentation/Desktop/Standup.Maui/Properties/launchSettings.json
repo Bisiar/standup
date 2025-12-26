@@ -2,11 +2,7 @@
   "profiles": {
     "Mac Catalyst": {
       "commandName": "Project",
-      "nativeDebugging": false
-    },
-    "Mac Catalyst (Debug)": {
-      "commandName": "Project",
-      "launchBrowser": false,
+      "nativeDebugging": false,
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }
