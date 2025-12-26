@@ -299,7 +299,7 @@
                         <!-- Series are added dynamically in code-behind based on ProjectDailyActivities -->
 
                         <telerik:RadCartesianChart.ChartBehaviors>
-                            <telerik:ChartTrackBallBehavior ShowTrackInfo="True" ShowIntersectionPoints="True" />
+                            <telerik:ChartTooltipBehavior TriggerMode="Tap" />
                         </telerik:RadCartesianChart.ChartBehaviors>
                     </telerik:RadCartesianChart>
 
@@ -491,7 +491,7 @@
                     <CollectionView Grid.Row="1"
                                     ItemsSource="{Binding RecentCommits}"
                                     SelectionMode="None"
-                                    VerticalOptions="FillAndExpand">
+                                    HeightRequest="250">
                         <CollectionView.EmptyView>
                             <Label Text="No recent commits"
                                    FontSize="13"
