@@ -3,34 +3,42 @@ using System.Globalization;
 namespace Standup.Maui.Converters;
 
 /// <summary>
-/// Converts a percentage value (0-100) to a width for progress bars.
-/// ConverterParameter specifies the maximum width (default 200).
+/// Converts percentage values to AbsoluteLayout bounds for stacked bar charts.
+/// Uses MultiBinding with AdditionsPercent and DeletionsPercent.
+/// ConverterParameter: "additions" starts at x=0, "deletions" starts after additions.
 /// </summary>
-public class PercentToWidthConverter : IValueConverter
+public class PercentToWidthConverter : IMultiValueConverter
 {
     /// <inheritdoc/>
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is not double percent)
+        // MultiBinding: values[0] = AdditionsPercent, values[1] = DeletionsPercent
+        if (values.Length < 2)
         {
-            return 0;
+            return new Rect(0, 0, 0, 1);
         }
 
-        var maxWidth = 200.0;
-        if (parameter is string paramStr && double.TryParse(paramStr, out var parsed))
-        {
-            maxWidth = parsed;
-        }
-        else if (parameter is double paramDouble)
-        {
-            maxWidth = paramDouble;
-        }
+        var additionsPercent = values[0] as double? ?? 0;
+        var deletionsPercent = values[1] as double? ?? 0;
+        var paramStr = parameter as string ?? "additions";
 
-        return Math.Max(0, Math.Min(maxWidth, percent / 100.0 * maxWidth));
+        var additionsWidth = additionsPercent / 100.0;
+        var deletionsWidth = deletionsPercent / 100.0;
+
+        if (paramStr == "additions")
+        {
+            // Additions: start at 0, width = additions percentage
+            return new Rect(0, 0, additionsWidth, 1);
+        }
+        else
+        {
+            // Deletions: start after additions, width = deletions percentage
+            return new Rect(additionsWidth, 0, deletionsWidth, 1);
+        }
     }
 
     /// <inheritdoc/>
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object?[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }
