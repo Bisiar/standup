@@ -9,7 +9,7 @@
              x:DataType="viewModels:DashboardViewModel">
 
     <ScrollView>
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Padding="24" RowSpacing="20">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Padding="24" RowSpacing="20">
 
             <!-- Row 0: Header -->
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
@@ -224,21 +224,52 @@
                         </Button.Triggers>
                     </Button>
 
-                    <!-- Group Selector -->
-                    <BoxView WidthRequest="1" BackgroundColor="#374151" Margin="8,4" />
-                    <Picker ItemsSource="{Binding Groups}"
-                            SelectedItem="{Binding SelectedGroup}"
-                            ItemDisplayBinding="{Binding Name}"
-                            Title="Group"
-                            FontSize="13"
-                            TextColor="{AppThemeBinding Light=#1F2937, Dark=#F9FAFB}"
-                            TitleColor="#6B7280"
-                            MinimumWidthRequest="140" />
                 </HorizontalStackLayout>
             </Border>
 
-            <!-- Row 3: Daily Trend Line Chart -->
-            <Border Grid.Row="3"
+            <!-- Row 3: Group Selector Chips -->
+            <CollectionView Grid.Row="3"
+                            ItemsSource="{Binding GroupsWithAll}"
+                            SelectedItem="{Binding SelectedGroup}"
+                            SelectionMode="Single"
+                            ItemsLayout="HorizontalList"
+                            HorizontalOptions="Center"
+                            HeightRequest="44">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="entities:RepositoryGroup">
+                        <Border Padding="16,8"
+                                Margin="4,0"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 20"
+                                BackgroundColor="Transparent"
+                                Stroke="#374151">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup Name="CommonStates">
+                                    <VisualState Name="Normal">
+                                        <VisualState.Setters>
+                                            <Setter Property="BackgroundColor" Value="Transparent" />
+                                            <Setter Property="Stroke" Value="#374151" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState Name="Selected">
+                                        <VisualState.Setters>
+                                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                            <Setter Property="Stroke" Value="#3B82F6" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Label Text="{Binding Name}"
+                                   FontSize="13"
+                                   TextColor="#9CA3AF"
+                                   VerticalOptions="Center" />
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Row 4: Daily Trend Line Chart -->
+            <Border Grid.Row="4"
                     BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
                     StrokeShape="RoundRectangle 12"
                     Padding="20"
@@ -253,7 +284,7 @@
                            TextColor="#E2E8F0"
                            Margin="0,0,0,12" />
 
-                    <telerik:RadCartesianChart Grid.Row="1">
+                    <telerik:RadCartesianChart x:Name="DailyTrendChart" Grid.Row="1">
                         <telerik:RadCartesianChart.HorizontalAxis>
                             <telerik:DateTimeContinuousAxis LabelFitMode="Rotate"
                                                             MajorStepUnit="Day"
@@ -265,43 +296,24 @@
                             <telerik:NumericalAxis />
                         </telerik:RadCartesianChart.VerticalAxis>
 
-                        <telerik:RadCartesianChart.Series>
-                            <telerik:LineSeries ValueBinding="Additions"
-                                                CategoryBinding="Date"
-                                                ItemsSource="{Binding DailyMetrics}"
-                                                Stroke="#10B981"
-                                                StrokeThickness="3"
-                                                DisplayName="Lines Added" />
-
-                            <telerik:LineSeries ValueBinding="Deletions"
-                                                CategoryBinding="Date"
-                                                ItemsSource="{Binding DailyMetrics}"
-                                                Stroke="#EF4444"
-                                                StrokeThickness="3"
-                                                DisplayName="Lines Deleted" />
-                        </telerik:RadCartesianChart.Series>
+                        <!-- Series are added dynamically in code-behind based on ProjectDailyActivities -->
 
                         <telerik:RadCartesianChart.ChartBehaviors>
-                            <telerik:ChartTooltipBehavior TriggerMode="Tap" />
+                            <telerik:ChartTrackBallBehavior ShowTrackInfo="True" ShowIntersectionPoints="True" />
                         </telerik:RadCartesianChart.ChartBehaviors>
                     </telerik:RadCartesianChart>
 
-                    <!-- Legend -->
-                    <HorizontalStackLayout Grid.Row="2" HorizontalOptions="Center" Spacing="24" Margin="0,8,0,0">
-                        <HorizontalStackLayout Spacing="6">
-                            <Border BackgroundColor="#10B981" StrokeShape="RoundRectangle 2" WidthRequest="16" HeightRequest="4" StrokeThickness="0" VerticalOptions="Center" />
-                            <Label Text="Lines Added" FontSize="12" TextColor="#94A3B8" VerticalOptions="Center" />
-                        </HorizontalStackLayout>
-                        <HorizontalStackLayout Spacing="6">
-                            <Border BackgroundColor="#EF4444" StrokeShape="RoundRectangle 2" WidthRequest="16" HeightRequest="4" StrokeThickness="0" VerticalOptions="Center" />
-                            <Label Text="Lines Deleted" FontSize="12" TextColor="#94A3B8" VerticalOptions="Center" />
-                        </HorizontalStackLayout>
-                    </HorizontalStackLayout>
+                    <!-- Dynamic Legend -->
+                    <FlexLayout x:Name="TrendChartLegend"
+                                Grid.Row="2"
+                                Wrap="Wrap"
+                                JustifyContent="Center"
+                                Margin="0,8,0,0" />
                 </Grid>
             </Border>
 
-            <!-- Row 4: Activity by Project + Donut Chart -->
-            <Grid Grid.Row="4" ColumnDefinitions="2*,*" ColumnSpacing="16" IsVisible="{Binding HasData}">
+            <!-- Row 5: Activity by Project + Donut Chart -->
+            <Grid Grid.Row="5" ColumnDefinitions="2*,*" ColumnSpacing="16" IsVisible="{Binding HasData}">
                 <!-- Activity by Project (Horizontal Bars) -->
                 <Border Grid.Column="0"
                         BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
@@ -335,25 +347,39 @@
                                                TextColor="#F59E0B"
                                                VerticalOptions="Center" />
 
-                                        <!-- Stacked Bar using Grid columns for proportional sizing -->
-                                        <Grid Grid.Column="1" ColumnDefinitions="*,*" HeightRequest="24">
-                                            <Border Grid.ColumnSpan="2"
-                                                    BackgroundColor="#0F172A"
+                                        <!-- Stacked Bar with percentage-based sizing -->
+                                        <AbsoluteLayout Grid.Column="1" HeightRequest="20">
+                                            <!-- Background track -->
+                                            <Border BackgroundColor="#0F172A"
                                                     StrokeShape="RoundRectangle 4"
-                                                    StrokeThickness="0" />
-                                            <Border Grid.Column="0"
-                                                    BackgroundColor="#10B981"
+                                                    StrokeThickness="0"
+                                                    AbsoluteLayout.LayoutBounds="0,0,1,1"
+                                                    AbsoluteLayout.LayoutFlags="All" />
+                                            <!-- Additions (green) - positioned from left -->
+                                            <Border BackgroundColor="#10B981"
                                                     StrokeShape="RoundRectangle 4,0,0,4"
                                                     StrokeThickness="0"
-                                                    Margin="0,2" />
-                                            <Border Grid.Column="1"
-                                                    BackgroundColor="#EF4444"
+                                                    AbsoluteLayout.LayoutFlags="All">
+                                                <AbsoluteLayout.LayoutBounds>
+                                                    <MultiBinding Converter="{StaticResource PercentToWidthConverter}" ConverterParameter="additions">
+                                                        <Binding Path="AdditionsPercent" />
+                                                        <Binding Path="DeletionsPercent" />
+                                                    </MultiBinding>
+                                                </AbsoluteLayout.LayoutBounds>
+                                            </Border>
+                                            <!-- Deletions (red) - positioned after additions -->
+                                            <Border BackgroundColor="#EF4444"
                                                     StrokeShape="RoundRectangle 0,4,4,0"
                                                     StrokeThickness="0"
-                                                    Margin="0,2"
-                                                    HorizontalOptions="Start"
-                                                    WidthRequest="40" />
-                                        </Grid>
+                                                    AbsoluteLayout.LayoutFlags="All">
+                                                <AbsoluteLayout.LayoutBounds>
+                                                    <MultiBinding Converter="{StaticResource PercentToWidthConverter}" ConverterParameter="deletions">
+                                                        <Binding Path="AdditionsPercent" />
+                                                        <Binding Path="DeletionsPercent" />
+                                                    </MultiBinding>
+                                                </AbsoluteLayout.LayoutBounds>
+                                            </Border>
+                                        </AbsoluteLayout>
 
                                         <Label Grid.Column="2"
                                                FontSize="11"
@@ -389,10 +415,14 @@
                                Margin="0,0,0,12" />
 
                         <telerik:RadPieChart Grid.Row="1">
+                            <telerik:RadPieChart.ChartBehaviors>
+                                <telerik:ChartSelectionBehavior DataPointSelectionMode="Single" SeriesSelectionMode="None" />
+                            </telerik:RadPieChart.ChartBehaviors>
                             <telerik:RadPieChart.Series>
                                 <telerik:DonutSeries ValueBinding="CommitCount"
                                                      ItemsSource="{Binding ClientCodeMetrics}"
-                                                     ShowLabels="False"
+                                                     ShowLabels="True"
+                                                     LegendTitleBinding="ClientCode"
                                                      InnerRadiusFactor="0.6" />
                             </telerik:RadPieChart.Series>
                         </telerik:RadPieChart>
@@ -443,8 +473,8 @@
                 </Border>
             </Grid>
 
-            <!-- Row 5: Recent Activity Timeline -->
-            <Border Grid.Row="5"
+            <!-- Row 6: Recent Activity Timeline -->
+            <Border Grid.Row="6"
                     BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
                     StrokeShape="RoundRectangle 12"
                     Padding="20"
@@ -460,7 +490,8 @@
 
                     <CollectionView Grid.Row="1"
                                     ItemsSource="{Binding RecentCommits}"
-                                    SelectionMode="None">
+                                    SelectionMode="None"
+                                    VerticalOptions="FillAndExpand">
                         <CollectionView.EmptyView>
                             <Label Text="No recent commits"
                                    FontSize="13"
@@ -506,8 +537,8 @@
                 </Grid>
             </Border>
 
-            <!-- Row 6: Group Health Warnings -->
-            <Border Grid.Row="6"
+            <!-- Row 7: Group Health Warnings -->
+            <Border Grid.Row="7"
                     BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
                     StrokeShape="RoundRectangle 12"
                     Padding="20"
@@ -677,7 +708,7 @@
             </Border>
 
             <!-- No Data State -->
-            <Border Grid.Row="3"
+            <Border Grid.Row="4"
                     Grid.RowSpan="4"
                     BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
                     StrokeShape="RoundRectangle 12"
