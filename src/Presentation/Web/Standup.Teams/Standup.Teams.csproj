@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Standup.Application\Standup.Application.csproj" />
-    <ProjectReference Include="..\Standup.Infrastructure\Standup.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Core\Standup.Application\Standup.Application.csproj" />
+    <ProjectReference Include="..\..\..\Infrastructure\Standup.Infrastructure\Standup.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

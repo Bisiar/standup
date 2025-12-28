@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Standup.Domain\Standup.Domain.csproj" />
-    <ProjectReference Include="..\Standup.Application\Standup.Application.csproj" />
+    <ProjectReference Include="..\..\Core\Standup.Domain\Standup.Domain.csproj" />
+    <ProjectReference Include="..\..\Core\Standup.Application\Standup.Application.csproj" />
   </ItemGroup>
 
 </Project>
