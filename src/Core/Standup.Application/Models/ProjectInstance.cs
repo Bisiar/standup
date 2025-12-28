@@ -18,6 +18,7 @@ public record ProjectInstance(
     string? SourceProject = null,
     string? SourceRepository = null,
     string? SourcePat = null,
+    string? LocalPath = null,
     string? AuthorIdentifier = null,
     bool UseLocalGeneration = true,
     string? ApiEndpointOverride = null,
