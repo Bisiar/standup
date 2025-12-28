@@ -88,11 +88,11 @@
                                 </HorizontalStackLayout>
                             </VerticalStackLayout>
 
-                            <!-- Client Code Entry (only show when selected) -->
+                            <!-- Project Name Entry (only show when selected) -->
                             <Entry Grid.Column="2"
-                                   Placeholder="Client Code"
+                                   Placeholder="Project Name"
                                    Text="{Binding ClientCode}"
-                                   WidthRequest="100"
+                                   WidthRequest="120"
                                    IsVisible="{Binding IsSelected}"
                                    VerticalOptions="Center" />
 

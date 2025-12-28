@@ -22,7 +22,8 @@ public record ProjectInstance(
     bool UseLocalGeneration = true,
     string? ApiEndpointOverride = null,
     bool IncludeInGeneration = true,
-    string? CrmProjectId = null)
+    string? CrmProjectId = null,
+    string? CrmProjectName = null)
 {
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 
