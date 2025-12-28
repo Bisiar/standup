@@ -1,5 +1,3 @@
-using Microsoft.Maui.Controls;
-
 // .NET 10 Global XML Namespaces
 // These registrations allow XAML files to use types from these namespaces
 // without explicit xmlns: declarations by using the global namespace:

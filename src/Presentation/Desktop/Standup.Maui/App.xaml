@@ -23,6 +23,19 @@
             <global:BoolToTextConverter x:Key="BoolToTextConverter" />
             <global:BoolToColorConverter x:Key="BoolToColorConverter" />
             <global:PercentToWidthConverter x:Key="PercentToWidthConverter" />
+
+            <!-- Projects Master-Detail View Converters -->
+            <global:BoolToFilterBackgroundConverter x:Key="BoolToFilterBackgroundConverter" />
+            <global:BoolToFilterTextConverter x:Key="BoolToFilterTextConverter" />
+            <global:PatToBackgroundConverter x:Key="PatToBackgroundConverter" />
+            <global:PatToStatusTextConverter x:Key="PatToStatusTextConverter" />
+            <global:PatToTextColorConverter x:Key="PatToTextColorConverter" />
+            <global:DateToRelativeConverter x:Key="DateToRelativeConverter" />
+            <global:NullToTextConverter x:Key="NullToTextConverter" />
+            <global:NullToColorConverter x:Key="NullToColorConverter" />
+            <global:ErrorToColorConverter x:Key="ErrorToColorConverter" />
+            <global:ActivityTypeToColorConverter x:Key="ActivityTypeToColorConverter" />
+            <global:IsZeroConverter x:Key="IsZeroConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

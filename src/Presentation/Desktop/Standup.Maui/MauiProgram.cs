@@ -95,9 +95,9 @@ public static class MauiProgram
             {
                 options.InstanceUrl = Preferences.Get("DynamicsCrm__InstanceUrl", "string.Empty");
                 options.TenantId = Preferences.Get("DynamicsCrm__TenantId", "string.Empty");
-                options.ClientId = Preferences.Get("DynamicsCrm__ClientId", string.Empty);
-                options.ClientSecret = Preferences.Get("DynamicsCrm__ClientSecret", string.Empty);
-                options.Enabled = Preferences.Get("DynamicsCrm__Enabled", false);
+                options.ClientId = Preferences.Get("DynamicsCrm__ClientId", "string.Empty");
+                options.ClientSecret = Preferences.Get("DynamicsCrm__ClientSecret", "string.Empty");
+                options.Enabled = Preferences.Get("DynamicsCrm__Enabled", true);
 
                 Log.Information(
                     "Dynamics CRM configured: InstanceUrl={InstanceUrl}, TenantId={TenantId}, Enabled={Enabled}",
@@ -154,6 +154,7 @@ public static class MauiProgram
             builder.Services.AddTransient<AddRepositoryViewModel>();
             builder.Services.AddTransient<ReportViewModel>();
             builder.Services.AddTransient<FrameworkViewModel>();
+            builder.Services.AddTransient<ProjectDashboardViewModel>();
 
             // Views
             Log.Debug("Registering Views");
@@ -166,6 +167,7 @@ public static class MauiProgram
             builder.Services.AddTransient<RepositoryConfigPage>();
             builder.Services.AddTransient<DocumentsPage>();
             builder.Services.AddTransient<AddRepositoryPage>();
+            builder.Services.AddTransient<ProjectDashboardPage>();
 
             // Configure logging
             Log.Information("Configuring logging providers");
