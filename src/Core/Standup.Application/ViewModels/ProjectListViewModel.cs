@@ -64,6 +64,26 @@ public partial class ProjectListViewModel : ObservableObject
     [ObservableProperty]
     private string _newApiEndpoint = string.Empty;
 
+    [ObservableProperty]
+    private SourceType _newSourceType = SourceType.AzureDevOps;
+
+    [ObservableProperty]
+    private string _newSourceOrganization = string.Empty;
+
+    [ObservableProperty]
+    private string _newSourceProject = string.Empty;
+
+    [ObservableProperty]
+    private string _newSourceRepository = string.Empty;
+
+    [ObservableProperty]
+    private string _newSourcePat = string.Empty;
+
+    /// <summary>
+    /// Gets the available source types for the picker.
+    /// </summary>
+    public IReadOnlyList<SourceType> AvailableSourceTypes { get; } = new[] { SourceType.AzureDevOps, SourceType.GitHub };
+
     // Edit project properties
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShouldShowAddProjectButton))]
@@ -130,6 +150,10 @@ public partial class ProjectListViewModel : ObservableObject
                 Projects.Add(project);
             }
 
+            // Notify computed properties to refresh after loading
+            NotifyProjectCountsChanged();
+            Log.Information("LoadProjectsAsync: Loaded {Count} projects, notified UI", Projects.Count);
+
             SelectedProject = await _projectService.GetCurrentProjectAsync();
         }
         finally
@@ -143,6 +167,9 @@ public partial class ProjectListViewModel : ObservableObject
     {
         await _projectService.SetCurrentProjectAsync(project.Id);
         SelectedProject = project;
+
+        // Load stats for selected project (defined in partial class)
+        await LoadProjectStatsAsync(project);
     }
 
     [RelayCommand]
@@ -152,12 +179,26 @@ public partial class ProjectListViewModel : ObservableObject
         NewProjectName = string.Empty;
         NewTenantName = string.Empty;
         NewApiEndpoint = string.Empty;
+        NewSourceType = SourceType.AzureDevOps;
+        NewSourceOrganization = string.Empty;
+        NewSourceProject = string.Empty;
+        NewSourceRepository = string.Empty;
+        NewSourcePat = string.Empty;
     }
 
     [RelayCommand]
     private async Task AddProjectAsync()
     {
-        if (string.IsNullOrWhiteSpace(NewProjectName) || string.IsNullOrWhiteSpace(NewApiEndpoint))
+        // Require project name and source configuration
+        if (string.IsNullOrWhiteSpace(NewProjectName) ||
+            string.IsNullOrWhiteSpace(NewSourceOrganization) ||
+            string.IsNullOrWhiteSpace(NewSourceRepository))
+        {
+            return;
+        }
+
+        // Azure DevOps requires Project, GitHub does not
+        if (NewSourceType == SourceType.AzureDevOps && string.IsNullOrWhiteSpace(NewSourceProject))
         {
             return;
         }
@@ -166,11 +207,25 @@ public partial class ProjectListViewModel : ObservableObject
             Id: Guid.NewGuid().ToString(),
             Name: NewProjectName,
             TenantName: NewTenantName,
-            ApiEndpoint: NewApiEndpoint);
+            ApiEndpoint: NewApiEndpoint,
+            SourceType: NewSourceType,
+            SourceOrganization: NewSourceOrganization,
+            SourceProject: NewSourceType == SourceType.AzureDevOps ? NewSourceProject : null,
+            SourceRepository: NewSourceRepository,
+            SourcePat: string.IsNullOrWhiteSpace(NewSourcePat) ? null : NewSourcePat);
 
         var added = await _projectService.AddProjectAsync(project);
         Projects.Add(added);
+        NotifyProjectCountsChanged();
         IsAddingProject = false;
+    }
+
+    private void NotifyProjectCountsChanged()
+    {
+        OnPropertyChanged(nameof(GroupedProjects));
+        OnPropertyChanged(nameof(TotalProjectCount));
+        OnPropertyChanged(nameof(ConfiguredProjectCount));
+        OnPropertyChanged(nameof(NeedsPatProjectCount));
     }
 
     [RelayCommand]
@@ -184,6 +239,7 @@ public partial class ProjectListViewModel : ObservableObject
     {
         await _projectService.DeleteProjectAsync(project.Id);
         Projects.Remove(project);
+        NotifyProjectCountsChanged();
     }
 
     [RelayCommand]
@@ -257,7 +313,8 @@ public partial class ProjectListViewModel : ObservableObject
             TenantName = EditTenantName,
             SourcePat = string.IsNullOrWhiteSpace(EditSourcePat) ? null : EditSourcePat,
             AuthorIdentifier = string.IsNullOrWhiteSpace(EditAuthorIdentifier) ? null : EditAuthorIdentifier,
-            CrmProjectId = SelectedCrmProject?.CrmProjectId
+            CrmProjectId = SelectedCrmProject?.CrmProjectId,
+            CrmProjectName = SelectedCrmProject?.ProjectName
         };
 
         await _projectService.UpdateProjectAsync(updatedProject);
@@ -268,6 +325,9 @@ public partial class ProjectListViewModel : ObservableObject
         {
             Projects[index] = updatedProject;
         }
+
+        // Update SelectedProject so the detail view refreshes
+        SelectedProject = updatedProject;
 
         IsEditingProject = false;
         EditingProject = null;
@@ -401,13 +461,7 @@ public partial class ProjectListViewModel : ObservableObject
     [RelayCommand]
     private async Task ViewLatestReportAsync(ProjectInstance project)
     {
-        Log.Information("ViewLatestReportAsync called for project: {ProjectName} (Id: {ProjectId})", project?.Name, project?.Id);
-
-        if (project == null)
-        {
-            Log.Warning("ViewLatestReportAsync called with null project");
-            return;
-        }
+        Log.Information("ViewLatestReportAsync called for project: {ProjectName} (Id: {ProjectId})", project.Name, project.Id);
 
         try
         {
@@ -448,11 +502,6 @@ public partial class ProjectListViewModel : ObservableObject
     [RelayCommand]
     private async Task ValidateProjectAsync(ProjectInstance project)
     {
-        if (project == null)
-        {
-            return;
-        }
-
         Log.Information("ValidateProjectAsync called for project: {ProjectName}", project.Name);
 
         if (_sourceProviderFactory == null || _encryptionService == null)
