@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             xmlns:models="clr-namespace:Standup.Application.Models;assembly=Standup.Application"
+             x:Class="Standup.Maui.Views.ProjectDashboardPage"
+             x:DataType="viewModels:ProjectDashboardViewModel"
+             BackgroundColor="#0F172A"
+             Title="Project Dashboard">
+
+    <ScrollView>
+        <Grid Padding="24" RowSpacing="24" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+
+            <!-- Row 0: Header -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                <!-- Left: Project Info -->
+                <VerticalStackLayout Grid.Column="0" Spacing="8">
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="🚀" FontSize="24" VerticalOptions="Center" />
+                        <Label Text="{Binding ProjectName}" FontSize="28" FontAttributes="Bold"
+                               TextColor="#E2E8F0" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="16">
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="🏢" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                            <Label Text="{Binding Organization}" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="📅" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                            <Label Text="{Binding StartDate, StringFormat='Started {0:MMM dd, yyyy}'}" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="🎯" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                            <Label Text="{Binding TargetDate, StringFormat='Target: {0:MMM dd, yyyy}'}" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="📁" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                            <Label Text="{Binding SourceType}" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- Right: Status Indicators -->
+                <HorizontalStackLayout Grid.Column="1" Spacing="12" VerticalOptions="Center">
+                    <!-- Health Indicator -->
+                    <Border BackgroundColor="#1E293B" StrokeShape="RoundRectangle 20" Padding="12,8" StrokeThickness="0">
+                        <HorizontalStackLayout Spacing="8">
+                            <Border BackgroundColor="#22C55E" StrokeShape="RoundRectangle 5"
+                                    WidthRequest="10" HeightRequest="10" StrokeThickness="0" VerticalOptions="Center" />
+                            <Label Text="{Binding LastSyncText, StringFormat='Synced {0}'}" FontSize="13" TextColor="#E2E8F0" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!-- Status Badge -->
+                    <Border StrokeShape="RoundRectangle 20" Padding="12,8" StrokeThickness="0">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#065F46" Offset="0" />
+                                <GradientStop Color="#047857" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Label Text="✓ On Track" FontSize="13" FontAttributes="Bold" TextColor="#34D399" />
+                    </Border>
+
+                    <!-- Back Button -->
+                    <Button Text="← Back" Clicked="OnBackClicked"
+                            BackgroundColor="#334155" TextColor="#E2E8F0"
+                            Padding="16,8" CornerRadius="12" />
+                </HorizontalStackLayout>
+            </Grid>
+
+            <!-- Row 1: Top Metrics -->
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" ColumnSpacing="16">
+                <!-- Overall Progress -->
+                <Border Grid.Column="0" StrokeShape="RoundRectangle 16" Padding="20" StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#334155" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="📊" FontSize="24" />
+                        <Label Text="OVERALL PROGRESS" FontSize="11" TextColor="#64748B" CharacterSpacing="0.5" />
+                        <Label Text="{Binding OverallProgressPercent, StringFormat='{0}%'}" FontSize="32" FontAttributes="Bold" TextColor="#60A5FA" />
+                        <Label FontSize="12" TextColor="#64748B">
+                            <Label.Text>
+                                <MultiBinding StringFormat="{}{0} of {1} milestones">
+                                    <Binding Path="MilestonesCompleted" />
+                                    <Binding Path="TotalMilestones" />
+                                </MultiBinding>
+                            </Label.Text>
+                        </Label>
+                        <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 2" HeightRequest="4" StrokeThickness="0" Margin="0,8,0,0">
+                            <Border BackgroundColor="#3B82F6" StrokeShape="RoundRectangle 2" HeightRequest="4"
+                                    WidthRequest="{Binding OverallProgressPercent, Converter={StaticResource IntToBoolConverter}}"
+                                    HorizontalOptions="Start" StrokeThickness="0" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Current Sprint -->
+                <Border Grid.Column="1" StrokeShape="RoundRectangle 16" Padding="20" StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#334155" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="🏃" FontSize="24" />
+                        <Label Text="CURRENT SPRINT" FontSize="11" TextColor="#64748B" CharacterSpacing="0.5" />
+                        <Label FontSize="32" FontAttributes="Bold" TextColor="#A78BFA">
+                            <Label.Text>
+                                <MultiBinding StringFormat="{}{0}/{1}">
+                                    <Binding Path="CurrentSprintNumber" />
+                                    <Binding Path="TotalSprints" />
+                                </MultiBinding>
+                            </Label.Text>
+                        </Label>
+                        <Label Text="{Binding SprintDaysRemaining, StringFormat='{0} days remaining'}" FontSize="12" TextColor="#64748B" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Tasks Complete -->
+                <Border Grid.Column="2" StrokeShape="RoundRectangle 16" Padding="20" StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#334155" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="✅" FontSize="24" />
+                        <Label Text="TASKS COMPLETE" FontSize="11" TextColor="#64748B" CharacterSpacing="0.5" />
+                        <Label FontSize="32" FontAttributes="Bold" TextColor="#34D399">
+                            <Label.Text>
+                                <MultiBinding StringFormat="{}{0}/{1}">
+                                    <Binding Path="TasksCompleted" />
+                                    <Binding Path="TotalTasks" />
+                                </MultiBinding>
+                            </Label.Text>
+                        </Label>
+                        <Label Text="{Binding TaskCompletionPercent, StringFormat='{0}% completion rate'}" FontSize="12" TextColor="#64748B" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Budget Used -->
+                <Border Grid.Column="3" StrokeShape="RoundRectangle 16" Padding="20" StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#334155" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="💰" FontSize="24" />
+                        <Label Text="BUDGET USED" FontSize="11" TextColor="#64748B" CharacterSpacing="0.5" />
+                        <Label Text="{Binding BudgetUsed, StringFormat='${0:N1}K'}" FontSize="32" FontAttributes="Bold" TextColor="#FBBF24" />
+                        <Label Text="{Binding BudgetTotal, StringFormat='of ${0:N0}K allocated'}" FontSize="12" TextColor="#64748B" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Days Remaining -->
+                <Border Grid.Column="4" StrokeShape="RoundRectangle 16" Padding="20" StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#334155" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="⏱️" FontSize="24" />
+                        <Label Text="DAYS REMAINING" FontSize="11" TextColor="#64748B" CharacterSpacing="0.5" />
+                        <Label Text="{Binding DaysRemaining}" FontSize="32" FontAttributes="Bold" TextColor="#F87171" />
+                        <Label Text="On schedule" FontSize="12" TextColor="#64748B" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- Row 2: Sprint Timeline -->
+            <Border Grid.Row="2" BackgroundColor="#1E293B" StrokeShape="RoundRectangle 16" Padding="24" StrokeThickness="0">
+                <VerticalStackLayout Spacing="20">
+                    <!-- Sprint Header -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <HorizontalStackLayout Grid.Column="0" Spacing="16">
+                            <Border StrokeShape="RoundRectangle 12" Padding="12,8" StrokeThickness="0">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#8B5CF6" Offset="0" />
+                                        <GradientStop Color="#A855F7" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Label Text="{Binding CurrentSprintNumber, StringFormat='Sprint {0}'}" FontSize="14" FontAttributes="Bold" TextColor="White" />
+                            </Border>
+                            <Label Text="{Binding SprintDates}" FontSize="13" TextColor="#94A3B8" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" HorizontalOptions="End">
+                            <Label Text="{Binding SprintDaysRemaining, StringFormat='{0} days'}" FontSize="24" FontAttributes="Bold" TextColor="#FBBF24" HorizontalOptions="End" />
+                            <Label Text="until sprint ends" FontSize="11" TextColor="#64748B" HorizontalOptions="End" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <!-- Sprint Progress Bar -->
+                    <VerticalStackLayout Spacing="12">
+                        <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 6" HeightRequest="12" StrokeThickness="0">
+                            <Grid ColumnDefinitions="45*,15*,20*,20*">
+                                <Border Grid.Column="0" BackgroundColor="#22C55E" StrokeThickness="0" />
+                                <Border Grid.Column="1" BackgroundColor="#F59E0B" StrokeThickness="0" />
+                                <Border Grid.Column="2" BackgroundColor="#3B82F6" StrokeThickness="0" />
+                                <Border Grid.Column="3" BackgroundColor="#0F172A" StrokeThickness="0" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Legend -->
+                        <HorizontalStackLayout Spacing="24">
+                            <HorizontalStackLayout Spacing="8">
+                                <Border BackgroundColor="#22C55E" StrokeShape="RoundRectangle 3" WidthRequest="10" HeightRequest="10" StrokeThickness="0" VerticalOptions="Center" />
+                                <Label Text="{Binding SprintDoneCount, StringFormat='Done ({0})'}" FontSize="12" TextColor="#94A3B8" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <Border BackgroundColor="#F59E0B" StrokeShape="RoundRectangle 3" WidthRequest="10" HeightRequest="10" StrokeThickness="0" VerticalOptions="Center" />
+                                <Label Text="{Binding SprintReviewCount, StringFormat='In Review ({0})'}" FontSize="12" TextColor="#94A3B8" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <Border BackgroundColor="#3B82F6" StrokeShape="RoundRectangle 3" WidthRequest="10" HeightRequest="10" StrokeThickness="0" VerticalOptions="Center" />
+                                <Label Text="{Binding SprintProgressCount, StringFormat='In Progress ({0})'}" FontSize="12" TextColor="#94A3B8" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                            <HorizontalStackLayout Spacing="8">
+                                <Border BackgroundColor="#475569" StrokeShape="RoundRectangle 3" WidthRequest="10" HeightRequest="10" StrokeThickness="0" VerticalOptions="Center" />
+                                <Label Text="{Binding SprintTodoCount, StringFormat='To Do ({0})'}" FontSize="12" TextColor="#94A3B8" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Row 3: Timeline + Team -->
+            <Grid Grid.Row="3" ColumnDefinitions="2*,*" ColumnSpacing="24">
+                <!-- Project Timeline -->
+                <Border Grid.Column="0" BackgroundColor="#1E293B" StrokeShape="RoundRectangle 16" Padding="24" StrokeThickness="0">
+                    <VerticalStackLayout Spacing="20">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <HorizontalStackLayout Grid.Column="0" Spacing="10">
+                                <Label Text="📈" FontSize="18" VerticalOptions="Center" />
+                                <Label Text="Project Timeline" FontSize="16" FontAttributes="Bold" TextColor="#E2E8F0" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                            <Label Grid.Column="1" Text="View Gantt →" FontSize="13" TextColor="#60A5FA" VerticalOptions="Center">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ViewGanttCommand}" />
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </Grid>
+
+                        <!-- Phases List -->
+                        <CollectionView ItemsSource="{Binding Phases}" SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:ProjectPhase">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="12,0" Margin="0,0,0,12">
+                                        <!-- Phase Dot -->
+                                        <Border Grid.Column="0" WidthRequest="12" HeightRequest="12" StrokeShape="RoundRectangle 6" StrokeThickness="0" VerticalOptions="Center" Margin="0,0,12,0">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsComplete}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#22C55E" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsInProgress}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsPending}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#475569" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                        </Border>
+
+                                        <!-- Phase Info -->
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                            <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" TextColor="#E2E8F0" />
+                                            <Label Text="{Binding Dates}" FontSize="12" TextColor="#64748B" />
+                                        </VerticalStackLayout>
+
+                                        <!-- Status Badge -->
+                                        <Border Grid.Column="2" Padding="10,4" StrokeShape="RoundRectangle 12" StrokeThickness="0" VerticalOptions="Center">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsComplete}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#065F46" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsInProgress}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#1E3A5F" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsPending}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#334155" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                            <Label Text="{Binding StatusText}" FontSize="12">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsComplete}" Value="True">
+                                                        <Setter Property="TextColor" Value="#34D399" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsInProgress}" Value="True">
+                                                        <Setter Property="TextColor" Value="#60A5FA" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsPending}" Value="True">
+                                                        <Setter Property="TextColor" Value="#94A3B8" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Team Section -->
+                <Border Grid.Column="1" BackgroundColor="#1E293B" StrokeShape="RoundRectangle 16" Padding="24" StrokeThickness="0">
+                    <VerticalStackLayout Spacing="20">
+                        <HorizontalStackLayout Spacing="10">
+                            <Label Text="👥" FontSize="18" VerticalOptions="Center" />
+                            <Label Text="Team" FontSize="16" FontAttributes="Bold" TextColor="#E2E8F0" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+
+                        <CollectionView ItemsSource="{Binding TeamMembers}" SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:TeamMember">
+                                    <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 12" Padding="12" Margin="0,0,0,8" StrokeThickness="0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <!-- Avatar -->
+                                            <Border Grid.Column="0" WidthRequest="44" HeightRequest="44" StrokeShape="RoundRectangle 12" StrokeThickness="0"
+                                                    BackgroundColor="{Binding AvatarColor}" Margin="0,0,12,0">
+                                                <Label Text="{Binding Initials}" FontSize="14" FontAttributes="Bold" TextColor="White"
+                                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                                            </Border>
+
+                                            <!-- Info -->
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                                <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" TextColor="#E2E8F0" />
+                                                <Label Text="{Binding Role}" FontSize="12" TextColor="#64748B" />
+                                            </VerticalStackLayout>
+
+                                            <!-- Stats -->
+                                            <VerticalStackLayout Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center">
+                                                <Label Text="{Binding TaskCount}" FontSize="18" FontAttributes="Bold" TextColor="#60A5FA" HorizontalOptions="End" />
+                                                <HorizontalStackLayout Spacing="4">
+                                                    <Border WidthRequest="8" HeightRequest="8" StrokeShape="RoundRectangle 4" BackgroundColor="{Binding StatusColor}" StrokeThickness="0" VerticalOptions="Center" />
+                                                    <Label Text="{Binding StatusText}" FontSize="11" TextColor="#64748B" VerticalOptions="Center" />
+                                                </HorizontalStackLayout>
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- Row 4: Tasks + Activity -->
+            <Grid Grid.Row="4" ColumnDefinitions="2*,*" ColumnSpacing="24">
+                <!-- Current Tasks -->
+                <Border Grid.Column="0" BackgroundColor="#1E293B" StrokeShape="RoundRectangle 16" Padding="24" StrokeThickness="0">
+                    <VerticalStackLayout Spacing="20">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <HorizontalStackLayout Grid.Column="0" Spacing="10">
+                                <Label Text="📋" FontSize="18" VerticalOptions="Center" />
+                                <Label Text="Current Tasks" FontSize="16" FontAttributes="Bold" TextColor="#E2E8F0" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                            <Label Grid.Column="1" Text="View Board →" FontSize="13" TextColor="#60A5FA" VerticalOptions="Center">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ViewBoardCommand}" />
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="24">
+                            <!-- In Progress Column -->
+                            <VerticalStackLayout Grid.Column="0" Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Grid.Column="0" Text="In Progress" FontSize="14" FontAttributes="Bold" TextColor="#94A3B8" />
+                                    <Border Grid.Column="1" BackgroundColor="#334155" StrokeShape="RoundRectangle 10" Padding="8,2" StrokeThickness="0">
+                                        <Label Text="{Binding InProgressTasks.Count}" FontSize="12" TextColor="#E2E8F0" />
+                                    </Border>
+                                </Grid>
+
+                                <CollectionView ItemsSource="{Binding InProgressTasks}" SelectionMode="None">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ProjectTask">
+                                            <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 12" Padding="16" Margin="0,0,0,10"
+                                                    Stroke="{Binding PriorityColor}" StrokeThickness="0">
+                                                <Border.Background>
+                                                    <SolidColorBrush Color="#0F172A" />
+                                                </Border.Background>
+                                                <VerticalStackLayout Spacing="8">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <Label Grid.Column="0" Text="{Binding Id}" FontSize="11" TextColor="#64748B" FontFamily="Courier" />
+                                                        <Border Grid.Column="1" BackgroundColor="{Binding PriorityBackground}" StrokeShape="RoundRectangle 8" Padding="8,3" StrokeThickness="0">
+                                                            <Label Text="{Binding PriorityText}" FontSize="10" FontAttributes="Bold" TextColor="{Binding PriorityColor}" />
+                                                        </Border>
+                                                    </Grid>
+                                                    <Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" TextColor="#E2E8F0" LineBreakMode="WordWrap" />
+                                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                                        <HorizontalStackLayout Grid.Column="0" Spacing="8">
+                                                            <Border WidthRequest="24" HeightRequest="24" StrokeShape="RoundRectangle 6" StrokeThickness="0">
+                                                                <Border.Background>
+                                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                                        <GradientStop Color="#3B82F6" Offset="0" />
+                                                                        <GradientStop Color="#8B5CF6" Offset="1" />
+                                                                    </LinearGradientBrush>
+                                                                </Border.Background>
+                                                                <Label Text="{Binding AssigneeInitials}" FontSize="10" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                                                            </Border>
+                                                            <Label Text="{Binding AssigneeName}" FontSize="12" TextColor="#94A3B8" VerticalOptions="Center" />
+                                                        </HorizontalStackLayout>
+                                                        <Label Grid.Column="2" Text="{Binding DueDateText}" FontSize="11" TextColor="#64748B" VerticalOptions="Center" />
+                                                    </Grid>
+                                                </VerticalStackLayout>
+                                            </Border>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </VerticalStackLayout>
+
+                            <!-- In Review Column -->
+                            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Grid.Column="0" Text="In Review" FontSize="14" FontAttributes="Bold" TextColor="#94A3B8" />
+                                    <Border Grid.Column="1" BackgroundColor="#334155" StrokeShape="RoundRectangle 10" Padding="8,2" StrokeThickness="0">
+                                        <Label Text="{Binding InReviewTasks.Count}" FontSize="12" TextColor="#E2E8F0" />
+                                    </Border>
+                                </Grid>
+
+                                <CollectionView ItemsSource="{Binding InReviewTasks}" SelectionMode="None">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ProjectTask">
+                                            <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 12" Padding="16" Margin="0,0,0,10"
+                                                    Stroke="{Binding PriorityColor}" StrokeThickness="0">
+                                                <VerticalStackLayout Spacing="8">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <Label Grid.Column="0" Text="{Binding Id}" FontSize="11" TextColor="#64748B" FontFamily="Courier" />
+                                                        <Border Grid.Column="1" BackgroundColor="{Binding PriorityBackground}" StrokeShape="RoundRectangle 8" Padding="8,3" StrokeThickness="0">
+                                                            <Label Text="{Binding PriorityText}" FontSize="10" FontAttributes="Bold" TextColor="{Binding PriorityColor}" />
+                                                        </Border>
+                                                    </Grid>
+                                                    <Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" TextColor="#E2E8F0" LineBreakMode="WordWrap" />
+                                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                                        <HorizontalStackLayout Grid.Column="0" Spacing="8">
+                                                            <Border WidthRequest="24" HeightRequest="24" StrokeShape="RoundRectangle 6" StrokeThickness="0">
+                                                                <Border.Background>
+                                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                                        <GradientStop Color="#3B82F6" Offset="0" />
+                                                                        <GradientStop Color="#8B5CF6" Offset="1" />
+                                                                    </LinearGradientBrush>
+                                                                </Border.Background>
+                                                                <Label Text="{Binding AssigneeInitials}" FontSize="10" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                                                            </Border>
+                                                            <Label Text="{Binding AssigneeName}" FontSize="12" TextColor="#94A3B8" VerticalOptions="Center" />
+                                                        </HorizontalStackLayout>
+                                                        <Label Grid.Column="2" FontSize="11" VerticalOptions="Center">
+                                                            <Label.Text>
+                                                                <Binding Path="DueDateText" />
+                                                            </Label.Text>
+                                                            <Label.Triggers>
+                                                                <DataTrigger TargetType="Label" Binding="{Binding IsOverdue}" Value="True">
+                                                                    <Setter Property="TextColor" Value="#F87171" />
+                                                                </DataTrigger>
+                                                                <DataTrigger TargetType="Label" Binding="{Binding IsOverdue}" Value="False">
+                                                                    <Setter Property="TextColor" Value="#64748B" />
+                                                                </DataTrigger>
+                                                            </Label.Triggers>
+                                                        </Label>
+                                                    </Grid>
+                                                </VerticalStackLayout>
+                                            </Border>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Activity + Connected Services -->
+                <VerticalStackLayout Grid.Column="1" Spacing="24">
+                    <!-- Recent Activity -->
+                    <Border BackgroundColor="#1E293B" StrokeShape="RoundRectangle 16" Padding="24" StrokeThickness="0">
+                        <VerticalStackLayout Spacing="16">
+                            <HorizontalStackLayout Spacing="10">
+                                <Label Text="⚡" FontSize="18" VerticalOptions="Center" />
+                                <Label Text="Recent Activity" FontSize="16" FontAttributes="Bold" TextColor="#E2E8F0" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+
+                            <CollectionView ItemsSource="{Binding RecentActivity}" SelectionMode="None" HeightRequest="200">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ProjectActivity">
+                                        <Grid ColumnDefinitions="Auto,*" Padding="0,8">
+                                            <Border Grid.Column="0" WidthRequest="32" HeightRequest="32" StrokeShape="RoundRectangle 8"
+                                                    BackgroundColor="{Binding BackgroundColor}" StrokeThickness="0" Margin="0,0,12,0">
+                                                <Label Text="{Binding Icon}" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+                                            </Border>
+                                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                                <Label Text="{Binding FormattedText}" FontSize="13" TextColor="#E2E8F0" LineBreakMode="WordWrap" />
+                                                <Label Text="{Binding TimeAgo}" FontSize="11" TextColor="#64748B" />
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Connected Services -->
+                    <Border StrokeShape="RoundRectangle 16" Padding="20" Stroke="#334155" StrokeThickness="1">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#1E293B" Offset="0" />
+                                <GradientStop Color="#0F172A" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <VerticalStackLayout Spacing="16">
+                            <HorizontalStackLayout Spacing="12">
+                                <Label Text="🔗" FontSize="24" VerticalOptions="Center" />
+                                <VerticalStackLayout>
+                                    <Label Text="Connected Services" FontSize="14" FontAttributes="Bold" TextColor="#E2E8F0" />
+                                    <Label Text="All systems operational" FontSize="12" TextColor="#22C55E" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+
+                            <CollectionView ItemsSource="{Binding ConnectedServices}" SelectionMode="None">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ConnectedService">
+                                        <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 8" Padding="10,12" Margin="0,0,0,8" StrokeThickness="0">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <HorizontalStackLayout Grid.Column="0" Spacing="8">
+                                                    <Label Text="{Binding Icon}" FontSize="14" VerticalOptions="Center" />
+                                                    <Label Text="{Binding Name}" FontSize="13" TextColor="#E2E8F0" VerticalOptions="Center" />
+                                                </HorizontalStackLayout>
+                                                <Border Grid.Column="1" BackgroundColor="{Binding StatusBackground}" StrokeShape="RoundRectangle 6" Padding="8,3" StrokeThickness="0">
+                                                    <Label Text="{Binding StatusText}" FontSize="11" TextColor="{Binding StatusTextColor}" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </Grid>
+
+        </Grid>
+    </ScrollView>
+</ContentPage>
