@@ -29,6 +29,7 @@ dotnet_diagnostic.SA1101.severity = none  # Prefix local calls with this
 dotnet_diagnostic.SA1200.severity = none  # Using directives placement
 dotnet_diagnostic.SA1309.severity = none  # Field names should not begin with underscore
 dotnet_diagnostic.SA1633.severity = none  # File should have header
+dotnet_diagnostic.SA1636.severity = none  # File header copyright text mismatch
 dotnet_diagnostic.SA1600.severity = none  # Elements should be documented
 dotnet_diagnostic.SA1601.severity = none  # Partial elements should be documented
 dotnet_diagnostic.SA1602.severity = none  # Enumeration items should be documented
