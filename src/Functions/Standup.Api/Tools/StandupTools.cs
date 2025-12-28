@@ -1,10 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using MediatR;
-using Microsoft.AspNetCore.Http;
-using ModelContextProtocol;
 using ModelContextProtocol.Server;
-using Standup.Application.DTOs;
 using Standup.Application.Features.GenerateStandup;
 using Standup.Domain.Enums;
 
