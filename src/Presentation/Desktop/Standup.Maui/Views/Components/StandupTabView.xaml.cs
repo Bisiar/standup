@@ -1,36 +1,21 @@
-using Standup.Application.ViewModels;
-using Standup.Domain.Entities;
+// -----------------------------------------------------------------------
+// <copyright file="StandupTabView.xaml.cs" company="JourneyTeam">
+//     Copyright (c) JourneyTeam. All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Standup.Maui.Views.Components;
 
+/// <summary>
+/// Code-behind for the Standup Tab view with sidebar configuration and report display.
+/// </summary>
 public partial class StandupTabView : ContentView
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StandupTabView"/> class.
+    /// </summary>
     public StandupTabView()
     {
         InitializeComponent();
-    }
-
-    /// <summary>
-    /// Handles the Switch.Toggled event for repository inclusion.
-    /// Calls the ViewModel to save changes and trigger on-the-fly generation if needed.
-    /// </summary>
-    private async void OnRepoInclusionToggled(object? sender, ToggledEventArgs e)
-    {
-        if (sender is not Switch toggleSwitch)
-        {
-            return;
-        }
-
-        if (toggleSwitch.BindingContext is not GroupedRepository repo)
-        {
-            return;
-        }
-
-        if (BindingContext is not StandupViewModel viewModel)
-        {
-            return;
-        }
-
-        await viewModel.OnRepoInclusionChangedAsync(repo);
     }
 }

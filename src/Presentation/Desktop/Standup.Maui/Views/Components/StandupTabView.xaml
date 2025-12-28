@@ -9,217 +9,314 @@
              x:DataType="viewModels:StandupViewModel">
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="1" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-        <!-- Internal Tab Bar (visible when report exists) -->
-        <Border Grid.Row="0" BackgroundColor="{AppThemeBinding Light=#E5E5E5, Dark=#1A1A1A}"
-                Padding="10,5" IsVisible="{Binding HasReport}">
-            <HorizontalStackLayout Spacing="5" HorizontalOptions="Center">
-                <!-- Back to Config Button -->
-                <Button Text="← Config"
-                        Command="{Binding BackToConfigCommand}"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=Gray, Dark=DimGray}"
-                        FontSize="13"
-                        Padding="10,5" />
-
-                <!-- Report Tab -->
-                <Button Text="Report"
-                        Command="{Binding SwitchViewCommand}"
-                        CommandParameter="{x:Int32 1}"
-                        TextColor="White"
-                        FontSize="13"
-                        Padding="15,8">
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="1">
-                            <Setter Property="BackgroundColor" Value="#3B82F6" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="2">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="3">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="4">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-
-                <!-- Commits Tab (clickable stat) -->
-                <Button Command="{Binding SwitchViewCommand}"
-                        CommandParameter="{x:Int32 2}"
-                        TextColor="White"
-                        FontSize="13"
-                        Padding="15,8">
-                    <Button.Text>
-                        <Binding Path="GroupedReport.TotalCommits" StringFormat="{}{0} Commits" FallbackValue="0 Commits" />
-                    </Button.Text>
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="2">
-                            <Setter Property="BackgroundColor" Value="#3B82F6" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="1">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="3">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="4">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-
-                <!-- PRs Tab -->
-                <Button Command="{Binding SwitchViewCommand}"
-                        CommandParameter="{x:Int32 3}"
-                        TextColor="White"
-                        FontSize="13"
-                        Padding="15,8">
-                    <Button.Text>
-                        <Binding Path="GroupedReport.TotalPullRequests" StringFormat="{}{0} PRs" FallbackValue="0 PRs" />
-                    </Button.Text>
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="3">
-                            <Setter Property="BackgroundColor" Value="#10B981" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="1">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="2">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="4">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-
-                <!-- Tasks Tab -->
-                <Button Command="{Binding SwitchViewCommand}"
-                        CommandParameter="{x:Int32 4}"
-                        TextColor="White"
-                        FontSize="13"
-                        Padding="15,8">
-                    <Button.Text>
-                        <Binding Path="GroupedReport.TotalWorkItems" StringFormat="{}{0} Tasks" FallbackValue="0 Tasks" />
-                    </Button.Text>
-                    <Button.Triggers>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="4">
-                            <Setter Property="BackgroundColor" Value="#8B5CF6" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="1">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="2">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="3">
-                            <Setter Property="BackgroundColor" Value="DimGray" />
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-            </HorizontalStackLayout>
-        </Border>
-
-        <!-- Content Area -->
-        <Grid Grid.Row="1">
-            <!-- VIEW 0: Configuration/Group Selection -->
-            <ScrollView IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0}">
-                <Grid Padding="20">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
+        <!-- LEFT SIDEBAR - Configuration -->
+        <Grid Grid.Column="0" BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}">
+            <ScrollView>
+                <VerticalStackLayout Padding="20" Spacing="20">
                     <!-- Header -->
-                    <VerticalStackLayout Grid.Row="0" Spacing="10">
-                        <Label Text="Standup Report" FontSize="24" FontAttributes="Bold" />
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Standup Report" FontSize="20" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                        <Label Text="Generate AI-powered standup summaries" FontSize="12"
+                               TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                    </VerticalStackLayout>
 
-                        <HorizontalStackLayout Spacing="10">
-                            <Label Text="Group:" FontSize="14" VerticalOptions="Center" />
-                            <Picker Title="Select Group"
-                                    ItemsSource="{Binding Groups}"
+                    <!-- Group Selector -->
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="SELECT GROUP" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                               CharacterSpacing="0.5" />
+                        <Border StrokeShape="RoundRectangle 10" Padding="2"
+                                Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}"
+                                BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#1a1a1a}">
+                            <Picker ItemsSource="{Binding Groups}"
                                     SelectedItem="{Binding SelectedGroup}"
                                     ItemDisplayBinding="{Binding Name}"
-                                    WidthRequest="250"
-                                    VerticalOptions="Center" />
-                        </HorizontalStackLayout>
+                                    FontSize="14"
+                                    TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                        </Border>
+                    </VerticalStackLayout>
 
-                        <!-- Quick Date Range Selection (segmented control style) -->
-                        <HorizontalStackLayout Spacing="0" Margin="0,10,0,0">
-                            <Label Text="Period:" FontSize="14" VerticalOptions="Center" Margin="0,0,10,0" />
-                            <Border StrokeShape="RoundRectangle 6" Stroke="#3B82F6" StrokeThickness="1" Padding="0">
+                    <!-- Period Selector -->
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="TIME PERIOD" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                               CharacterSpacing="0.5" />
+                        <Border StrokeShape="RoundRectangle 10" Padding="4"
+                                BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#1a1a1a}">
+                            <HorizontalStackLayout Spacing="0">
+                                <Button Text="Yesterday"
+                                        Command="{Binding SetPeriodYesterdayCommand}"
+                                        FontSize="12" Padding="12,10" CornerRadius="8" BorderWidth="0">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
+                                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                            <Setter Property="TextColor" Value="White" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
+                                            <Setter Property="BackgroundColor" Value="Transparent" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light=#64748B, Dark=#94a3b8}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
+                                            <Setter Property="BackgroundColor" Value="Transparent" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light=#64748B, Dark=#94a3b8}" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                                <Button Text="Today"
+                                        Command="{Binding SetPeriodTodayCommand}"
+                                        FontSize="12" Padding="12,10" CornerRadius="8" BorderWidth="0">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
+                                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                            <Setter Property="TextColor" Value="White" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
+                                            <Setter Property="BackgroundColor" Value="Transparent" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light=#64748B, Dark=#94a3b8}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
+                                            <Setter Property="BackgroundColor" Value="Transparent" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light=#64748B, Dark=#94a3b8}" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                                <Button Text="Week"
+                                        Command="{Binding SetPeriodWeekCommand}"
+                                        FontSize="12" Padding="12,10" CornerRadius="8" BorderWidth="0">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
+                                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                            <Setter Property="TextColor" Value="White" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
+                                            <Setter Property="BackgroundColor" Value="Transparent" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light=#64748B, Dark=#94a3b8}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
+                                            <Setter Property="BackgroundColor" Value="Transparent" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light=#64748B, Dark=#94a3b8}" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                            </HorizontalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Section Toggles -->
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="INCLUDE SECTIONS" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                               CharacterSpacing="0.5" />
+
+                        <!-- Executive Summary Toggle -->
+                        <Border StrokeShape="RoundRectangle 12" Padding="14"
+                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}"
+                                Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                    <Label Text="Executive Summary" FontSize="14" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                    <Label Text="Business-focused overview" FontSize="11"
+                                           TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                                </VerticalStackLayout>
+                                <Switch Grid.Column="1" IsToggled="{Binding GenerateExecutive}"
+                                        OnColor="#3B82F6" ThumbColor="White" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Technical Summary Toggle -->
+                        <Border StrokeShape="RoundRectangle 12" Padding="14"
+                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}"
+                                Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                    <Label Text="Technical Summary" FontSize="14" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                    <Label Text="Developer-focused details" FontSize="11"
+                                           TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                                </VerticalStackLayout>
+                                <Switch Grid.Column="1" IsToggled="{Binding GenerateTechnical}"
+                                        OnColor="#10B981" ThumbColor="White" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Code Review Toggle -->
+                        <Border StrokeShape="RoundRectangle 12" Padding="14"
+                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}"
+                                Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                    <Label Text="Code Review" FontSize="14" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                    <Label Text="Security and quality analysis" FontSize="11"
+                                           TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                                </VerticalStackLayout>
+                                <Switch Grid.Column="1" IsToggled="{Binding GenerateCodeReview}"
+                                        OnColor="#8B5CF6" ThumbColor="White" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Generate Button -->
+                    <Button Text="Generate Standup"
+                            Command="{Binding GenerateStandupCommand}"
+                            FontSize="15" FontAttributes="Bold" Padding="16" CornerRadius="12"
+                            TextColor="White"
+                            IsVisible="{Binding IsGenerating, Converter={StaticResource InvertedBoolConverter}}">
+                        <Button.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#f97316" Offset="0" />
+                                <GradientStop Color="#ea580c" Offset="1" />
+                            </LinearGradientBrush>
+                        </Button.Background>
+                    </Button>
+
+                    <!-- Progress During Generation -->
+                    <VerticalStackLayout Spacing="8" IsVisible="{Binding IsGenerating}">
+                        <Border StrokeShape="RoundRectangle 12" Padding="16"
+                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}">
+                            <VerticalStackLayout Spacing="10">
+                                <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                                    <ActivityIndicator IsRunning="True" WidthRequest="20" HeightRequest="20"
+                                                       Color="#f97316" />
+                                    <Label Text="{Binding GenerationProgress, StringFormat='{0:P0}'}"
+                                           FontSize="16" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                </HorizontalStackLayout>
+                                <ProgressBar Progress="{Binding GenerationProgress}" ProgressColor="#f97316"
+                                             HeightRequest="6" />
+                                <Label Text="{Binding StatusMessage}" FontSize="11"
+                                       TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                                       HorizontalOptions="Center" LineBreakMode="TailTruncation" MaxLines="1" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- History Section -->
+                    <VerticalStackLayout Spacing="10"
+                                        IsVisible="{Binding ReportHistory.Count, Converter={StaticResource IntToBoolConverter}}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="RECENT REPORTS" FontSize="11"
+                                   TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                                   CharacterSpacing="0.5" VerticalOptions="Center" />
+                            <Button Grid.Column="1" Text="Clear" FontSize="10"
+                                    BackgroundColor="#EF4444" TextColor="White"
+                                    Padding="8,4" HeightRequest="24" CornerRadius="6"
+                                    Command="{Binding ClearAllHistoryCommand}" />
+                        </Grid>
+
+                        <CollectionView ItemsSource="{Binding ReportHistory}" HeightRequest="160" SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="entities:ReportHistory">
+                                    <Border Margin="0,2" Padding="10,8" StrokeShape="RoundRectangle 8"
+                                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}"
+                                            Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:StandupViewModel}}, Path=LoadHistoryItemCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <VerticalStackLayout Grid.Column="0">
+                                                <Label Text="{Binding GroupName}" FontSize="13" FontAttributes="Bold"
+                                                       TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                                <Label Text="{Binding GeneratedAt, StringFormat='{0:MMM dd, HH:mm}'}"
+                                                       FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                                            </VerticalStackLayout>
+                                            <Label Grid.Column="1" Text="{Binding TotalCommits, StringFormat='{0} commits'}"
+                                                   FontSize="10" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}"
+                                                   VerticalOptions="Center" Margin="0,0,8,0" />
+                                            <Button Grid.Column="2" Text="x" FontSize="12"
+                                                    BackgroundColor="Transparent" TextColor="#EF4444"
+                                                    WidthRequest="24" HeightRequest="24" Padding="0"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:StandupViewModel}}, Path=DeleteHistoryItemCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+
+        <!-- Splitter Bar -->
+        <BoxView Grid.Column="1" BackgroundColor="{AppThemeBinding Light=#E2E8F0, Dark=#404040}" />
+
+        <!-- RIGHT PANEL - Report Content -->
+        <Grid Grid.Column="2" BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}">
+            <!-- Empty State -->
+            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                                IsVisible="{Binding HasReport, Converter={StaticResource InvertedBoolConverter}}">
+                <Label Text="📝" FontSize="64" HorizontalOptions="Center" Opacity="0.5" />
+                <Label Text="No Report Generated" FontSize="18" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}"
+                       HorizontalOptions="Center" Margin="0,16,0,0" />
+                <Label Text="Configure options and click Generate Standup" FontSize="14"
+                       TextColor="{AppThemeBinding Light=#CBD5E1, Dark=#64748b}"
+                       HorizontalOptions="Center" Margin="0,8,0,0" />
+            </VerticalStackLayout>
+
+            <!-- Report Content -->
+            <Grid IsVisible="{Binding HasReport}" RowDefinitions="Auto,*">
+                <!-- Tab Bar -->
+                <Border Grid.Row="0" Padding="16,12"
+                        BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                        StrokeThickness="0,0,0,1"
+                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <!-- View Tabs -->
+                        <HorizontalStackLayout Grid.Column="0" Spacing="4">
+                            <Border StrokeShape="RoundRectangle 8" Padding="4"
+                                    BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#1a1a1a}">
                                 <HorizontalStackLayout Spacing="0">
-                                    <Button Text="Yesterday"
-                                            Command="{Binding SetPeriodYesterdayCommand}"
-                                            FontSize="12"
-                                            Padding="14,8"
-                                            CornerRadius="0"
-                                            BorderWidth="0">
+                                    <Button Text="Report" Command="{Binding SwitchViewCommand}" CommandParameter="{x:Int32 1}"
+                                            FontSize="12" Padding="12,8" CornerRadius="6" BorderWidth="0">
                                         <Button.Triggers>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
+                                            <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="1">
                                                 <Setter Property="BackgroundColor" Value="#3B82F6" />
                                                 <Setter Property="TextColor" Value="White" />
-                                            </DataTrigger>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
-                                                <Setter Property="BackgroundColor" Value="Transparent" />
-                                                <Setter Property="TextColor" Value="#3B82F6" />
-                                            </DataTrigger>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
-                                                <Setter Property="BackgroundColor" Value="Transparent" />
-                                                <Setter Property="TextColor" Value="#3B82F6" />
                                             </DataTrigger>
                                         </Button.Triggers>
                                     </Button>
-                                    <BoxView WidthRequest="1" BackgroundColor="#3B82F6" />
-                                    <Button Text="Today"
-                                            Command="{Binding SetPeriodTodayCommand}"
-                                            FontSize="12"
-                                            Padding="14,8"
-                                            CornerRadius="0"
-                                            BorderWidth="0">
+                                    <Button Command="{Binding SwitchViewCommand}" CommandParameter="{x:Int32 2}"
+                                            FontSize="12" Padding="12,8" CornerRadius="6" BorderWidth="0">
+                                        <Button.Text>
+                                            <Binding Path="GroupedReport.TotalCommits" StringFormat="Commits ({0})" FallbackValue="Commits" />
+                                        </Button.Text>
                                         <Button.Triggers>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
+                                            <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="2">
                                                 <Setter Property="BackgroundColor" Value="#3B82F6" />
                                                 <Setter Property="TextColor" Value="White" />
-                                            </DataTrigger>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
-                                                <Setter Property="BackgroundColor" Value="Transparent" />
-                                                <Setter Property="TextColor" Value="#3B82F6" />
-                                            </DataTrigger>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
-                                                <Setter Property="BackgroundColor" Value="Transparent" />
-                                                <Setter Property="TextColor" Value="#3B82F6" />
                                             </DataTrigger>
                                         </Button.Triggers>
                                     </Button>
-                                    <BoxView WidthRequest="1" BackgroundColor="#3B82F6" />
-                                    <Button Text="Week"
-                                            Command="{Binding SetPeriodWeekCommand}"
-                                            FontSize="12"
-                                            Padding="14,8"
-                                            CornerRadius="0"
-                                            BorderWidth="0">
+                                    <Button Command="{Binding SwitchViewCommand}" CommandParameter="{x:Int32 3}"
+                                            FontSize="12" Padding="12,8" CornerRadius="6" BorderWidth="0">
+                                        <Button.Text>
+                                            <Binding Path="GroupedReport.TotalPullRequests" StringFormat="PRs ({0})" FallbackValue="PRs" />
+                                        </Button.Text>
                                         <Button.Triggers>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="2">
-                                                <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                            <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="3">
+                                                <Setter Property="BackgroundColor" Value="#10B981" />
                                                 <Setter Property="TextColor" Value="White" />
                                             </DataTrigger>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="0">
-                                                <Setter Property="BackgroundColor" Value="Transparent" />
-                                                <Setter Property="TextColor" Value="#3B82F6" />
-                                            </DataTrigger>
-                                            <DataTrigger TargetType="Button" Binding="{Binding SelectedPeriod}" Value="1">
-                                                <Setter Property="BackgroundColor" Value="Transparent" />
-                                                <Setter Property="TextColor" Value="#3B82F6" />
+                                        </Button.Triggers>
+                                    </Button>
+                                    <Button Command="{Binding SwitchViewCommand}" CommandParameter="{x:Int32 4}"
+                                            FontSize="12" Padding="12,8" CornerRadius="6" BorderWidth="0">
+                                        <Button.Text>
+                                            <Binding Path="GroupedReport.TotalWorkItems" StringFormat="Tasks ({0})" FallbackValue="Tasks" />
+                                        </Button.Text>
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding CurrentViewMode}" Value="4">
+                                                <Setter Property="BackgroundColor" Value="#8B5CF6" />
+                                                <Setter Property="TextColor" Value="White" />
                                             </DataTrigger>
                                         </Button.Triggers>
                                     </Button>
@@ -227,477 +324,213 @@
                             </Border>
                         </HorizontalStackLayout>
 
-                    </VerticalStackLayout>
-
-                    <!-- Repository Toggles -->
-                    <Border Grid.Row="1" Margin="0,15" Padding="15" StrokeShape="RoundRectangle 8"
-                            IsVisible="{Binding SelectedGroup.Repositories.Count, Converter={StaticResource IntToBoolConverter}}">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Include Repositories" FontSize="14" FontAttributes="Bold" />
-                            <CollectionView ItemsSource="{Binding SelectedGroup.Repositories}" SelectionMode="None">
-                                <CollectionView.ItemTemplate>
-                                    <DataTemplate x:DataType="entities:GroupedRepository">
-                                        <Grid ColumnDefinitions="85,*,Auto" Padding="5,8">
-                                            <!-- Source type on left -->
-                                            <Label Grid.Column="0" Text="{Binding SourceType}" FontSize="10"
-                                                   TextColor="DimGray" VerticalOptions="Center" />
-                                            <!-- Repo name in middle: show ClientCode/Repo or just Repo -->
-                                            <Label Grid.Column="1" VerticalOptions="Center"
-                                                   Text="{Binding Repository}"
-                                                   IsVisible="{Binding ClientCode, Converter={StaticResource IsNullOrEmptyConverter}}" />
-                                            <Label Grid.Column="1" VerticalOptions="Center"
-                                                   IsVisible="{Binding ClientCode, Converter={StaticResource IsNotNullOrEmptyConverter}}">
-                                                <Label.FormattedText>
-                                                    <FormattedString>
-                                                        <Span Text="{Binding ClientCode}" FontAttributes="Bold" TextColor="#10B981" />
-                                                        <Span Text="/" TextColor="Gray" />
-                                                        <Span Text="{Binding Repository}" />
-                                                    </FormattedString>
-                                                </Label.FormattedText>
-                                            </Label>
-                                            <!-- Toggle switch on right -->
-                                            <Switch Grid.Column="2"
-                                                    IsToggled="{Binding IncludeInGeneration}"
-                                                    OnColor="#10B981"
-                                                    ThumbColor="White"
-                                                    VerticalOptions="Center"
-                                                    Toggled="OnRepoInclusionToggled" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Section Toggles -->
-                    <Border Grid.Row="2" Margin="0,15" Padding="15" StrokeShape="RoundRectangle 8">
-                        <VerticalStackLayout Spacing="15">
-                            <Label Text="Include Sections" FontSize="14" FontAttributes="Bold" />
-
-                            <!-- Executive Summary Toggle -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
-                                    <Label Text="Executive Summary" FontSize="14" />
-                                    <Label Text="Business-focused overview for stakeholders"
-                                           FontSize="11" TextColor="DimGray" />
-                                </VerticalStackLayout>
-                                <Switch Grid.Column="1"
-                                        IsToggled="{Binding GenerateExecutive}"
-                                        OnColor="#3B82F6"
-                                        ThumbColor="White" />
-                            </Grid>
-
-                            <!-- Technical Summary Toggle -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
-                                    <Label Text="Technical Summary" FontSize="14" />
-                                    <Label Text="Developer-focused with code details"
-                                           FontSize="11" TextColor="DimGray" />
-                                </VerticalStackLayout>
-                                <Switch Grid.Column="1"
-                                        IsToggled="{Binding GenerateTechnical}"
-                                        OnColor="#10B981"
-                                        ThumbColor="White" />
-                            </Grid>
-
-                            <!-- Code Review Toggle -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
-                                    <Label Text="Code Review" FontSize="14" />
-                                    <Label Text="Security, quality, and testing analysis"
-                                           FontSize="11" TextColor="DimGray" />
-                                </VerticalStackLayout>
-                                <Switch Grid.Column="1"
-                                        IsToggled="{Binding GenerateCodeReview}"
-                                        OnColor="#8B5CF6"
-                                        ThumbColor="White" />
-                            </Grid>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Generate Button -->
-                    <VerticalStackLayout Grid.Row="3" Spacing="10">
-                        <!-- Button with inline progress -->
-                        <Border StrokeShape="RoundRectangle 8"
-                                BackgroundColor="#3B82F6"
-                                WidthRequest="200"
-                                HeightRequest="44"
-                                HorizontalOptions="Center">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding GenerateStandupCommand}" />
-                            </Border.GestureRecognizers>
-                            <Grid>
-                                <!-- Normal state: Text -->
-                                <Label Text="Generate Standup"
-                                       TextColor="White"
-                                       FontSize="14"
-                                       FontAttributes="Bold"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center"
-                                       IsVisible="{Binding IsGenerating, Converter={StaticResource InvertedBoolConverter}}" />
-
-                                <!-- Generating state: Spinner + Percent -->
-                                <HorizontalStackLayout HorizontalOptions="Center"
-                                                       VerticalOptions="Center"
-                                                       Spacing="8"
-                                                       IsVisible="{Binding IsGenerating}">
-                                    <ActivityIndicator IsRunning="{Binding IsGenerating}"
-                                                       WidthRequest="18"
-                                                       HeightRequest="18"
-                                                       Color="White" />
-                                    <Label Text="{Binding GenerationProgress, StringFormat='{0:P0}'}"
-                                           FontSize="14"
-                                           TextColor="White"
-                                           FontAttributes="Bold"
-                                           VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                            </Grid>
-                        </Border>
-
-                        <!-- Progress Bar and Status (visible during generation) -->
-                        <VerticalStackLayout Spacing="5" IsVisible="{Binding IsGenerating}" HorizontalOptions="Center" WidthRequest="350">
-                            <ProgressBar Progress="{Binding GenerationProgress}"
-                                         ProgressColor="#3B82F6"
-                                         HeightRequest="8" />
-                            <Label Text="{Binding StatusMessage}"
-                                   FontSize="11"
-                                   TextColor="Gray"
-                                   HorizontalOptions="Center"
-                                   LineBreakMode="TailTruncation"
-                                   MaxLines="1" />
-                        </VerticalStackLayout>
-
-                        <!-- Status message (visible when not generating) -->
-                        <Label Text="{Binding StatusMessage}"
-                               FontSize="12"
-                               TextColor="Gray"
-                               HorizontalOptions="Center"
-                               IsVisible="{Binding IsGenerating, Converter={StaticResource InvertedBoolConverter}}" />
-                    </VerticalStackLayout>
-
-                    <!-- Report History -->
-                    <Border Grid.Row="4" Margin="0,15,0,0" Padding="15" StrokeShape="RoundRectangle 8"
-                            BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#1A1A1A}"
-                            IsVisible="{Binding ReportHistory.Count, Converter={StaticResource IntToBoolConverter}}">
-                        <VerticalStackLayout Spacing="10">
-                            <!-- Header with Clear All button -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <Label Grid.Column="0" Text="Recent Reports" FontSize="14" FontAttributes="Bold" VerticalOptions="Center" />
-                                <Button Grid.Column="1" Text="Clear All" FontSize="11"
-                                        BackgroundColor="#EF4444" TextColor="White"
-                                        Padding="10,5" HeightRequest="28"
-                                        Command="{Binding ClearAllHistoryCommand}" />
-                            </Grid>
-
-                            <!-- Reports List -->
-                            <CollectionView ItemsSource="{Binding ReportHistory}" HeightRequest="180" SelectionMode="None">
-                                <CollectionView.ItemTemplate>
-                                    <DataTemplate x:DataType="entities:ReportHistory">
-                                        <Border Margin="0,2" Padding="10,8" StrokeShape="RoundRectangle 6"
-                                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#252525}"
-                                                Stroke="{AppThemeBinding Light=#E5E5E5, Dark=#333333}">
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer
-                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:StandupViewModel}}, Path=LoadHistoryItemCommand}"
-                                                    CommandParameter="{Binding .}" />
-                                            </Border.GestureRecognizers>
-                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                                                <!-- Date -->
-                                                <Label Grid.Column="0" VerticalOptions="Center"
-                                                       Text="{Binding GeneratedAt, StringFormat='{0:MMM dd, HH:mm}'}"
-                                                       FontSize="12" TextColor="Gray" WidthRequest="90" />
-
-                                                <!-- Group Name -->
-                                                <Label Grid.Column="1" VerticalOptions="Center"
-                                                       Text="{Binding GroupName}"
-                                                       FontSize="12" FontAttributes="Bold"
-                                                       LineBreakMode="TailTruncation" />
-
-                                                <!-- Summary Type Badge -->
-                                                <Border Grid.Column="2" Padding="6,2" StrokeShape="RoundRectangle 4"
-                                                        BackgroundColor="#3B82F6" VerticalOptions="Center" Margin="5,0">
-                                                    <Label Text="{Binding SummaryType}" FontSize="10" TextColor="White" />
-                                                </Border>
-
-                                                <!-- Commit Count -->
-                                                <Label Grid.Column="3" VerticalOptions="Center"
-                                                       Text="{Binding TotalCommits, StringFormat='{0} commits'}"
-                                                       FontSize="11" TextColor="DimGray" WidthRequest="70" />
-
-                                                <!-- Delete Button -->
-                                                <Button Grid.Column="4" Text="✕" FontSize="12"
-                                                        BackgroundColor="Transparent" TextColor="#EF4444"
-                                                        WidthRequest="28" HeightRequest="28" Padding="0"
-                                                        VerticalOptions="Center"
-                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:StandupViewModel}}, Path=DeleteHistoryItemCommand}"
-                                                        CommandParameter="{Binding .}" />
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
-                        </VerticalStackLayout>
-                    </Border>
-                </Grid>
-            </ScrollView>
-
-            <!-- VIEW 1: Report Summary -->
-            <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="4" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-
-                <!-- Blue accent stripe -->
-                <BoxView Grid.Row="0" Color="#3B82F6" />
-
-                <ScrollView Grid.Row="1">
-                    <Grid Padding="20">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <!-- Header -->
-                        <VerticalStackLayout Grid.Row="0" Spacing="5">
-                        <Label Text="{Binding SelectedGroup.Name, StringFormat='Standup Report - {0}'}"
-                               FontSize="24" FontAttributes="Bold" />
-                        <Label Text="{Binding GroupedReport.PeriodStart, StringFormat='{0:MMM dd} - '}"
-                               FontSize="14" TextColor="DimGray">
-                            <Label.FormattedText>
-                                <FormattedString>
-                                    <Span Text="{Binding GroupedReport.PeriodStart, StringFormat='{0:MMM dd}'}" />
-                                    <Span Text=" - " />
-                                    <Span Text="{Binding GroupedReport.PeriodEnd, StringFormat='{0:MMM dd, yyyy}'}" />
-                                </FormattedString>
-                            </Label.FormattedText>
-                        </Label>
-                    </VerticalStackLayout>
-
-                    <!-- Display Format Toggle -->
-                    <HorizontalStackLayout Grid.Row="1" Spacing="10" VerticalOptions="Start" Margin="0,10,0,0">
-                        <Label Text="Display as:" VerticalOptions="Center" />
-                        <Label Text="Markdown" VerticalOptions="Center"
-                               TextColor="{Binding ShowAsHtml, Converter={StaticResource BoolToTextConverter}, ConverterParameter=Gray|#10B981}" />
-                        <Switch IsToggled="{Binding ShowAsHtml}"
-                                OnColor="#3B82F6"
-                                ThumbColor="White" />
-                        <Label Text="HTML" VerticalOptions="Center"
-                               TextColor="{Binding ShowAsHtml, Converter={StaticResource BoolToTextConverter}, ConverterParameter=#10B981|Gray}" />
-                    </HorizontalStackLayout>
-
-                    <!-- Report Content - HTML View (default) -->
-                    <Border Grid.Row="1" Margin="0,50,0,0" Padding="0" StrokeShape="RoundRectangle 8"
-                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                            IsVisible="{Binding ShowAsHtml}"
-                            VerticalOptions="FillAndExpand">
-                        <WebView VerticalOptions="FillAndExpand" MinimumHeightRequest="400">
-                            <WebView.Source>
-                                <HtmlWebViewSource Html="{Binding HtmlReportContent}" />
-                            </WebView.Source>
-                        </WebView>
-                    </Border>
-
-                    <!-- Report Content - Markdown View -->
-                    <Border Grid.Row="1" Margin="0,50,0,0" Padding="15" StrokeShape="RoundRectangle 8"
-                            BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#2D2D2D}"
-                            IsVisible="{Binding ShowAsHtml, Converter={StaticResource InvertedBoolConverter}}">
-                        <ScrollView>
-                            <Label Text="{Binding ReportContent}"
-                                   FontSize="13"
-                                   FontFamily="Menlo"
-                                   LineBreakMode="WordWrap" />
-                        </ScrollView>
-                    </Border>
-
-                        <!-- Actions -->
-                        <HorizontalStackLayout Grid.Row="2" Spacing="15" HorizontalOptions="Center">
-                            <Button Text="Copy"
-                                    Command="{Binding CopyToClipboardCommand}"
-                                    BackgroundColor="#3B82F6"
-                                    TextColor="White"
-                                    WidthRequest="100" />
-
-                            <Button Text="Save"
-                                    Command="{Binding SaveReportCommand}"
-                                    BackgroundColor="#10B981"
-                                    TextColor="White"
-                                    WidthRequest="100" />
+                        <!-- Action Buttons -->
+                        <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                            <Button Text="Copy" Command="{Binding CopyToClipboardCommand}"
+                                    BackgroundColor="#3B82F6" TextColor="White"
+                                    FontSize="12" Padding="12,8" CornerRadius="8" />
+                            <Button Text="Save" Command="{Binding SaveReportCommand}"
+                                    BackgroundColor="#10B981" TextColor="White"
+                                    FontSize="12" Padding="12,8" CornerRadius="8" />
                         </HorizontalStackLayout>
                     </Grid>
-                </ScrollView>
-            </Grid>
+                </Border>
 
-            <!-- VIEW 2: Commits List -->
-            <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="4" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+                <!-- Content Views -->
+                <Grid Grid.Row="1">
+                    <!-- VIEW 1: Report Summary -->
+                    <ScrollView IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}">
+                        <VerticalStackLayout Padding="24" Spacing="20">
+                            <!-- Header -->
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding SelectedGroup.Name, StringFormat='Standup Report - {0}'}"
+                                       FontSize="24" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                <Label FontSize="14" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding GroupedReport.PeriodStart, StringFormat='{0:MMM dd}'}" />
+                                            <Span Text=" - " />
+                                            <Span Text="{Binding GroupedReport.PeriodEnd, StringFormat='{0:MMM dd, yyyy}'}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                            </VerticalStackLayout>
 
-                <!-- Blue accent stripe for Commits -->
-                <BoxView Grid.Row="0" Color="#3B82F6" />
+                            <!-- Display Toggle -->
+                            <HorizontalStackLayout Spacing="10">
+                                <Label Text="Markdown" VerticalOptions="Center" FontSize="13"
+                                       TextColor="{Binding ShowAsHtml, Converter={StaticResource BoolToTextConverter}, ConverterParameter=Gray|#10B981}" />
+                                <Switch IsToggled="{Binding ShowAsHtml}" OnColor="#3B82F6" ThumbColor="White" />
+                                <Label Text="HTML" VerticalOptions="Center" FontSize="13"
+                                       TextColor="{Binding ShowAsHtml, Converter={StaticResource BoolToTextConverter}, ConverterParameter=#10B981|Gray}" />
+                            </HorizontalStackLayout>
 
-                <ScrollView Grid.Row="1">
-                    <Grid Padding="20">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
+                            <!-- HTML View -->
+                            <Border StrokeShape="RoundRectangle 12" Padding="0"
+                                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+                                    IsVisible="{Binding ShowAsHtml}" MinimumHeightRequest="400">
+                                <WebView>
+                                    <WebView.Source>
+                                        <HtmlWebViewSource Html="{Binding HtmlReportContent}" />
+                                    </WebView.Source>
+                                </WebView>
+                            </Border>
 
-                        <Label Grid.Row="0" Text="{Binding GroupedReport.TotalCommits, StringFormat='Commits ({0})'}"
-                               FontSize="20" FontAttributes="Bold" />
+                            <!-- Markdown View -->
+                            <Border StrokeShape="RoundRectangle 12" Padding="16"
+                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#2D2D2D}"
+                                    IsVisible="{Binding ShowAsHtml, Converter={StaticResource InvertedBoolConverter}}">
+                                <Label Text="{Binding ReportContent}" FontSize="13" FontFamily="Menlo"
+                                       LineBreakMode="WordWrap"
+                                       TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </ScrollView>
 
-                    <CollectionView Grid.Row="1" Margin="0,15,0,0">
-                        <CollectionView.ItemsSource>
-                            <Binding Path="GroupedReport.Sections" />
-                        </CollectionView.ItemsSource>
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="dtos:ClientCodeSection">
-                                <Border Margin="0,0,0,15" Padding="15" StrokeShape="RoundRectangle 8"
-                                        BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#2D2D2D}">
-                                    <VerticalStackLayout Spacing="10">
-                                        <Label Text="{Binding ClientCode, StringFormat='## {0}'}"
-                                               FontSize="16" FontAttributes="Bold" TextColor="#3B82F6" />
-
-                                        <CollectionView ItemsSource="{Binding Commits}">
-                                            <CollectionView.ItemTemplate>
-                                                <DataTemplate x:DataType="entities:CommitInfo">
-                                                    <HorizontalStackLayout Spacing="10" Padding="5,2">
-                                                        <Label Text="•" TextColor="Gray" />
-                                                        <Label Text="{Binding Message}"
-                                                               FontSize="12"
-                                                               LineBreakMode="TailTruncation"
-                                                               MaxLines="1" />
-                                                    </HorizontalStackLayout>
-                                                </DataTemplate>
-                                            </CollectionView.ItemTemplate>
-                                            </CollectionView>
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
+                    <!-- VIEW 2: Commits -->
+                    <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}"
+                          RowDefinitions="4,*">
+                        <BoxView Grid.Row="0" Color="#3B82F6" />
+                        <ScrollView Grid.Row="1" Padding="24">
+                            <VerticalStackLayout Spacing="16">
+                                <Label Text="{Binding GroupedReport.TotalCommits, StringFormat='Commits ({0})'}"
+                                       FontSize="20" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                <CollectionView ItemsSource="{Binding GroupedReport.Sections}">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="dtos:ClientCodeSection">
+                                            <Border Margin="0,0,0,12" Padding="16" StrokeShape="RoundRectangle 12"
+                                                    BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                                                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                                                <VerticalStackLayout Spacing="12">
+                                                    <Label Text="{Binding ClientCode}" FontSize="16" FontAttributes="Bold"
+                                                           TextColor="#f59e0b" />
+                                                    <CollectionView ItemsSource="{Binding Commits}">
+                                                        <CollectionView.ItemTemplate>
+                                                            <DataTemplate x:DataType="entities:CommitInfo">
+                                                                <Grid Padding="8,6" ColumnDefinitions="70,*,Auto"
+                                                                      BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}">
+                                                                    <Label Grid.Column="0" Text="{Binding Sha, StringFormat='{0:7}'}"
+                                                                           FontSize="11" FontFamily="Menlo"
+                                                                           TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                                                                    <Label Grid.Column="1" Text="{Binding Message}" FontSize="13"
+                                                                           LineBreakMode="TailTruncation" MaxLines="1"
+                                                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                                                    <Label Grid.Column="2"
+                                                                           Text="{Binding CommittedAt, Converter={StaticResource DateToRelativeConverter}}"
+                                                                           FontSize="11"
+                                                                           TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}" />
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </CollectionView.ItemTemplate>
+                                                    </CollectionView>
+                                                </VerticalStackLayout>
+                                            </Border>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </VerticalStackLayout>
+                        </ScrollView>
                     </Grid>
-                </ScrollView>
-            </Grid>
 
-            <!-- VIEW 3: PRs List -->
-            <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="4" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-
-                <!-- Green accent stripe for PRs -->
-                <BoxView Grid.Row="0" Color="#10B981" />
-
-                <ScrollView Grid.Row="1">
-                    <Grid Padding="20">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-
-                        <Label Grid.Row="0" Text="{Binding GroupedReport.TotalPullRequests, StringFormat='Pull Requests ({0})'}"
-                               FontSize="20" FontAttributes="Bold" />
-
-                        <CollectionView Grid.Row="1" Margin="0,15,0,0">
-                        <CollectionView.ItemsSource>
-                            <Binding Path="GroupedReport.Sections" />
-                        </CollectionView.ItemsSource>
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="dtos:ClientCodeSection">
-                                <Border Margin="0,0,0,15" Padding="15" StrokeShape="RoundRectangle 8"
-                                        BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#2D2D2D}">
-                                    <VerticalStackLayout Spacing="10">
-                                        <Label Text="{Binding ClientCode, StringFormat='## {0}'}"
-                                               FontSize="16" FontAttributes="Bold" TextColor="#10B981" />
-
-                                        <Label Text="No pull requests in this period"
-                                               FontSize="12" TextColor="Gray"
-                                               IsVisible="{Binding PullRequests.Count, Converter={StaticResource IntToBoolConverter}, ConverterParameter=invert}" />
-
-                                        <CollectionView ItemsSource="{Binding PullRequests}">
-                                            <CollectionView.ItemTemplate>
-                                                <DataTemplate x:DataType="entities:PullRequestInfo">
-                                                    <HorizontalStackLayout Spacing="10" Padding="5,2">
-                                                        <Label Text="•" TextColor="Gray" />
-                                                        <Label Text="{Binding Title}"
-                                                               FontSize="12"
-                                                               LineBreakMode="TailTruncation"
-                                                               MaxLines="1" />
-                                                    </HorizontalStackLayout>
-                                                </DataTemplate>
-                                            </CollectionView.ItemTemplate>
-                                            </CollectionView>
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
+                    <!-- VIEW 3: PRs -->
+                    <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3}"
+                          RowDefinitions="4,*">
+                        <BoxView Grid.Row="0" Color="#10B981" />
+                        <ScrollView Grid.Row="1" Padding="24">
+                            <VerticalStackLayout Spacing="16">
+                                <Label Text="{Binding GroupedReport.TotalPullRequests, StringFormat='Pull Requests ({0})'}"
+                                       FontSize="20" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                <CollectionView ItemsSource="{Binding GroupedReport.Sections}">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="dtos:ClientCodeSection">
+                                            <Border Margin="0,0,0,12" Padding="16" StrokeShape="RoundRectangle 12"
+                                                    BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                                                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                                                <VerticalStackLayout Spacing="12">
+                                                    <Label Text="{Binding ClientCode}" FontSize="16" FontAttributes="Bold"
+                                                           TextColor="#10B981" />
+                                                    <Label Text="No pull requests in this period" FontSize="12"
+                                                           TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}"
+                                                           IsVisible="{Binding PullRequests.Count, Converter={StaticResource IntToBoolConverter}, ConverterParameter=invert}" />
+                                                    <CollectionView ItemsSource="{Binding PullRequests}">
+                                                        <CollectionView.ItemTemplate>
+                                                            <DataTemplate x:DataType="entities:PullRequestInfo">
+                                                                <Grid Padding="8,6" ColumnDefinitions="Auto,*"
+                                                                      BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}">
+                                                                    <Border Grid.Column="0" Padding="6,2" StrokeShape="RoundRectangle 4"
+                                                                            BackgroundColor="#10B981" Margin="0,0,8,0">
+                                                                        <Label Text="{Binding Status}" FontSize="10" TextColor="White" />
+                                                                    </Border>
+                                                                    <Label Grid.Column="1" Text="{Binding Title}" FontSize="13"
+                                                                           LineBreakMode="TailTruncation" MaxLines="1"
+                                                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </CollectionView.ItemTemplate>
+                                                    </CollectionView>
+                                                </VerticalStackLayout>
+                                            </Border>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </VerticalStackLayout>
+                        </ScrollView>
                     </Grid>
-                </ScrollView>
-            </Grid>
 
-            <!-- VIEW 4: Work Items List -->
-            <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=4}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="4" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-
-                <!-- Purple accent stripe for Work Items -->
-                <BoxView Grid.Row="0" Color="#8B5CF6" />
-
-                <ScrollView Grid.Row="1">
-                    <Grid Padding="20">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-
-                        <Label Grid.Row="0" Text="{Binding GroupedReport.TotalWorkItems, StringFormat='Work Items ({0})'}"
-                               FontSize="20" FontAttributes="Bold" />
-
-                        <CollectionView Grid.Row="1" Margin="0,15,0,0">
-                            <CollectionView.ItemsSource>
-                                <Binding Path="GroupedReport.Sections" />
-                            </CollectionView.ItemsSource>
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="dtos:ClientCodeSection">
-                                    <Border Margin="0,0,0,15" Padding="15" StrokeShape="RoundRectangle 8"
-                                            BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#2D2D2D}">
-                                        <VerticalStackLayout Spacing="10">
-                                            <Label Text="{Binding ClientCode, StringFormat='## {0}'}"
-                                                   FontSize="16" FontAttributes="Bold" TextColor="#8B5CF6" />
-
-                                            <Label Text="No work items in this period"
-                                                   FontSize="12" TextColor="Gray"
-                                                   IsVisible="{Binding WorkItems.Count, Converter={StaticResource IntToBoolConverter}, ConverterParameter=invert}" />
-
-                                            <CollectionView ItemsSource="{Binding WorkItems}">
-                                                <CollectionView.ItemTemplate>
-                                                    <DataTemplate x:DataType="entities:WorkItemInfo">
-                                                        <HorizontalStackLayout Spacing="10" Padding="5,2">
-                                                            <Label Text="•" TextColor="Gray" />
-                                                            <Label Text="{Binding Title}"
-                                                                   FontSize="12"
-                                                                   LineBreakMode="TailTruncation"
-                                                                   MaxLines="1" />
-                                                        </HorizontalStackLayout>
-                                                    </DataTemplate>
-                                                </CollectionView.ItemTemplate>
-                                            </CollectionView>
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
+                    <!-- VIEW 4: Work Items -->
+                    <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=4}"
+                          RowDefinitions="4,*">
+                        <BoxView Grid.Row="0" Color="#8B5CF6" />
+                        <ScrollView Grid.Row="1" Padding="24">
+                            <VerticalStackLayout Spacing="16">
+                                <Label Text="{Binding GroupedReport.TotalWorkItems, StringFormat='Work Items ({0})'}"
+                                       FontSize="20" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                <CollectionView ItemsSource="{Binding GroupedReport.Sections}">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="dtos:ClientCodeSection">
+                                            <Border Margin="0,0,0,12" Padding="16" StrokeShape="RoundRectangle 12"
+                                                    BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                                                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                                                <VerticalStackLayout Spacing="12">
+                                                    <Label Text="{Binding ClientCode}" FontSize="16" FontAttributes="Bold"
+                                                           TextColor="#8B5CF6" />
+                                                    <Label Text="No work items in this period" FontSize="12"
+                                                           TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}"
+                                                           IsVisible="{Binding WorkItems.Count, Converter={StaticResource IntToBoolConverter}, ConverterParameter=invert}" />
+                                                    <CollectionView ItemsSource="{Binding WorkItems}">
+                                                        <CollectionView.ItemTemplate>
+                                                            <DataTemplate x:DataType="entities:WorkItemInfo">
+                                                                <Grid Padding="8,6" ColumnDefinitions="Auto,*"
+                                                                      BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}">
+                                                                    <Border Grid.Column="0" Padding="6,2" StrokeShape="RoundRectangle 4"
+                                                                            BackgroundColor="#8B5CF6" Margin="0,0,8,0">
+                                                                        <Label Text="{Binding State}" FontSize="10" TextColor="White" />
+                                                                    </Border>
+                                                                    <Label Grid.Column="1" Text="{Binding Title}" FontSize="13"
+                                                                           LineBreakMode="TailTruncation" MaxLines="1"
+                                                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </CollectionView.ItemTemplate>
+                                                    </CollectionView>
+                                                </VerticalStackLayout>
+                                            </Border>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </VerticalStackLayout>
+                        </ScrollView>
                     </Grid>
-                </ScrollView>
+                </Grid>
             </Grid>
         </Grid>
+
+        <!-- Loading Overlay -->
+        <ActivityIndicator Grid.ColumnSpan="3" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center" VerticalOptions="Center" />
     </Grid>
 </ContentView>
