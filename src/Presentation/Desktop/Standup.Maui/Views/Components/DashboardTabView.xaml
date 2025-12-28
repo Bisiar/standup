@@ -36,20 +36,28 @@
                 </Border>
             </Grid>
 
-            <!-- Row 1: Metric Cards -->
+            <!-- Row 1: Metric Cards with Gradient Backgrounds -->
             <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="16">
-                <!-- Total Commits Card -->
+                <!-- Total Commits Card (Blue gradient) -->
                 <Border Grid.Column="0"
-                        BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
-                        StrokeShape="RoundRectangle 12"
+                        StrokeShape="RoundRectangle 16"
                         Padding="20"
                         StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#1E3A5F" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
                     <Grid RowDefinitions="Auto,Auto,Auto">
-                        <Label Grid.Row="0"
-                               Text="TOTAL COMMITS"
-                               FontSize="11"
-                               TextColor="#94A3B8"
-                               CharacterSpacing="0.5" />
+                        <HorizontalStackLayout Grid.Row="0" Spacing="6">
+                            <Label Text="📝" FontSize="16" VerticalOptions="Center" />
+                            <Label Text="TOTAL COMMITS"
+                                   FontSize="11"
+                                   TextColor="#94A3B8"
+                                   CharacterSpacing="0.5"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                         <Label Grid.Row="1"
                                Text="{Binding TotalCommits}"
                                FontSize="32"
@@ -64,18 +72,26 @@
                     </Grid>
                 </Border>
 
-                <!-- Lines Added Card -->
+                <!-- Lines Added Card (Green gradient) -->
                 <Border Grid.Column="1"
-                        BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
-                        StrokeShape="RoundRectangle 12"
+                        StrokeShape="RoundRectangle 16"
                         Padding="20"
                         StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#064E3B" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
                     <Grid RowDefinitions="Auto,Auto,Auto">
-                        <Label Grid.Row="0"
-                               Text="LINES ADDED"
-                               FontSize="11"
-                               TextColor="#94A3B8"
-                               CharacterSpacing="0.5" />
+                        <HorizontalStackLayout Grid.Row="0" Spacing="6">
+                            <Label Text="➕" FontSize="16" VerticalOptions="Center" />
+                            <Label Text="LINES ADDED"
+                                   FontSize="11"
+                                   TextColor="#94A3B8"
+                                   CharacterSpacing="0.5"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                         <Label Grid.Row="1"
                                FontSize="32"
                                FontAttributes="Bold"
@@ -93,18 +109,26 @@
                     </Grid>
                 </Border>
 
-                <!-- Lines Deleted Card -->
+                <!-- Lines Deleted Card (Red gradient) -->
                 <Border Grid.Column="2"
-                        BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
-                        StrokeShape="RoundRectangle 12"
+                        StrokeShape="RoundRectangle 16"
                         Padding="20"
                         StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#7F1D1D" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
                     <Grid RowDefinitions="Auto,Auto,Auto">
-                        <Label Grid.Row="0"
-                               Text="LINES DELETED"
-                               FontSize="11"
-                               TextColor="#94A3B8"
-                               CharacterSpacing="0.5" />
+                        <HorizontalStackLayout Grid.Row="0" Spacing="6">
+                            <Label Text="➖" FontSize="16" VerticalOptions="Center" />
+                            <Label Text="LINES DELETED"
+                                   FontSize="11"
+                                   TextColor="#94A3B8"
+                                   CharacterSpacing="0.5"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                         <Label Grid.Row="1"
                                FontSize="32"
                                FontAttributes="Bold"
@@ -122,18 +146,26 @@
                     </Grid>
                 </Border>
 
-                <!-- Net Change Card -->
+                <!-- Net Change Card (Purple gradient) -->
                 <Border Grid.Column="3"
-                        BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
-                        StrokeShape="RoundRectangle 12"
+                        StrokeShape="RoundRectangle 16"
                         Padding="20"
                         StrokeThickness="0">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0" />
+                            <GradientStop Color="#4C1D95" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
                     <Grid RowDefinitions="Auto,Auto,Auto">
-                        <Label Grid.Row="0"
-                               Text="NET CHANGE"
-                               FontSize="11"
-                               TextColor="#94A3B8"
-                               CharacterSpacing="0.5" />
+                        <HorizontalStackLayout Grid.Row="0" Spacing="6">
+                            <Label Text="📈" FontSize="16" VerticalOptions="Center" />
+                            <Label Text="NET CHANGE"
+                                   FontSize="11"
+                                   TextColor="#94A3B8"
+                                   CharacterSpacing="0.5"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                         <Label Grid.Row="1"
                                FontSize="32"
                                FontAttributes="Bold"
@@ -473,69 +505,149 @@
                 </Border>
             </Grid>
 
-            <!-- Row 6: Recent Activity Timeline -->
-            <Border Grid.Row="6"
-                    BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
-                    StrokeShape="RoundRectangle 12"
-                    Padding="20"
-                    StrokeThickness="0"
-                    IsVisible="{Binding HasData}">
-                <Grid RowDefinitions="Auto,*">
-                    <Label Grid.Row="0"
-                           Text="🕐 Recent Activity"
-                           FontSize="14"
-                           FontAttributes="Bold"
-                           TextColor="#E2E8F0"
-                           Margin="0,0,0,16" />
+            <!-- Row 6: Bottom Section (Recent Activity + Top Contributors) -->
+            <Grid Grid.Row="6" ColumnDefinitions="2*,*" ColumnSpacing="16" IsVisible="{Binding HasData}">
+                <!-- Recent Activity Card -->
+                <Border Grid.Column="0"
+                        BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="20"
+                        StrokeThickness="0">
+                    <Grid RowDefinitions="Auto,*">
+                        <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+                            <Label Text="⚡" FontSize="14" VerticalOptions="Center" />
+                            <Label Text="Recent Activity"
+                                   FontSize="14"
+                                   FontAttributes="Bold"
+                                   TextColor="#E2E8F0"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
 
-                    <CollectionView Grid.Row="1"
-                                    ItemsSource="{Binding RecentCommits}"
-                                    SelectionMode="None"
-                                    HeightRequest="250">
-                        <CollectionView.EmptyView>
-                            <Label Text="No recent commits"
-                                   FontSize="13"
-                                   TextColor="#64748B"
-                                   HorizontalOptions="Center" />
-                        </CollectionView.EmptyView>
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="entities:CommitInfo">
-                                <Grid ColumnDefinitions="24,*" Margin="0,0,0,12">
-                                    <!-- Timeline dot -->
-                                    <Border Grid.Column="0"
-                                            BackgroundColor="#3B82F6"
-                                            StrokeShape="RoundRectangle 6"
-                                            WidthRequest="12"
-                                            HeightRequest="12"
-                                            StrokeThickness="0"
-                                            VerticalOptions="Start"
-                                            Margin="0,4,0,0" />
+                        <CollectionView Grid.Row="1"
+                                        ItemsSource="{Binding RecentCommits}"
+                                        SelectionMode="None"
+                                        HeightRequest="220">
+                            <CollectionView.EmptyView>
+                                <Label Text="No recent commits"
+                                       FontSize="13"
+                                       TextColor="#64748B"
+                                       HorizontalOptions="Center" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="entities:CommitInfo">
+                                    <Border BackgroundColor="#0F172A"
+                                            StrokeShape="RoundRectangle 10"
+                                            Padding="12"
+                                            Margin="0,0,0,8"
+                                            StrokeThickness="0">
+                                        <Grid ColumnDefinitions="Auto,*">
+                                            <!-- Activity Type Dot -->
+                                            <Border Grid.Column="0"
+                                                    BackgroundColor="#3B82F6"
+                                                    StrokeShape="RoundRectangle 5"
+                                                    WidthRequest="10"
+                                                    HeightRequest="10"
+                                                    StrokeThickness="0"
+                                                    VerticalOptions="Start"
+                                                    Margin="0,5,12,0" />
 
-                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                        <Label Text="{Binding CommittedAt, StringFormat='{0:MMM dd, h:mm tt}'}"
-                                               FontSize="11"
-                                               TextColor="#64748B" />
-                                        <HorizontalStackLayout Spacing="6">
-                                            <Label Text="{Binding Repository}"
+                                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                                <Label FontSize="13" TextColor="#E2E8F0" LineBreakMode="TailTruncation" MaxLines="1">
+                                                    <Label.Text>
+                                                        <MultiBinding StringFormat="{}{0} - {1}">
+                                                            <Binding Path="Repository" />
+                                                            <Binding Path="Message" />
+                                                        </MultiBinding>
+                                                    </Label.Text>
+                                                </Label>
+                                                <Label Text="{Binding CommittedAt, StringFormat='{0:MMM dd, h:mm tt}'}"
+                                                       FontSize="11"
+                                                       TextColor="#64748B" />
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+                </Border>
+
+                <!-- Top Contributors Card -->
+                <Border Grid.Column="1"
+                        BackgroundColor="{AppThemeBinding Light=#1E293B, Dark=#1E293B}"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="20"
+                        StrokeThickness="0">
+                    <Grid RowDefinitions="Auto,*">
+                        <HorizontalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+                            <Label Text="👥" FontSize="14" VerticalOptions="Center" />
+                            <Label Text="Top Contributors"
+                                   FontSize="14"
+                                   FontAttributes="Bold"
+                                   TextColor="#E2E8F0"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+
+                        <CollectionView Grid.Row="1"
+                                        ItemsSource="{Binding TopContributors}"
+                                        SelectionMode="None"
+                                        HeightRequest="220">
+                            <CollectionView.EmptyView>
+                                <Label Text="No contributors"
+                                       FontSize="13"
+                                       TextColor="#64748B"
+                                       HorizontalOptions="Center" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:ContributorStats">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+                                        <!-- Avatar with Initials -->
+                                        <Border Grid.Column="0"
+                                                BackgroundColor="{Binding AvatarColor}"
+                                                StrokeShape="RoundRectangle 18"
+                                                WidthRequest="36"
+                                                HeightRequest="36"
+                                                StrokeThickness="0"
+                                                Margin="0,0,12,0">
+                                            <Label Text="{Binding Initials}"
                                                    FontSize="13"
                                                    FontAttributes="Bold"
-                                                   TextColor="#F59E0B" />
-                                            <Label Text="-"
+                                                   TextColor="White"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                        </Border>
+
+                                        <!-- Name and Email -->
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                            <Label Text="{Binding Name}"
                                                    FontSize="13"
-                                                   TextColor="#64748B" />
-                                            <Label Text="{Binding Message}"
-                                                   FontSize="13"
+                                                   FontAttributes="Bold"
                                                    TextColor="#E2E8F0"
-                                                   LineBreakMode="TailTruncation"
-                                                   MaxLines="1" />
-                                        </HorizontalStackLayout>
-                                    </VerticalStackLayout>
-                                </Grid>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </Grid>
-            </Border>
+                                                   LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding TotalChanges, StringFormat='{0:N0} lines changed'}"
+                                                   FontSize="11"
+                                                   TextColor="#64748B" />
+                                        </VerticalStackLayout>
+
+                                        <!-- Commit Count Badge -->
+                                        <Border Grid.Column="2"
+                                                BackgroundColor="#1E3A5F"
+                                                StrokeShape="RoundRectangle 12"
+                                                Padding="10,4"
+                                                StrokeThickness="0"
+                                                VerticalOptions="Center">
+                                            <Label Text="{Binding CommitCount, StringFormat='{0} commits'}"
+                                                   FontSize="11"
+                                                   FontAttributes="Bold"
+                                                   TextColor="#60A5FA" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+                </Border>
+            </Grid>
 
             <!-- Row 7: Group Health Warnings -->
             <Border Grid.Row="7"
@@ -569,141 +681,34 @@
                         </Border>
                     </Grid>
 
-                    <!-- Warnings List -->
-                    <VerticalStackLayout Grid.Row="1" Spacing="8">
-                        <!-- Critical Warnings -->
-                        <CollectionView ItemsSource="{Binding CriticalWarnings}"
-                                        SelectionMode="None"
-                                        IsVisible="{Binding HasCriticalWarnings}">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="models:GroupWarning">
-                                    <Border BackgroundColor="#0F172A"
-                                            StrokeShape="RoundRectangle 8"
-                                            Padding="12"
-                                            Margin="0,0,0,8">
-                                        <Border.Stroke>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                <GradientStop Color="#EF4444" Offset="0" />
-                                                <GradientStop Color="Transparent" Offset="0.1" />
-                                            </LinearGradientBrush>
-                                        </Border.Stroke>
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <Label Grid.Column="0"
-                                                   Text="{Binding Icon}"
-                                                   FontSize="16"
-                                                   VerticalOptions="Center"
-                                                   Margin="0,0,12,0" />
-                                            <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                                <Label FontSize="13" FontAttributes="Bold" TextColor="#E2E8F0">
-                                                    <Label.Text>
-                                                        <MultiBinding StringFormat="{}{0} - {1}">
-                                                            <Binding Path="ClientCode" />
-                                                            <Binding Path="Message" />
-                                                        </MultiBinding>
-                                                    </Label.Text>
-                                                </Label>
-                                                <Label Text="{Binding Details}"
-                                                       FontSize="11"
-                                                       TextColor="#64748B" />
-                                            </VerticalStackLayout>
-                                            <Label Grid.Column="2"
-                                                   Text="{Binding ActionText}"
-                                                   FontSize="12"
-                                                   TextColor="#60A5FA"
-                                                   VerticalOptions="Center"
-                                                   IsVisible="{Binding ActionText, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-
-                        <!-- Configuration Warnings -->
-                        <CollectionView ItemsSource="{Binding Warnings}"
-                                        SelectionMode="None">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="models:GroupWarning">
-                                    <Border BackgroundColor="#0F172A"
-                                            StrokeShape="RoundRectangle 8"
-                                            Padding="12"
-                                            Margin="0,0,0,8">
-                                        <Border.Stroke>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                <GradientStop Color="#F59E0B" Offset="0" />
-                                                <GradientStop Color="Transparent" Offset="0.1" />
-                                            </LinearGradientBrush>
-                                        </Border.Stroke>
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <Label Grid.Column="0"
-                                                   Text="{Binding Icon}"
-                                                   FontSize="16"
-                                                   VerticalOptions="Center"
-                                                   Margin="0,0,12,0" />
-                                            <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                                <Label FontSize="13" FontAttributes="Bold" TextColor="#E2E8F0">
-                                                    <Label.Text>
-                                                        <MultiBinding StringFormat="{}{0} - {1}">
-                                                            <Binding Path="ClientCode" />
-                                                            <Binding Path="Message" />
-                                                        </MultiBinding>
-                                                    </Label.Text>
-                                                </Label>
-                                                <Label Text="{Binding Details}"
-                                                       FontSize="11"
-                                                       TextColor="#64748B" />
-                                            </VerticalStackLayout>
-                                            <Label Grid.Column="2"
-                                                   Text="{Binding ActionText}"
-                                                   FontSize="12"
-                                                   TextColor="#60A5FA"
-                                                   VerticalOptions="Center"
-                                                   IsVisible="{Binding ActionText, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-
-                        <!-- Info Warnings -->
-                        <CollectionView ItemsSource="{Binding InfoWarnings}"
-                                        SelectionMode="None">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="models:GroupWarning">
-                                    <Border BackgroundColor="#0F172A"
-                                            StrokeShape="RoundRectangle 8"
-                                            Padding="12"
-                                            Margin="0,0,0,8">
-                                        <Border.Stroke>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                <GradientStop Color="#3B82F6" Offset="0" />
-                                                <GradientStop Color="Transparent" Offset="0.1" />
-                                            </LinearGradientBrush>
-                                        </Border.Stroke>
-                                        <Grid ColumnDefinitions="Auto,*">
-                                            <Label Grid.Column="0"
-                                                   Text="{Binding Icon}"
-                                                   FontSize="16"
-                                                   VerticalOptions="Center"
-                                                   Margin="0,0,12,0" />
-                                            <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                                <Label FontSize="13" FontAttributes="Bold" TextColor="#E2E8F0">
-                                                    <Label.Text>
-                                                        <MultiBinding StringFormat="{}{0} - {1}">
-                                                            <Binding Path="ClientCode" />
-                                                            <Binding Path="Message" />
-                                                        </MultiBinding>
-                                                    </Label.Text>
-                                                </Label>
-                                                <Label Text="{Binding Details}"
-                                                       FontSize="11"
-                                                       TextColor="#64748B" />
-                                            </VerticalStackLayout>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </VerticalStackLayout>
+                    <!-- Combined Warnings List -->
+                    <CollectionView Grid.Row="1" ItemsSource="{Binding AllWarnings}" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:GroupWarning">
+                                <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 8"
+                                        Padding="12" Margin="0,0,0,8" Stroke="{Binding SeverityColor}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Label Grid.Column="0" Text="{Binding Icon}" FontSize="16"
+                                               VerticalOptions="Center" Margin="0,0,12,0" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                            <Label FontSize="13" FontAttributes="Bold" TextColor="#E2E8F0">
+                                                <Label.Text>
+                                                    <MultiBinding StringFormat="{}{0} - {1}">
+                                                        <Binding Path="ClientCode" />
+                                                        <Binding Path="Message" />
+                                                    </MultiBinding>
+                                                </Label.Text>
+                                            </Label>
+                                            <Label Text="{Binding Details}" FontSize="11" TextColor="#64748B" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="2" Text="{Binding ActionText}" FontSize="12"
+                                               TextColor="#60A5FA" VerticalOptions="Center"
+                                               IsVisible="{Binding ActionText, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                 </Grid>
             </Border>
 

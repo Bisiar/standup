@@ -170,6 +170,12 @@ public partial class DashboardViewModel : ObservableObject
     private ObservableCollection<CommitInfo> _recentCommits = new();
 
     /// <summary>
+    /// Gets or sets the top contributors for the dashboard.
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<ContributorStats> _topContributors = new();
+
+    /// <summary>
     /// Gets the net change (additions - deletions).
     /// </summary>
     public int NetChange => TotalAdditions - TotalDeletions;
@@ -244,6 +250,12 @@ public partial class DashboardViewModel : ObservableObject
     /// Gets a value indicating whether the group is healthy (no critical or warning issues).
     /// </summary>
     public bool IsGroupHealthy => CriticalWarnings.Count == 0 && Warnings.Count == 0;
+
+    /// <summary>
+    /// Gets all warnings combined (Critical + Warnings + Info) for single-list display.
+    /// </summary>
+    public IEnumerable<GroupWarning> AllWarnings =>
+        CriticalWarnings.Concat(Warnings).Concat(InfoWarnings);
 
     /// <summary>
     /// Gets all commits - from Report if available, otherwise from local repos.
@@ -481,6 +493,7 @@ public partial class DashboardViewModel : ObservableObject
             ClientMetrics.Clear();
             ClientCodeMetrics.Clear();
             RecentCommits.Clear();
+            TopContributors.Clear();
             TotalAdditions = 0;
             TotalDeletions = 0;
             TotalCommits = 0;
@@ -502,6 +515,7 @@ public partial class DashboardViewModel : ObservableObject
             RepositoryMetrics.Clear();
             ClientCodeMetrics.Clear();
             RecentCommits.Clear();
+            TopContributors.Clear();
             StatusMessage = $"No commits found for {PeriodDisplay}";
             RefreshWarnings();
             NotifyCalculatedPropertiesChanged();
@@ -551,6 +565,9 @@ public partial class DashboardViewModel : ObservableObject
 
         // Generate client code metrics (grouped by client code from repo config or report sections)
         RefreshClientCodeMetrics(filteredCommits);
+
+        // Generate top contributors from commits
+        RefreshTopContributors(filteredCommits);
 
         // Populate recent commits (last 5 for timeline)
         var recentCommitData = filteredCommits
