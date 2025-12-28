@@ -77,4 +77,15 @@ public class GroupWarning
         "Projects" => "Configure →",
         _ => null,
     };
+
+    /// <summary>
+    /// Gets the border color for this warning based on severity.
+    /// </summary>
+    public string SeverityColor => Severity switch
+    {
+        WarningSeverity.Critical => "#EF4444",
+        WarningSeverity.Warning => "#F59E0B",
+        WarningSeverity.Info => "#3B82F6",
+        _ => "#64748B",
+    };
 }

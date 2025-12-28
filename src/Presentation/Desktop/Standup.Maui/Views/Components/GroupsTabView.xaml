@@ -2,266 +2,471 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
              xmlns:entities="clr-namespace:Standup.Domain.Entities;assembly=Standup.Domain"
              x:Class="Standup.Maui.Views.Components.GroupsTabView"
              x:DataType="viewModels:GroupListViewModel">
 
-    <Grid Padding="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360" />
+            <ColumnDefinition Width="1" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-        <!-- Header -->
-        <HorizontalStackLayout Grid.Row="0" Margin="0,0,0,15">
-            <Label Text="Repository Groups" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
-            <Label Text="{Binding Groups.Count, StringFormat=' ({0})'}" FontSize="16" TextColor="Gray" VerticalOptions="Center" />
-        </HorizontalStackLayout>
+        <!-- LEFT PANEL - Groups List -->
+        <Grid Grid.Column="0" BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-        <!-- Groups List -->
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Spacing="10">
-                <CollectionView ItemsSource="{Binding Groups}" SelectionMode="None">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="entities:RepositoryGroup">
-                            <Border Margin="0,5" Padding="0" StrokeShape="RoundRectangle 8"
-                                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}">
-                                <VerticalStackLayout>
-                                    <!-- Group Header -->
-                                    <Grid Padding="15" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
-                                        <!-- Default Star -->
-                                        <Label Grid.Column="0" Text="★" FontSize="18" TextColor="Gold"
-                                               IsVisible="{Binding IsDefault}" VerticalOptions="Center" Margin="0,0,10,0">
-                                            <Label.GestureRecognizers>
-                                                <TapGestureRecognizer
-                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=SetDefaultGroupCommand}"
-                                                    CommandParameter="{Binding .}" />
-                                            </Label.GestureRecognizers>
-                                        </Label>
-                                        <Label Grid.Column="0" Text="☆" FontSize="18" TextColor="Gray"
-                                               IsVisible="{Binding IsDefault, Converter={StaticResource InvertedBoolConverter}}"
-                                               VerticalOptions="Center" Margin="0,0,10,0">
-                                            <Label.GestureRecognizers>
-                                                <TapGestureRecognizer
-                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=SetDefaultGroupCommand}"
-                                                    CommandParameter="{Binding .}" />
-                                            </Label.GestureRecognizers>
-                                        </Label>
+            <!-- Header with Search -->
+            <VerticalStackLayout Grid.Row="0" Padding="16" Spacing="12"
+                                 BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}">
+                <!-- Title and Add Button -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <HorizontalStackLayout Grid.Column="0" Spacing="8">
+                        <Label Text="&#x1F4C1;" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="Groups" FontSize="18" FontAttributes="Bold" VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                    </HorizontalStackLayout>
+                    <Button Grid.Column="1" Text="+ Add Group"
+                            FontSize="12" Padding="12,8"
+                            BackgroundColor="#F97316" TextColor="White"
+                            Command="{Binding ShowAddGroupCommand}" />
+                </Grid>
 
-                                        <!-- Group Name and Info -->
-                                        <VerticalStackLayout Grid.Column="1">
-                                            <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
-                                            <HorizontalStackLayout Spacing="10">
-                                                <Label Text="{Binding Repositories.Count, StringFormat='{0} repos'}"
-                                                       FontSize="12" TextColor="Gray" />
-                                                <Label Text="{Binding Description}" FontSize="12" TextColor="DimGray"
-                                                       IsVisible="{Binding Description, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
-                                            </HorizontalStackLayout>
-                                            <!-- Include in Generation Toggle -->
-                                            <HorizontalStackLayout Spacing="5" Margin="0,5,0,0">
-                                                <HorizontalStackLayout.GestureRecognizers>
-                                                    <TapGestureRecognizer
-                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=ToggleIncludeInGenerationCommand}"
-                                                        CommandParameter="{Binding .}" />
-                                                </HorizontalStackLayout.GestureRecognizers>
-                                                <Label Text="✓" FontSize="14" TextColor="#10B981" VerticalOptions="Center"
-                                                       IsVisible="{Binding IncludeInGeneration}" FontAttributes="Bold" />
-                                                <Label Text="✗" FontSize="14" TextColor="#EF4444" VerticalOptions="Center"
-                                                       IsVisible="{Binding IncludeInGeneration, Converter={StaticResource InvertedBoolConverter}}" FontAttributes="Bold" />
-                                                <Label Text="Include in Generation" FontSize="11" TextColor="Gray" VerticalOptions="Center" />
-                                            </HorizontalStackLayout>
-                                        </VerticalStackLayout>
+                <!-- Search Box -->
+                <Border StrokeShape="RoundRectangle 8"
+                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}"
+                        BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#1a1a1a}">
+                    <Grid Padding="12,10" ColumnDefinitions="Auto,*">
+                        <Label Grid.Column="0" Text="&#x1F50D;" FontSize="14" VerticalOptions="Center" Margin="0,0,8,0" />
+                        <Entry Grid.Column="1" Placeholder="Search groups..."
+                               Text="{Binding SearchText}"
+                               BackgroundColor="Transparent"
+                               FontSize="13" />
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
 
-                                        <!-- Edit Button -->
-                                        <Button Grid.Column="2" Text="✎" FontSize="14"
-                                                BackgroundColor="Transparent" TextColor="#F59E0B"
-                                                WidthRequest="30" HeightRequest="30" Padding="0"
-                                                VerticalOptions="Center"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=ShowEditGroupCommand}"
-                                                CommandParameter="{Binding .}" />
+            <!-- Groups List -->
+            <CollectionView Grid.Row="1"
+                           ItemsSource="{Binding FilteredGroups}"
+                           SelectionMode="Single"
+                           SelectedItem="{Binding SelectedGroup}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="entities:RepositoryGroup">
+                        <Border Padding="0" Margin="0"
+                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}"
+                                StrokeThickness="0,0,0,1"
+                                Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                            <Grid Padding="16,14" ColumnDefinitions="Auto,*">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=SelectGroupCommand}"
+                                                         CommandParameter="{Binding .}" />
+                                </Grid.GestureRecognizers>
 
-                                        <!-- Add Repo Button -->
-                                        <Button Grid.Column="3" Text="+Repo" FontSize="11"
-                                                BackgroundColor="#3B82F6" TextColor="White"
-                                                Padding="8,4" VerticalOptions="Center" Margin="5,0"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=ShowAddRepositoryCommand}"
-                                                CommandParameter="{Binding .}" />
+                                <!-- Star Icon -->
+                                <Label Grid.Column="0"
+                                       Text="{Binding IsDefault, Converter={StaticResource BoolToTextConverter}, ConverterParameter='★|☆'}"
+                                       TextColor="{Binding IsDefault, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FBBF24|#64748B'}"
+                                       FontSize="16" VerticalOptions="Start" Margin="0,2,10,0">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=SetDefaultGroupCommand}"
+                                                              CommandParameter="{Binding .}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
 
-                                        <!-- Generate Button -->
-                                        <Button Grid.Column="4" Text="Generate" FontSize="11"
-                                                BackgroundColor="#10B981" TextColor="White"
-                                                Padding="8,4" VerticalOptions="Center" Margin="5,0"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=NavigateToStandupCommand}"
-                                                CommandParameter="{Binding .}" />
-
-                                        <!-- Delete Button -->
-                                        <Button Grid.Column="5" Text="✕" FontSize="14"
-                                                BackgroundColor="Transparent" TextColor="Gray"
-                                                WidthRequest="30" HeightRequest="30" Padding="0"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=DeleteGroupCommand}"
-                                                CommandParameter="{Binding .}" />
+                                <!-- Group Info -->
+                                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                    <!-- Name and Badges Row -->
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label Grid.Column="0" Text="{Binding Name}" FontSize="15" FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}"
+                                               LineBreakMode="TailTruncation" />
+                                        <HorizontalStackLayout Grid.Column="1" Spacing="6">
+                                            <!-- Repo Count Badge -->
+                                            <Border StrokeShape="RoundRectangle 10" Padding="8,3"
+                                                    BackgroundColor="{AppThemeBinding Light=#E0E7FF, Dark=#1e3a5f}">
+                                                <Label Text="{Binding Repositories.Count, StringFormat='{0} repos'}" FontSize="10"
+                                                       TextColor="{AppThemeBinding Light=#4338CA, Dark=#60a5fa}" />
+                                            </Border>
+                                            <!-- Active/Excluded Badge -->
+                                            <Border StrokeShape="RoundRectangle 10" Padding="8,3"
+                                                    BackgroundColor="{Binding IncludeInGeneration, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#065f46|#7f1d1d'}">
+                                                <Label Text="{Binding IncludeInGeneration, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Active|Excluded'}" FontSize="10"
+                                                       TextColor="{Binding IncludeInGeneration, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#34d399|#fca5a5'}" />
+                                            </Border>
+                                        </HorizontalStackLayout>
                                     </Grid>
 
-                                    <!-- Repository List (nested) -->
-                                    <CollectionView ItemsSource="{Binding Repositories}"
-                                                    Margin="15,0,15,10"
-                                                    IsVisible="{Binding Repositories.Count, Converter={StaticResource IntToBoolConverter}}">
-                                        <CollectionView.ItemTemplate>
-                                            <DataTemplate x:DataType="entities:GroupedRepository">
-                                                <Border Margin="0,2" Padding="10" StrokeShape="RoundRectangle 4"
-                                                        BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#252525}">
-                                                    <Grid ColumnDefinitions="*,Auto,Auto">
-                                                        <VerticalStackLayout Grid.Column="0">
-                                                            <Label Text="{Binding Repository}" FontSize="14" FontAttributes="Bold" />
-                                                            <Label Text="{Binding Organization, StringFormat='{0}'}"
-                                                                   FontSize="11" TextColor="Gray" />
-                                                        </VerticalStackLayout>
-                                                        <Label Grid.Column="1" Text="{Binding SourceType}"
-                                                               FontSize="10" TextColor="DimGray" VerticalOptions="Center" Margin="0,0,10,0" />
-                                                        <Button Grid.Column="2" Text="✕" FontSize="12"
-                                                                BackgroundColor="Transparent" TextColor="#EF4444"
-                                                                WidthRequest="28" HeightRequest="28" Padding="0"
-                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=RemoveRepositoryCommand}"
-                                                                CommandParameter="{Binding .}" />
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </CollectionView.ItemTemplate>
-                                    </CollectionView>
+                                    <!-- Description -->
+                                    <Label Text="{Binding Description}" FontSize="12"
+                                           TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                                           LineBreakMode="TailTruncation"
+                                           IsVisible="{Binding Description, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+
+                                    <!-- Meta Info -->
+                                    <Label FontSize="11" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}">
+                                        <Label.Text>
+                                            <MultiBinding StringFormat="{}{0} repositories">
+                                                <Binding Path="Repositories.Count" />
+                                            </MultiBinding>
+                                        </Label.Text>
+                                    </Label>
                                 </VerticalStackLayout>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-
-                <!-- Add Repository Form -->
-                <Border IsVisible="{Binding IsAddingRepository}" Padding="15" StrokeShape="RoundRectangle 8"
-                        BackgroundColor="{AppThemeBinding Light=#F0F8FF, Dark=#1A2A3A}"
-                        Stroke="{AppThemeBinding Light=#4A90D9, Dark=#4A90D9}">
-                    <VerticalStackLayout Spacing="12">
-                        <Label Text="Add Repository" FontAttributes="Bold" FontSize="16" />
-
-                        <!-- Client Code -->
-                        <VerticalStackLayout Spacing="5">
-                            <Label Text="Client Code" FontSize="12" TextColor="Gray" />
-                            <Entry Placeholder="e.g., UPHT, UPREHS" Text="{Binding NewRepoClientCode}" />
-                        </VerticalStackLayout>
-
-                        <!-- Source Type -->
-                        <VerticalStackLayout Spacing="5">
-                            <Label Text="Source Type" FontSize="12" TextColor="Gray" />
-                            <HorizontalStackLayout Spacing="15">
-                                <RadioButton Content="Azure DevOps" GroupName="SourceType"
-                                             IsChecked="{Binding NewRepoSourceType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AzureDevOps}" />
-                                <RadioButton Content="GitHub" GroupName="SourceType"
-                                             IsChecked="{Binding NewRepoSourceType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=GitHub}" />
-                            </HorizontalStackLayout>
-                        </VerticalStackLayout>
-
-                        <!-- Organization -->
-                        <VerticalStackLayout Spacing="5">
-                            <Label Text="Organization" FontSize="12" TextColor="Gray" />
-                            <Entry Placeholder="e.g., UPREHS or github-org" Text="{Binding NewRepoOrganization}" />
-                        </VerticalStackLayout>
-
-                        <!-- Project (Azure DevOps only) -->
-                        <VerticalStackLayout Spacing="5" IsVisible="{Binding NewRepoSourceType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AzureDevOps}">
-                            <Label Text="Project" FontSize="12" TextColor="Gray" />
-                            <Entry Placeholder="Azure DevOps Project name" Text="{Binding NewRepoProject}" />
-                        </VerticalStackLayout>
-
-                        <!-- Repository -->
-                        <VerticalStackLayout Spacing="5">
-                            <Label Text="Repository" FontSize="12" TextColor="Gray" />
-                            <Entry Placeholder="Repository name" Text="{Binding NewRepoRepository}" />
-                        </VerticalStackLayout>
-
-                        <!-- PAT -->
-                        <VerticalStackLayout Spacing="5">
-                            <Label Text="Personal Access Token" FontSize="12" TextColor="Gray" />
-                            <Entry Placeholder="PAT" Text="{Binding NewRepoPat}" IsPassword="True" />
-                        </VerticalStackLayout>
-
-                        <!-- Local Path with Browse Button -->
-                        <VerticalStackLayout Spacing="5">
-                            <Label Text="Local Path (optional)" FontSize="12" TextColor="Gray" />
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <Entry Grid.Column="0" Placeholder="/path/to/local/repo" Text="{Binding NewRepoLocalPath}" />
-                                <Button Grid.Column="1" Text="Browse" Command="{Binding BrowseForLocalRepoCommand}"
-                                        BackgroundColor="Gray" TextColor="White" Padding="10,5" />
                             </Grid>
-                        </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
 
-                        <!-- Error Message -->
-                        <Label Text="{Binding StatusMessage}"
-                               TextColor="#EF4444"
-                               FontSize="12"
-                               HorizontalOptions="Center"
-                               IsVisible="{Binding StatusMessage, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+        <!-- Splitter Bar -->
+        <BoxView Grid.Column="1" BackgroundColor="{AppThemeBinding Light=#E2E8F0, Dark=#404040}" />
 
-                        <!-- Buttons -->
-                        <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,10,0,0">
-                            <Button Text="Cancel" Command="{Binding CancelAddRepositoryCommand}"
-                                    BackgroundColor="Gray" TextColor="White" />
-                            <Button Text="Add Repository" Command="{Binding AddRepositoryCommand}"
-                                    BackgroundColor="#3B82F6" TextColor="White" />
+        <!-- RIGHT PANEL - Group Details -->
+        <Grid Grid.Column="2" BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}">
+            <!-- Empty State (no group selected) -->
+            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                                IsVisible="{Binding SelectedGroup, Converter={StaticResource IsNullConverter}}">
+                <Label Text="&#x1F4C1;" FontSize="64" HorizontalOptions="Center" Opacity="0.5" />
+                <Label Text="Select a Group" FontSize="18" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}"
+                       HorizontalOptions="Center" Margin="0,16,0,0" />
+                <Label Text="Choose a group from the list to view details" FontSize="14"
+                       TextColor="{AppThemeBinding Light=#CBD5E1, Dark=#64748b}"
+                       HorizontalOptions="Center" Margin="0,8,0,0" />
+            </VerticalStackLayout>
+
+            <!-- Group Details (when selected) -->
+            <Grid IsVisible="{Binding SelectedGroup, Converter={StaticResource IsNotNullConverter}}"
+                  RowDefinitions="Auto,*">
+
+                <!-- Detail Header -->
+                <Border Grid.Row="0" Padding="20,20,20,16"
+                        BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                        StrokeThickness="0,0,0,1"
+                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}">
+                    <VerticalStackLayout Spacing="16">
+                        <!-- Title Row -->
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <!-- Star and Name -->
+                            <HorizontalStackLayout Grid.Column="0" Spacing="12">
+                                <Label Text="{Binding SelectedGroup.IsDefault, Converter={StaticResource BoolToTextConverter}, ConverterParameter='★|☆'}"
+                                       TextColor="{Binding SelectedGroup.IsDefault, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FBBF24|#64748B'}"
+                                       FontSize="24" VerticalOptions="Center">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetDefaultGroupCommand}"
+                                                              CommandParameter="{Binding SelectedGroup}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                                <VerticalStackLayout VerticalOptions="Center">
+                                    <Label Text="{Binding SelectedGroup.Name}" FontSize="22" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                    <Label Text="{Binding SelectedGroup.Description}" FontSize="13"
+                                           TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                                           IsVisible="{Binding SelectedGroup.Description, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+
+                            <!-- Action Buttons -->
+                            <HorizontalStackLayout Grid.Column="2" Spacing="8">
+                                <Button Text="▶ Generate Standup" FontSize="12" Padding="12,8"
+                                        BackgroundColor="#10B981" TextColor="White"
+                                        Command="{Binding NavigateToStandupCommand}"
+                                        CommandParameter="{Binding SelectedGroup}" />
+                                <Button Text="✏️ Edit" FontSize="12" Padding="12,8"
+                                        BackgroundColor="#F59E0B" TextColor="White"
+                                        Command="{Binding ShowEditGroupCommand}"
+                                        CommandParameter="{Binding SelectedGroup}" />
+                                <Button Text="🗑️ Delete" FontSize="12" Padding="12,8"
+                                        BackgroundColor="Transparent" TextColor="#EF4444"
+                                        BorderColor="#EF4444" BorderWidth="1"
+                                        Command="{Binding DeleteGroupCommand}"
+                                        CommandParameter="{Binding SelectedGroup}" />
+                            </HorizontalStackLayout>
+                        </Grid>
+
+                        <!-- Quick Stats -->
+                        <HorizontalStackLayout Spacing="32">
+                            <VerticalStackLayout>
+                                <Label Text="{Binding SelectedGroupStats.RepositoryCount}" FontSize="24" FontAttributes="Bold" TextColor="#60a5fa" />
+                                <Label Text="REPOSITORIES" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout>
+                                <Label Text="{Binding SelectedGroupStats.CommitCount7d}" FontSize="24" FontAttributes="Bold" TextColor="#34d399" />
+                                <Label Text="COMMITS (7D)" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout>
+                                <Label Text="{Binding SelectedGroupStats.ReposWithPat}" FontSize="24" FontAttributes="Bold" TextColor="#fbbf24" />
+                                <Label Text="WITH PAT" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                            </VerticalStackLayout>
                         </HorizontalStackLayout>
                     </VerticalStackLayout>
                 </Border>
-            </VerticalStackLayout>
-        </ScrollView>
 
-        <!-- Add Group Form -->
-        <Border Grid.Row="2" IsVisible="{Binding IsAddingGroup}" Padding="15" Margin="0,10,0,0"
-                StrokeShape="RoundRectangle 8"
-                BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
-            <VerticalStackLayout Spacing="10">
-                <Label Text="Add New Group" FontAttributes="Bold" FontSize="16" />
-                <Entry Placeholder="Group Name (e.g., JourneyTeam)" Text="{Binding NewGroupName}" />
-                <Entry Placeholder="Description (optional)" Text="{Binding NewGroupDescription}" />
-                <HorizontalStackLayout Spacing="10" HorizontalOptions="End">
-                    <Button Text="Cancel" Command="{Binding CancelAddGroupCommand}"
-                            BackgroundColor="Gray" TextColor="White" />
-                    <Button Text="Add Group" Command="{Binding AddGroupCommand}"
-                            BackgroundColor="#3B82F6" TextColor="White" />
-                </HorizontalStackLayout>
-            </VerticalStackLayout>
+                <!-- Detail Content (scrollable) -->
+                <ScrollView Grid.Row="1" Padding="24">
+                    <VerticalStackLayout Spacing="16">
+                        <!-- Repositories Section Header -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0">
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label Text="&#x1F4C2;" FontSize="16" />
+                                    <Label Text="Repositories" FontSize="16" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding SelectedGroup.Repositories.Count, StringFormat='{0} repositories in this group'}"
+                                       FontSize="12" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="+ Add Repository"
+                                    FontSize="12" Padding="12,8"
+                                    BackgroundColor="#3B82F6" TextColor="White"
+                                    Command="{Binding ShowAddRepositoryCommand}"
+                                    CommandParameter="{Binding SelectedGroup}" />
+                        </Grid>
+
+                        <!-- Repository List -->
+                        <VerticalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding SelectedGroup.Repositories}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="entities:GroupedRepository">
+                                    <Border StrokeShape="RoundRectangle 12" Padding="16"
+                                            BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                                            Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
+                                            <!-- Source Type Icon -->
+                                            <Border Grid.Column="0" WidthRequest="44" HeightRequest="44"
+                                                    StrokeShape="RoundRectangle 10">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                        <GradientStop Color="#0078d4" Offset="0" />
+                                                        <GradientStop Color="#00bcf2" Offset="1" />
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <Label Text="&#x1F537;" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                                            </Border>
+
+                                            <!-- Repo Info -->
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                                <HorizontalStackLayout Spacing="8">
+                                                    <Label Text="{Binding Repository}" FontSize="14" FontAttributes="Bold"
+                                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                                    <!-- Client Code Badge -->
+                                                    <Border StrokeShape="RoundRectangle 6" Padding="8,2"
+                                                            BackgroundColor="{AppThemeBinding Light=#E0E7FF, Dark=#1e3a5f}"
+                                                            IsVisible="{Binding ClientCode, Converter={StaticResource IsNotNullOrEmptyConverter}}">
+                                                        <Label Text="{Binding ClientCode}" FontSize="10"
+                                                               TextColor="{AppThemeBinding Light=#4338CA, Dark=#60a5fa}" />
+                                                    </Border>
+                                                </HorizontalStackLayout>
+                                                <Label FontSize="12" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}">
+                                                    <Label.Text>
+                                                        <MultiBinding StringFormat="{}{0} / {1}">
+                                                            <Binding Path="Organization" />
+                                                            <Binding Path="Project" FallbackValue="" />
+                                                        </MultiBinding>
+                                                    </Label.Text>
+                                                </Label>
+                                                <!-- PAT Status -->
+                                                <Label FontSize="11"
+                                                       Text="{Binding EncryptedPat, Converter={StaticResource PatToStatusTextConverter}}"
+                                                       TextColor="{Binding EncryptedPat, Converter={StaticResource PatToTextColorConverter}}" />
+                                            </VerticalStackLayout>
+
+                                            <!-- Client Code Entry -->
+                                            <Entry Grid.Column="2"
+                                                   Text="{Binding ClientCode}"
+                                                   Placeholder="Project Name"
+                                                   FontSize="12"
+                                                   WidthRequest="120"
+                                                   VerticalOptions="Center"
+                                                   BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#1a1a1a}"
+                                                   ReturnCommand="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=SaveRepositoryCommand}"
+                                                   ReturnCommandParameter="{Binding .}">
+                                                <Entry.Behaviors>
+                                                    <toolkit:EventToCommandBehavior
+                                                        EventName="Unfocused"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=SaveRepositoryCommand}"
+                                                        CommandParameter="{Binding .}" />
+                                                </Entry.Behaviors>
+                                            </Entry>
+
+                                            <!-- Active Toggle -->
+                                            <Switch Grid.Column="3"
+                                                    IsToggled="{Binding IncludeInGeneration}"
+                                                    OnColor="#22C55E"
+                                                    VerticalOptions="Center" />
+
+                                            <!-- Delete Button -->
+                                            <Button Grid.Column="4" Text="×" FontSize="18"
+                                                    BackgroundColor="Transparent" TextColor="#EF4444"
+                                                    WidthRequest="36" HeightRequest="36" Padding="0"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:GroupListViewModel}}, Path=RemoveRepositoryCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+
+                        <!-- Empty state for repos -->
+                        <Label Text="No repositories in this group. Click 'Add Repository' to add one."
+                               FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}"
+                               HorizontalOptions="Center" Margin="0,20"
+                               IsVisible="{Binding SelectedGroup.Repositories.Count, Converter={StaticResource IsZeroConverter}}" />
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Grid>
+        </Grid>
+
+        <!-- Add Group Overlay -->
+        <Border Grid.ColumnSpan="3"
+                IsVisible="{Binding IsAddingGroup}"
+                BackgroundColor="{AppThemeBinding Light=#80000000, Dark=#B3000000}">
+            <Border HorizontalOptions="Center" VerticalOptions="Center"
+                    WidthRequest="450" StrokeShape="RoundRectangle 16" Padding="24"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Add New Group" FontSize="20" FontAttributes="Bold" />
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Group Name" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding NewGroupName}" Placeholder="e.g., JourneyTeam" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Description (optional)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding NewGroupDescription}" Placeholder="Description" />
+                    </VerticalStackLayout>
+
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,16,0,0">
+                        <Button Text="Cancel" Command="{Binding CancelAddGroupCommand}"
+                               BackgroundColor="Gray" TextColor="White" />
+                        <Button Text="Add Group" Command="{Binding AddGroupCommand}"
+                               BackgroundColor="#3B82F6" TextColor="White" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
         </Border>
 
-        <!-- Edit Group Form -->
-        <Border Grid.Row="2" IsVisible="{Binding IsEditingGroup}" Padding="15" Margin="0,10,0,0"
-                StrokeShape="RoundRectangle 8"
-                BackgroundColor="{AppThemeBinding Light=#FFF7ED, Dark=#3D2D1D}"
-                Stroke="#F59E0B">
-            <VerticalStackLayout Spacing="10">
-                <Label Text="Edit Group" FontAttributes="Bold" FontSize="16" TextColor="#F59E0B" />
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Group Name" FontSize="12" TextColor="Gray" />
-                    <Entry Text="{Binding EditGroupName}" Placeholder="Group Name" />
+        <!-- Edit Group Overlay -->
+        <Border Grid.ColumnSpan="3"
+                IsVisible="{Binding IsEditingGroup}"
+                BackgroundColor="{AppThemeBinding Light=#80000000, Dark=#B3000000}">
+            <Border HorizontalOptions="Center" VerticalOptions="Center"
+                    WidthRequest="450" StrokeShape="RoundRectangle 16" Padding="24"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Edit Group" FontSize="20" FontAttributes="Bold" TextColor="#F59E0B" />
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Group Name" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding EditGroupName}" Placeholder="Group Name" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Description" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding EditGroupDescription}" Placeholder="Description (optional)" />
+                    </VerticalStackLayout>
+
+                    <!-- Include in Generation Toggle -->
+                    <HorizontalStackLayout Spacing="10">
+                        <Switch IsToggled="{Binding SelectedGroup.IncludeInGeneration}" OnColor="#10B981" />
+                        <Label Text="Include in Generation" VerticalOptions="Center" FontSize="14" />
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,16,0,0">
+                        <Button Text="Cancel" Command="{Binding CancelEditGroupCommand}"
+                               BackgroundColor="Gray" TextColor="White" />
+                        <Button Text="Save Changes" Command="{Binding SaveEditGroupCommand}"
+                               BackgroundColor="#F59E0B" TextColor="White" />
+                    </HorizontalStackLayout>
                 </VerticalStackLayout>
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Description" FontSize="12" TextColor="Gray" />
-                    <Entry Text="{Binding EditGroupDescription}" Placeholder="Description (optional)" />
-                </VerticalStackLayout>
-                <HorizontalStackLayout Spacing="10" HorizontalOptions="End">
-                    <Button Text="Cancel" Command="{Binding CancelEditGroupCommand}"
-                            BackgroundColor="Gray" TextColor="White" />
-                    <Button Text="Save Changes" Command="{Binding SaveEditGroupCommand}"
-                            BackgroundColor="#F59E0B" TextColor="White" />
-                </HorizontalStackLayout>
-            </VerticalStackLayout>
+            </Border>
         </Border>
 
-        <!-- Add Group Button (hidden when adding or editing) -->
-        <Button Grid.Row="2" Text="+ Add Group" Command="{Binding ShowAddGroupCommand}"
-                IsVisible="{Binding CanShowAddGroupButton}"
-                HorizontalOptions="End" Margin="0,10,0,0" />
+        <!-- Add Repository Overlay -->
+        <Border Grid.ColumnSpan="3"
+                IsVisible="{Binding IsAddingRepository}"
+                BackgroundColor="{AppThemeBinding Light=#80000000, Dark=#B3000000}">
+            <Border HorizontalOptions="Center" VerticalOptions="Center"
+                    WidthRequest="500" StrokeShape="RoundRectangle 16" Padding="24"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Add Repository" FontSize="20" FontAttributes="Bold" TextColor="#3B82F6" />
 
-        <!-- Loading Indicator -->
-        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
-                           HorizontalOptions="Center" VerticalOptions="Center" Grid.RowSpan="3" />
+                    <!-- Project Name -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Project Name" FontSize="12" TextColor="Gray" />
+                        <Entry Placeholder="Groups commits in reports (e.g., Tempus)" Text="{Binding NewRepoClientCode}" />
+                    </VerticalStackLayout>
+
+                    <!-- Source Type -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Source Type" FontSize="12" TextColor="Gray" />
+                        <HorizontalStackLayout Spacing="15">
+                            <RadioButton Content="Azure DevOps" GroupName="SourceType"
+                                         IsChecked="{Binding NewRepoSourceType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AzureDevOps}" />
+                            <RadioButton Content="GitHub" GroupName="SourceType"
+                                         IsChecked="{Binding NewRepoSourceType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=GitHub}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+
+                    <!-- Organization -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Organization" FontSize="12" TextColor="Gray" />
+                        <Entry Placeholder="e.g., JT-Ops or github-org" Text="{Binding NewRepoOrganization}" />
+                    </VerticalStackLayout>
+
+                    <!-- Project (Azure DevOps only) -->
+                    <VerticalStackLayout Spacing="5" IsVisible="{Binding NewRepoSourceType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=AzureDevOps}">
+                        <Label Text="Project" FontSize="12" TextColor="Gray" />
+                        <Entry Placeholder="Azure DevOps Project name" Text="{Binding NewRepoProject}" />
+                    </VerticalStackLayout>
+
+                    <!-- Repository -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Repository" FontSize="12" TextColor="Gray" />
+                        <Entry Placeholder="Repository name" Text="{Binding NewRepoRepository}" />
+                    </VerticalStackLayout>
+
+                    <!-- PAT -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Personal Access Token" FontSize="12" TextColor="Gray" />
+                        <Entry Placeholder="PAT" Text="{Binding NewRepoPat}" IsPassword="True" />
+                    </VerticalStackLayout>
+
+                    <!-- Local Path with Browse -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Local Path (optional)" FontSize="12" TextColor="Gray" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Entry Grid.Column="0" Placeholder="/path/to/local/repo" Text="{Binding NewRepoLocalPath}" />
+                            <Button Grid.Column="1" Text="Browse" Command="{Binding BrowseForLocalRepoCommand}"
+                                    BackgroundColor="Gray" TextColor="White" Padding="10,5" />
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <!-- Status Message -->
+                    <Label Text="{Binding StatusMessage}"
+                           TextColor="#EF4444" FontSize="12" HorizontalOptions="Center"
+                           IsVisible="{Binding StatusMessage, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,16,0,0">
+                        <Button Text="Cancel" Command="{Binding CancelAddRepositoryCommand}"
+                               BackgroundColor="Gray" TextColor="White" />
+                        <Button Text="Add Repository" Command="{Binding AddRepositoryCommand}"
+                               BackgroundColor="#3B82F6" TextColor="White" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <ActivityIndicator Grid.ColumnSpan="3" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center" VerticalOptions="Center" />
     </Grid>
 </ContentView>

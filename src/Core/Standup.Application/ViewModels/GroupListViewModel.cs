@@ -666,6 +666,37 @@ public partial class GroupListViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Save a repository's changes (like ClientCode/Project Name) to its parent group.
+    /// This command finds the parent group by searching all groups.
+    /// </summary>
+    /// <param name="repository">The repository to save.</param>
+    /// <returns>A task representing the async operation.</returns>
+    [RelayCommand]
+    private async Task SaveRepositoryAsync(GroupedRepository repository)
+    {
+        Log.Information("SaveRepository called for {Repo} - ClientCode: {ClientCode}", repository.Repository, repository.ClientCode);
+
+        // Find the parent group that contains this repository
+        var parentGroup = Groups.FirstOrDefault(g => g.Repositories.Any(r => r.Id == repository.Id));
+        if (parentGroup == null)
+        {
+            Log.Warning("Could not find parent group for repository {RepoId}", repository.Id);
+            return;
+        }
+
+        try
+        {
+            await _groupService.UpdateGroupAsync(parentGroup);
+            Log.Information("Repository {Repo} saved with ClientCode: {ClientCode}", repository.Repository, repository.ClientCode);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to save repository {Repo}", repository.Repository);
+            StatusMessage = $"Error saving: {ex.Message}";
+        }
+    }
+
+    /// <summary>
     /// Remove a repository from its parent group.
     /// This command finds the parent group by searching all groups.
     /// </summary>
