@@ -318,7 +318,8 @@ public sealed partial class LocalStandupService : ILocalStandupService
                     ex.Message,
                     ex.Message,
                     ex.Message);
-                repoData.Add(new RepositoryStandupData(repo.ClientCode, [], [], [], errorStatus));
+                var groupKey = string.IsNullOrWhiteSpace(repo.ClientCode) ? repo.Repository : repo.ClientCode;
+                repoData.Add(new RepositoryStandupData(groupKey, [], [], [], errorStatus));
             }
         }
 
@@ -649,7 +650,8 @@ public sealed partial class LocalStandupService : ILocalStandupService
             prsError,
             workItemsError);
 
-        return new RepositoryStandupData(repo.ClientCode, commits, prs, workItems, sourceStatus);
+        var groupKey = string.IsNullOrWhiteSpace(repo.ClientCode) ? repo.Repository : repo.ClientCode;
+        return new RepositoryStandupData(groupKey, commits, prs, workItems, sourceStatus);
     }
 
     private async Task<List<ClientCodeSection>> GenerateSectionsWithSummariesAsync(

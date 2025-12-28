@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using Standup.Teams.Models;
 
 namespace Standup.Teams.Services;
