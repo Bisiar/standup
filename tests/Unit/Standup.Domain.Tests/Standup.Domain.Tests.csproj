@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Standup.Domain\Standup.Domain.csproj" />
+    <ProjectReference Include="..\..\..\src\Core\Standup.Domain\Standup.Domain.csproj" />
   </ItemGroup>
 
 </Project>

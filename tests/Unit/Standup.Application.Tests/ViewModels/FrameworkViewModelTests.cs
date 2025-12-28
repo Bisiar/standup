@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Standup.Application.Tests.TestHelpers;
 using Standup.Application.ViewModels;
 using Xunit;
 

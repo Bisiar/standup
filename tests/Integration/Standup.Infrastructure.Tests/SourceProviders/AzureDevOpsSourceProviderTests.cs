@@ -10,7 +10,7 @@ namespace Standup.Infrastructure.Tests.SourceProviders;
 
 public class AzureDevOpsSourceProviderTests
 {
-    private const string Organization = "UPREHS";
+    private const string Organization = "JT-Ops";
 
     private readonly AzureDevOpsSourceProvider _provider;
     private readonly TestEncryptionService _encryptionService;
@@ -194,8 +194,8 @@ public class AzureDevOpsSourceProviderTests
             UserId = "test-user",
             SourceType = SourceType.AzureDevOps,
             Organization = Organization,
-            Project = "AI-Chat-Bot",
-            Repository = "AI-Chat-Bot",
+            Project = "JTP",
+            Repository = "jt-crm-time-entry-ai",
             AuthorIdentifier = string.Empty, // Empty to get all authors
             EncryptedPat = _encryptionService.Encrypt(_pat),
             IsActive = true,

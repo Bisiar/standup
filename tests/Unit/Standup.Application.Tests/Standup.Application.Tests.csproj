@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Standup.Application\Standup.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\Core\Standup.Application\Standup.Application.csproj" />
   </ItemGroup>
 
 </Project>
