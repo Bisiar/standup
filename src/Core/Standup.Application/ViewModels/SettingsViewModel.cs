@@ -17,6 +17,25 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ILocalStandupService _localStandupService;
     private IReportCacheService? _cacheService;
 
+    /// <summary>
+    /// Gets or sets the selected settings tab index.
+    /// 0 = AI Config, 1 = Integrations, 2 = Cache, 3 = Appearance, 4 = About.
+    /// </summary>
+    [ObservableProperty]
+    private int _selectedSettingsTab;
+
+    /// <summary>
+    /// Gets or sets the selected theme (Light, Dark, System).
+    /// </summary>
+    [ObservableProperty]
+    private string _selectedTheme = "System";
+
+    /// <summary>
+    /// Gets or sets the last cache cleared date display.
+    /// </summary>
+    [ObservableProperty]
+    private string _lastCacheCleared = "Never";
+
     [ObservableProperty]
     private ObservableCollection<ProjectInstance> _projects = new();
 
@@ -494,5 +513,45 @@ public partial class SettingsViewModel : ObservableObject
         {
             IsTestingCrmConnection = false;
         }
+    }
+
+    /// <summary>
+    /// Command to select a settings tab by index.
+    /// </summary>
+    /// <param name="tabIndex">The tab index to select.</param>
+    [RelayCommand]
+    private void SelectSettingsTab(int tabIndex)
+    {
+        SelectedSettingsTab = tabIndex;
+    }
+
+    /// <summary>
+    /// Command to select the Light theme.
+    /// </summary>
+    [RelayCommand]
+    private void SelectLightTheme()
+    {
+        SelectedTheme = "Light";
+        StatusMessage = "Light theme selected. Restart app to apply.";
+    }
+
+    /// <summary>
+    /// Command to select the Dark theme.
+    /// </summary>
+    [RelayCommand]
+    private void SelectDarkTheme()
+    {
+        SelectedTheme = "Dark";
+        StatusMessage = "Dark theme selected. Restart app to apply.";
+    }
+
+    /// <summary>
+    /// Command to select the System theme.
+    /// </summary>
+    [RelayCommand]
+    private void SelectSystemTheme()
+    {
+        SelectedTheme = "System";
+        StatusMessage = "System theme selected. Restart app to apply.";
     }
 }

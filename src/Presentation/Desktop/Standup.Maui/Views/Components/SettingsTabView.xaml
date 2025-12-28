@@ -1,130 +1,664 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
              xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
              x:Class="Standup.Maui.Views.Components.SettingsTabView"
              x:DataType="viewModels:SettingsViewModel">
 
-    <ScrollView Padding="20">
-        <VerticalStackLayout Spacing="20">
-            <Label Text="Application Settings" FontSize="24" FontAttributes="Bold" />
-            <Label Text="Configure global settings for the application" FontSize="12" TextColor="Gray" />
+    <Grid Padding="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <!-- AI Configuration -->
-            <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#E8F4FD, Dark=#1E3A4C}">
-                <VerticalStackLayout Spacing="15">
-                    <Label Text="🤖 AI Summary Configuration" FontAttributes="Bold" FontSize="16" />
-                    <Label Text="Configure Azure OpenAI / AI Foundry for generating standup summaries" FontSize="12" TextColor="Gray" />
+        <!-- Header -->
+        <VerticalStackLayout Grid.Row="0" Margin="0,0,0,20">
+            <Label Text="Settings" FontSize="28" FontAttributes="Bold" />
+            <Label Text="Configure your StandBot experience" FontSize="14" TextColor="Gray" />
+        </VerticalStackLayout>
 
-                    <VerticalStackLayout Spacing="5">
-                        <Label Text="Azure OpenAI Endpoint" FontSize="12" TextColor="Gray" />
-                        <Entry Text="{Binding AiEndpoint}" Placeholder="https://your-resource.openai.azure.com/" />
-                    </VerticalStackLayout>
+        <!-- Navigation Tabs -->
+        <Border Grid.Row="1" Padding="6" StrokeShape="RoundRectangle 12"
+                BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#242424}"
+                Stroke="Transparent" Margin="0,0,0,20">
+            <HorizontalStackLayout Spacing="8">
+                <!-- AI Config Tab -->
+                <Border Padding="10,8" StrokeShape="RoundRectangle 8" Stroke="Transparent"
+                        BackgroundColor="Transparent">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding SelectedSettingsTab}" Value="0">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="0" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="AI Config" FontSize="13" VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding SelectedSettingsTab}" Value="0">
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
 
-                    <VerticalStackLayout Spacing="5">
-                        <Label Text="Deployment Name" FontSize="12" TextColor="Gray" />
-                        <Entry Text="{Binding AiDeploymentName}" Placeholder="gpt-4o" />
-                    </VerticalStackLayout>
+                <!-- Integrations Tab -->
+                <Border Padding="10,8" StrokeShape="RoundRectangle 8" Stroke="Transparent"
+                        BackgroundColor="Transparent">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding SelectedSettingsTab}" Value="1">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="1" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Integrations" FontSize="13" VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding SelectedSettingsTab}" Value="1">
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
 
-                    <VerticalStackLayout Spacing="5">
-                        <Label Text="API Key (optional - leave empty to use your Azure login)" FontSize="12" TextColor="Gray" />
-                        <Entry Text="{Binding AiApiKey}" Placeholder="Leave empty to use Azure Identity" IsPassword="True" />
-                        <HorizontalStackLayout Spacing="5">
-                            <Label Text="Auth Method:" FontSize="11" TextColor="DimGray" VerticalOptions="Center" />
-                            <Label Text="{Binding AuthMethodDisplay}" FontSize="11" TextColor="{Binding AuthMethodColor}" FontAttributes="Bold" VerticalOptions="Center" />
+                <!-- Cache Tab -->
+                <Border Padding="10,8" StrokeShape="RoundRectangle 8" Stroke="Transparent"
+                        BackgroundColor="Transparent">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding SelectedSettingsTab}" Value="2">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="2" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Cache" FontSize="13" VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding SelectedSettingsTab}" Value="2">
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
+
+                <!-- Appearance Tab -->
+                <Border Padding="10,8" StrokeShape="RoundRectangle 8" Stroke="Transparent"
+                        BackgroundColor="Transparent">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding SelectedSettingsTab}" Value="3">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="3" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Appearance" FontSize="13" VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding SelectedSettingsTab}" Value="3">
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
+
+                <!-- About Tab -->
+                <Border Padding="10,8" StrokeShape="RoundRectangle 8" Stroke="Transparent"
+                        BackgroundColor="Transparent">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding SelectedSettingsTab}" Value="4">
+                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="4" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="About" FontSize="13" VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding SelectedSettingsTab}" Value="4">
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
+            </HorizontalStackLayout>
+        </Border>
+
+        <!-- Content Sections -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Spacing="20" MaximumWidthRequest="900">
+
+                <!-- AI Configuration Section (Tab 0) -->
+                <Border Padding="24" StrokeShape="RoundRectangle 16" Stroke="Transparent"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}"
+                        IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0}">
+                    <VerticalStackLayout Spacing="20">
+                        <!-- Section Header with Gradient Icon -->
+                        <HorizontalStackLayout Spacing="16">
+                            <Border WidthRequest="48" HeightRequest="48" StrokeShape="RoundRectangle 12" Stroke="Transparent">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#8B5CF6" Offset="0" />
+                                        <GradientStop Color="#A855F7" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Label Text="AI" FontSize="20" TextColor="White"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout>
+                                <Label Text="AI Summary Configuration" FontSize="20" FontAttributes="Bold" />
+                                <Label Text="Configure Azure OpenAI / AI Foundry for generating intelligent standup summaries"
+                                       FontSize="13" TextColor="Gray" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+
+                        <!-- Form Grid -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="20" RowDefinitions="Auto,Auto,Auto" RowSpacing="16">
+                            <!-- Endpoint URL (spans both columns) -->
+                            <VerticalStackLayout Grid.Row="0" Grid.ColumnSpan="2" Spacing="8">
+                                <HorizontalStackLayout Spacing="4">
+                                    <Label Text="Azure OpenAI Endpoint" FontSize="13" TextColor="Gray" />
+                                    <Label Text="*" TextColor="#EF4444" />
+                                </HorizontalStackLayout>
+                                <Entry Text="{Binding AiEndpoint}" Placeholder="https://your-resource.openai.azure.com/" />
+                                <Label Text="Your Azure OpenAI or AI Foundry endpoint URL" FontSize="11" TextColor="DimGray" />
+                            </VerticalStackLayout>
+
+                            <!-- Deployment Name -->
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="8">
+                                <HorizontalStackLayout Spacing="4">
+                                    <Label Text="Deployment Name" FontSize="13" TextColor="Gray" />
+                                    <Label Text="*" TextColor="#EF4444" />
+                                </HorizontalStackLayout>
+                                <Entry Text="{Binding AiDeploymentName}" Placeholder="gpt-4o" />
+                                <Label Text="The model deployment name in your Azure resource" FontSize="11" TextColor="DimGray" />
+                            </VerticalStackLayout>
+
+                            <!-- API Key -->
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="8">
+                                <Label Text="API Key" FontSize="13" TextColor="Gray" />
+                                <Entry Text="{Binding AiApiKey}" Placeholder="Leave empty to use Azure Identity" IsPassword="True" />
+                                <Label Text="Optional - leave empty to use your Azure login" FontSize="11" TextColor="DimGray" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <!-- Auth Method Indicator -->
+                        <HorizontalStackLayout Spacing="8">
+                            <Label Text="Authentication:" FontSize="12" TextColor="Gray" VerticalOptions="Center" />
+                            <Label Text="{Binding AuthMethodDisplay}" FontSize="12"
+                                   TextColor="{Binding AuthMethodColor}" FontAttributes="Bold" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+
+                        <!-- Connection Status -->
+                        <Border Padding="14,12" StrokeShape="RoundRectangle 10" Stroke="Transparent"
+                                BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
+                                IsVisible="{Binding AiValidationResult, Converter={StaticResource IsNotNullOrEmptyConverter}}">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding AiValidationSuccess}" Value="True">
+                                    <Setter Property="Stroke" Value="#22C55E" />
+                                    <Setter Property="StrokeThickness" Value="2" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding AiValidationSuccess}" Value="False">
+                                    <Setter Property="Stroke" Value="#EF4444" />
+                                    <Setter Property="StrokeThickness" Value="2" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <HorizontalStackLayout Spacing="12">
+                                <Label Text="✓" FontSize="20" TextColor="#22C55E" VerticalOptions="Center"
+                                       IsVisible="{Binding AiValidationSuccess}" />
+                                <Label Text="✗" FontSize="20" TextColor="#EF4444" VerticalOptions="Center"
+                                       IsVisible="{Binding AiValidationSuccess, Converter={StaticResource InvertedBoolConverter}}" />
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding AiValidationResult}" FontSize="14" FontAttributes="Bold" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Action Buttons -->
+                        <BoxView HeightRequest="1" Color="{AppThemeBinding Light=#E0E0E0, Dark=#333333}" Margin="0,4,0,0" />
+                        <HorizontalStackLayout Spacing="12">
+                            <Button Text="Validate Connection" Command="{Binding ValidateAIConnectionCommand}"
+                                    BackgroundColor="#8B5CF6" TextColor="White" Padding="20,12"
+                                    IsEnabled="{Binding IsValidatingAI, Converter={StaticResource InvertedBoolConverter}}" />
+                            <Button Text="Save AI Settings" Command="{Binding SaveAISettingsCommand}"
+                                    BackgroundColor="#10B981" TextColor="White" Padding="20,12" />
+                            <ActivityIndicator IsRunning="{Binding IsValidatingAI}" IsVisible="{Binding IsValidatingAI}"
+                                              HeightRequest="24" WidthRequest="24" VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </VerticalStackLayout>
+                </Border>
 
-                    <!-- Validation Result -->
-                    <Label Text="{Binding AiValidationResult}"
-                           FontSize="12"
-                           TextColor="{Binding AiValidationSuccess, Converter={StaticResource BoolToColorConverter}}"
-                           IsVisible="{Binding AiValidationResult, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+                <!-- Integrations Section (Tab 1) -->
+                <Border Padding="24" StrokeShape="RoundRectangle 16" Stroke="Transparent"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}"
+                        IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}">
+                    <VerticalStackLayout Spacing="20">
+                        <!-- Section Header -->
+                        <HorizontalStackLayout Spacing="16">
+                            <Border WidthRequest="48" HeightRequest="48" StrokeShape="RoundRectangle 12" Stroke="Transparent">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#F59E0B" Offset="0" />
+                                        <GradientStop Color="#FBBF24" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Label Text="+" FontSize="24" TextColor="White"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout>
+                                <Label Text="Integrations" FontSize="20" FontAttributes="Bold" />
+                                <Label Text="Connect external services to enhance your standup reports"
+                                       FontSize="13" TextColor="Gray" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
 
-                    <!-- Action Buttons -->
-                    <HorizontalStackLayout Spacing="10">
-                        <Button Text="Validate"
-                               Command="{Binding ValidateAIConnectionCommand}"
-                               BackgroundColor="#8B5CF6"
-                               TextColor="White"
-                               WidthRequest="100"
-                               IsEnabled="{Binding IsValidatingAI, Converter={StaticResource InvertedBoolConverter}}" />
-                        <Button Text="Save AI Settings"
-                               Command="{Binding SaveAISettingsCommand}"
-                               BackgroundColor="#10B981"
-                               TextColor="White"
-                               WidthRequest="140" />
-                        <ActivityIndicator IsRunning="{Binding IsValidatingAI}"
-                                          IsVisible="{Binding IsValidatingAI}"
-                                          HeightRequest="20"
-                                          WidthRequest="20"
-                                          VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-            </Border>
+                        <!-- Integration Cards Grid (2x2) -->
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="16">
+                            <!-- Azure DevOps Card -->
+                            <Border Grid.Row="0" Grid.Column="0" Padding="20" StrokeShape="RoundRectangle 12"
+                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
+                                    Stroke="#22C55E" StrokeThickness="1">
+                                <VerticalStackLayout Spacing="12">
+                                    <HorizontalStackLayout>
+                                        <Label Text="ADO" FontSize="24" TextColor="#0078D4" />
+                                        <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
+                                                BackgroundColor="#065F46" HorizontalOptions="EndAndExpand">
+                                            <Label Text="Connected" FontSize="11" TextColor="#34D399" />
+                                        </Border>
+                                    </HorizontalStackLayout>
+                                    <Label Text="Azure DevOps" FontSize="16" FontAttributes="Bold" />
+                                    <Label Text="Pull commits, PRs, and work items from Azure DevOps repositories"
+                                           FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
+                                    <Button Text="Disconnect" BackgroundColor="Transparent" TextColor="#EF4444"
+                                            BorderColor="#EF4444" BorderWidth="1" Padding="10,8" />
+                                </VerticalStackLayout>
+                            </Border>
 
-            <!-- Cache Management -->
-            <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
-                <VerticalStackLayout Spacing="15">
-                    <Label Text="📦 Cache Management" FontAttributes="Bold" FontSize="16" />
-                    <Label Text="Manage cached standup reports" FontSize="12" TextColor="Gray" />
+                            <!-- GitHub Card -->
+                            <Border Grid.Row="0" Grid.Column="1" Padding="20" StrokeShape="RoundRectangle 12"
+                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
+                                    Stroke="#22C55E" StrokeThickness="1">
+                                <VerticalStackLayout Spacing="12">
+                                    <HorizontalStackLayout>
+                                        <Label Text="GH" FontSize="24" TextColor="#6E5494" />
+                                        <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
+                                                BackgroundColor="#065F46" HorizontalOptions="EndAndExpand">
+                                            <Label Text="Connected" FontSize="11" TextColor="#34D399" />
+                                        </Border>
+                                    </HorizontalStackLayout>
+                                    <Label Text="GitHub" FontSize="16" FontAttributes="Bold" />
+                                    <Label Text="Pull commits and PRs from GitHub repositories"
+                                           FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
+                                    <Button Text="Disconnect" BackgroundColor="Transparent" TextColor="#EF4444"
+                                            BorderColor="#EF4444" BorderWidth="1" Padding="10,8" />
+                                </VerticalStackLayout>
+                            </Border>
 
-                    <HorizontalStackLayout Spacing="15">
-                        <VerticalStackLayout>
-                            <Label Text="Cached Reports" FontSize="12" TextColor="Gray" />
-                            <Label Text="{Binding CacheEntryCount, StringFormat='{0} reports'}" FontSize="14" FontAttributes="Bold" />
-                        </VerticalStackLayout>
-                        <VerticalStackLayout>
-                            <Label Text="Cache Size" FontSize="12" TextColor="Gray" />
-                            <Label Text="{Binding CacheSizeDisplay}" FontSize="14" FontAttributes="Bold" />
-                        </VerticalStackLayout>
-                    </HorizontalStackLayout>
+                            <!-- Office 365 Email Card -->
+                            <Border Grid.Row="1" Grid.Column="0" Padding="20" StrokeShape="RoundRectangle 12"
+                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}">
+                                <VerticalStackLayout Spacing="12">
+                                    <HorizontalStackLayout>
+                                        <Label Text="Email" FontSize="20" TextColor="#D83B01" />
+                                        <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
+                                                BackgroundColor="#1E3A5F" HorizontalOptions="EndAndExpand">
+                                            <Label Text="Available" FontSize="11" TextColor="#60A5FA" />
+                                        </Border>
+                                    </HorizontalStackLayout>
+                                    <Label Text="Office 365 Email" FontSize="16" FontAttributes="Bold" />
+                                    <Label Text="Include client email summaries and AI-generated action items"
+                                           FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
+                                    <Button Text="Configure" BackgroundColor="#3B82F6" TextColor="White" Padding="10,8" />
+                                </VerticalStackLayout>
+                            </Border>
 
-                    <Button Text="Clear Cache"
-                           Command="{Binding ClearCacheCommand}"
-                           BackgroundColor="#EF4444"
-                           TextColor="White"
-                           HorizontalOptions="Start"
-                           WidthRequest="120" />
-                </VerticalStackLayout>
-            </Border>
+                            <!-- Office 365 Calendar Card -->
+                            <Border Grid.Row="1" Grid.Column="1" Padding="20" StrokeShape="RoundRectangle 12"
+                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}">
+                                <VerticalStackLayout Spacing="12">
+                                    <HorizontalStackLayout>
+                                        <Label Text="Cal" FontSize="20" TextColor="#0078D4" />
+                                        <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
+                                                BackgroundColor="#1E3A5F" HorizontalOptions="EndAndExpand">
+                                            <Label Text="Available" FontSize="11" TextColor="#60A5FA" />
+                                        </Border>
+                                    </HorizontalStackLayout>
+                                    <Label Text="Office 365 Calendar" FontSize="16" FontAttributes="Bold" />
+                                    <Label Text="Add meeting summaries and schedule context to your standups"
+                                           FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
+                                    <Button Text="Configure" BackgroundColor="#3B82F6" TextColor="White" Padding="10,8" />
+                                </VerticalStackLayout>
+                            </Border>
 
-            <!-- Integrations -->
-            <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#FEF3C7, Dark=#78350F}">
-                <VerticalStackLayout Spacing="15">
-                    <Label Text="🔌 Integrations" FontAttributes="Bold" FontSize="16" />
-                    <Label Text="Optional integrations to enhance standup reports with additional context" FontSize="12" TextColor="Gray" />
+                            <!-- Microsoft Teams Card -->
+                            <Border Grid.Row="2" Grid.Column="0" Padding="20" StrokeShape="RoundRectangle 12"
+                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}">
+                                <VerticalStackLayout Spacing="12">
+                                    <HorizontalStackLayout>
+                                        <Label Text="Teams" FontSize="18" TextColor="#6264A7" />
+                                        <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
+                                                BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#404040}" HorizontalOptions="EndAndExpand">
+                                            <Label Text="Coming Soon" FontSize="11" TextColor="Gray" />
+                                        </Border>
+                                    </HorizontalStackLayout>
+                                    <Label Text="Microsoft Teams" FontSize="16" FontAttributes="Bold" />
+                                    <Label Text="Post standup reports directly to Teams channels"
+                                           FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
+                                    <Button Text="Coming Soon" BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#333333}"
+                                            TextColor="Gray" Padding="10,8" IsEnabled="False" />
+                                </VerticalStackLayout>
+                            </Border>
 
-                    <Label Text="Configure external integrations like CRM projects, Office 365 emails, and more to add rich context to your standup reports. Integrations are optional and can be enabled per group." FontSize="12" TextColor="Gray" />
+                            <!-- Dynamics 365 CRM Card -->
+                            <Border Grid.Row="2" Grid.Column="1" Padding="20" StrokeShape="RoundRectangle 12"
+                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}">
+                                <VerticalStackLayout Spacing="12">
+                                    <HorizontalStackLayout>
+                                        <Label Text="CRM" FontSize="20" TextColor="#002050" />
+                                        <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
+                                                BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#404040}" HorizontalOptions="EndAndExpand">
+                                            <Label Text="Coming Soon" FontSize="11" TextColor="Gray" />
+                                        </Border>
+                                    </HorizontalStackLayout>
+                                    <Label Text="Dynamics 365 CRM" FontSize="16" FontAttributes="Bold" />
+                                    <Label Text="Include project timelines and client context from CRM"
+                                           FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
+                                    <Button Text="Coming Soon" BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#333333}"
+                                            TextColor="Gray" Padding="10,8" IsEnabled="False" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
 
-                    <Label Text="Available integrations:" FontSize="12" FontAttributes="Bold" />
-                    <Label Text="• CRM Project Integration - Dynamics 365 project context, timelines, and milestones" FontSize="11" TextColor="Gray" Margin="10,0,0,0" />
-                    <Label Text="• Office 365 Email Integration - Client email summaries and AI-generated tasks" FontSize="11" TextColor="Gray" Margin="10,0,0,0" />
-                    <Label Text="• Office 365 Calendar - Meeting summaries and schedule context" FontSize="11" TextColor="Gray" Margin="10,0,0,0" />
-                    <Label Text="• Microsoft Teams - Teams activity and channel summaries" FontSize="11" TextColor="Gray" Margin="10,0,0,0" />
+                <!-- Cache Management Section (Tab 2) -->
+                <Border Padding="24" StrokeShape="RoundRectangle 16" Stroke="Transparent"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}"
+                        IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}">
+                    <VerticalStackLayout Spacing="20">
+                        <!-- Section Header -->
+                        <HorizontalStackLayout Spacing="16">
+                            <Border WidthRequest="48" HeightRequest="48" StrokeShape="RoundRectangle 12" Stroke="Transparent">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#3B82F6" Offset="0" />
+                                        <GradientStop Color="#60A5FA" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Label Text="DB" FontSize="18" TextColor="White"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout>
+                                <Label Text="Cache Management" FontSize="20" FontAttributes="Bold" />
+                                <Label Text="Manage cached data and standup reports"
+                                       FontSize="13" TextColor="Gray" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
 
-                    <Label Text="Coming Soon: Integration configuration will be available in a future update." FontSize="12" TextColor="#F59E0B" FontAttributes="Italic" />
-                </VerticalStackLayout>
-            </Border>
+                        <!-- Stats Row -->
+                        <HorizontalStackLayout Spacing="20">
+                            <!-- Cached Reports -->
+                            <Border Padding="20" StrokeShape="RoundRectangle 12" Stroke="Transparent"
+                                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
+                                    HorizontalOptions="FillAndExpand">
+                                <VerticalStackLayout HorizontalOptions="Center">
+                                    <Label Text="{Binding CacheEntryCount}" FontSize="32" FontAttributes="Bold"
+                                           TextColor="#60A5FA" HorizontalOptions="Center" />
+                                    <Label Text="Cached Reports" FontSize="12" TextColor="Gray" HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
 
-            <!-- About Section -->
-            <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="ℹ️ About" FontAttributes="Bold" FontSize="16" />
-                    <Label Text="StandBot - Standup Automation Platform" FontSize="14" />
-                    <Label Text="Collects work activity from GitHub/Azure DevOps, summarizes with AI, and delivers via Teams/email." FontSize="12" TextColor="Gray" />
-                    <Label Text="{Binding AppVersion, StringFormat='Version: {0}'}" FontSize="12" TextColor="Gray" />
-                </VerticalStackLayout>
-            </Border>
+                            <!-- Cache Size -->
+                            <Border Padding="20" StrokeShape="RoundRectangle 12" Stroke="Transparent"
+                                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
+                                    HorizontalOptions="FillAndExpand">
+                                <VerticalStackLayout HorizontalOptions="Center">
+                                    <Label Text="{Binding CacheSizeDisplay}" FontSize="32" FontAttributes="Bold"
+                                           TextColor="#60A5FA" HorizontalOptions="Center" />
+                                    <Label Text="Cache Size" FontSize="12" TextColor="Gray" HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
 
-            <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="Green" HorizontalOptions="Center" />
+                            <!-- Last Cleared -->
+                            <Border Padding="20" StrokeShape="RoundRectangle 12" Stroke="Transparent"
+                                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
+                                    HorizontalOptions="FillAndExpand">
+                                <VerticalStackLayout HorizontalOptions="Center">
+                                    <Label Text="{Binding LastCacheCleared}" FontSize="32" FontAttributes="Bold"
+                                           TextColor="#60A5FA" HorizontalOptions="Center" />
+                                    <Label Text="Last Cleared" FontSize="12" TextColor="Gray" HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </HorizontalStackLayout>
 
-            <Button Text="Save Settings"
-                   Command="{Binding SaveCommand}"
-                   BackgroundColor="#3B82F6"
-                   TextColor="White"
-                   HorizontalOptions="Center"
-                   WidthRequest="200" />
-        </VerticalStackLayout>
-    </ScrollView>
+                        <!-- Action Buttons -->
+                        <BoxView HeightRequest="1" Color="{AppThemeBinding Light=#E0E0E0, Dark=#333333}" Margin="0,4,0,0" />
+                        <HorizontalStackLayout Spacing="12">
+                            <Button Text="Clear All Cache" Command="{Binding ClearCacheCommand}"
+                                    BackgroundColor="#EF4444" TextColor="White" Padding="20,12" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Appearance Section (Tab 3) -->
+                <Border Padding="24" StrokeShape="RoundRectangle 16" Stroke="Transparent"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}"
+                        IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3}">
+                    <VerticalStackLayout Spacing="20">
+                        <!-- Section Header -->
+                        <HorizontalStackLayout Spacing="16">
+                            <Border WidthRequest="48" HeightRequest="48" StrokeShape="RoundRectangle 12" Stroke="Transparent">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#EC4899" Offset="0" />
+                                        <GradientStop Color="#F472B6" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Label Text="FX" FontSize="18" TextColor="White"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout>
+                                <Label Text="Appearance" FontSize="20" FontAttributes="Bold" />
+                                <Label Text="Customize the look and feel of StandBot"
+                                       FontSize="13" TextColor="Gray" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+
+                        <!-- Theme Label -->
+                        <Label Text="Theme" FontSize="13" TextColor="Gray" />
+
+                        <!-- Theme Options -->
+                        <HorizontalStackLayout Spacing="16">
+                            <!-- Light Theme -->
+                            <Border Padding="20" StrokeShape="RoundRectangle 12" StrokeThickness="2"
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}"
+                                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
+                                    WidthRequest="150">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding SelectedTheme}" Value="Light">
+                                        <Setter Property="Stroke" Value="#3B82F6" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SelectLightThemeCommand}" />
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                                    <Border WidthRequest="100" HeightRequest="60" StrokeShape="RoundRectangle 8" Stroke="Transparent">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Color="#F8FAFC" Offset="0" />
+                                                <GradientStop Color="#E2E8F0" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <Label Text="Light" FontSize="14" FontAttributes="Bold" HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Dark Theme -->
+                            <Border Padding="20" StrokeShape="RoundRectangle 12" StrokeThickness="2"
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}"
+                                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
+                                    WidthRequest="150">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding SelectedTheme}" Value="Dark">
+                                        <Setter Property="Stroke" Value="#3B82F6" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SelectDarkThemeCommand}" />
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                                    <Border WidthRequest="100" HeightRequest="60" StrokeShape="RoundRectangle 8" Stroke="Transparent">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Color="#1E293B" Offset="0" />
+                                                <GradientStop Color="#0F172A" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <Label Text="Dark" FontSize="14" FontAttributes="Bold" HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- System Theme -->
+                            <Border Padding="20" StrokeShape="RoundRectangle 12" StrokeThickness="2"
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}"
+                                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
+                                    WidthRequest="150">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding SelectedTheme}" Value="System">
+                                        <Setter Property="Stroke" Value="#3B82F6" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SelectSystemThemeCommand}" />
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                                    <Grid WidthRequest="100" HeightRequest="60">
+                                        <Border StrokeShape="RoundRectangle 8" Stroke="Transparent" WidthRequest="50" HorizontalOptions="Start">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="#F8FAFC" Offset="0" />
+                                                    <GradientStop Color="#E2E8F0" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                        </Border>
+                                        <Border StrokeShape="RoundRectangle 8" Stroke="Transparent" WidthRequest="50" HorizontalOptions="End">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="#1E293B" Offset="0" />
+                                                    <GradientStop Color="#0F172A" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                        </Border>
+                                    </Grid>
+                                    <Label Text="System" FontSize="14" FontAttributes="Bold" HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- About Section (Tab 4) -->
+                <Border Padding="24" StrokeShape="RoundRectangle 16" Stroke="Transparent"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}"
+                        IsVisible="{Binding SelectedSettingsTab, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=4}">
+                    <VerticalStackLayout Spacing="20">
+                        <!-- Section Header -->
+                        <HorizontalStackLayout Spacing="16">
+                            <Border WidthRequest="48" HeightRequest="48" StrokeShape="RoundRectangle 12" Stroke="Transparent">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#64748B" Offset="0" />
+                                        <GradientStop Color="#94A3B8" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Label Text="i" FontSize="24" TextColor="White" FontAttributes="Bold"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout>
+                                <Label Text="About" FontSize="20" FontAttributes="Bold" />
+                                <Label Text="Application information and resources"
+                                       FontSize="13" TextColor="Gray" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+
+                        <!-- About Content -->
+                        <HorizontalStackLayout Spacing="24">
+                            <!-- App Logo -->
+                            <Border WidthRequest="80" HeightRequest="80" StrokeShape="RoundRectangle 20" Stroke="Transparent">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#F97316" Offset="0" />
+                                        <GradientStop Color="#EA580C" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Label Text="SB" FontSize="32" TextColor="White" FontAttributes="Bold"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+
+                            <!-- App Info -->
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="StandBot" FontSize="22" FontAttributes="Bold" />
+                                <Label Text="{Binding AppVersion, StringFormat='Version {0}'}" FontSize="14" TextColor="Gray" />
+                                <Label Text="Standup Automation Platform - Collects work activity from GitHub and Azure DevOps, summarizes with AI, and delivers intelligent standup reports via Teams or email. Built with .NET MAUI and Telerik UI."
+                                       FontSize="14" TextColor="Gray" LineBreakMode="WordWrap" MaximumWidthRequest="500" Margin="0,8,0,0" />
+
+                                <!-- Links -->
+                                <HorizontalStackLayout Spacing="16" Margin="0,12,0,0">
+                                    <Label Text="Documentation" FontSize="13" TextColor="#60A5FA" TextDecorations="Underline">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                    <Label Text="Report Issue" FontSize="13" TextColor="#60A5FA" TextDecorations="Underline">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                    <Label Text="Feature Request" FontSize="13" TextColor="#60A5FA" TextDecorations="Underline">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                    <Label Text="Changelog" FontSize="13" TextColor="#60A5FA" TextDecorations="Underline">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Status Message -->
+                <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="#10B981"
+                       HorizontalOptions="Center"
+                       IsVisible="{Binding StatusMessage, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Loading Indicator -->
+        <ActivityIndicator Grid.RowSpan="3" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
 </ContentView>
