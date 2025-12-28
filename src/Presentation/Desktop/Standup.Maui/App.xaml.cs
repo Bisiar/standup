@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Standup.Maui.Views;
 
@@ -35,8 +34,13 @@ public partial class App : Microsoft.Maui.Controls.Application
             var mainPage = MauiProgram.ServiceProvider?.GetRequiredService<MainTabbedPage>()
                 ?? throw new InvalidOperationException("Failed to resolve MainTabbedPage from DI");
 
-            var window = new Window(mainPage);
-            Log.Information("Window created with MainTabbedPage");
+            // Wrap in NavigationPage to enable Navigation.PushAsync from ContentViews
+            var navigationPage = new NavigationPage(mainPage);
+            navigationPage.BarBackgroundColor = Colors.Transparent;
+            navigationPage.BarTextColor = Colors.White;
+
+            var window = new Window(navigationPage);
+            Log.Information("Window created with NavigationPage containing MainTabbedPage");
             return window;
         }
         catch (Exception ex)
