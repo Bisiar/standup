@@ -1,213 +1,465 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
+             xmlns:telerik="http://schemas.telerik.com/2022/xaml/maui"
              xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
              xmlns:models="clr-namespace:Standup.Application.Models;assembly=Standup.Application"
+             xmlns:enums="clr-namespace:Standup.Domain.Enums;assembly=Standup.Domain"
              x:Class="Standup.Maui.Views.Components.ProjectsTabView"
              x:DataType="viewModels:ProjectListViewModel">
 
-    <Grid Padding="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="380" />
+            <ColumnDefinition Width="1" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-         <VerticalStackLayout Grid.Row="0" Spacing="5">
-            <Label Text="Your Projects" FontSize="24" FontAttributes="Bold" />
+        <!-- LEFT PANEL - Project List -->
+        <Grid Grid.Column="0" BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-            <!-- Report Generation Status -->
-            <Border IsVisible="{Binding IsGeneratingReport}" Padding="10" StrokeShape="RoundRectangle 6"
-                    BackgroundColor="{AppThemeBinding Light=#FEF3C7, Dark=#3D3D1D}">
-                <VerticalStackLayout Spacing="5">
-                    <HorizontalStackLayout Spacing="10">
-                        <ActivityIndicator IsRunning="True" HeightRequest="16" WidthRequest="16" Color="#F59E0B" />
-                        <Label Text="{Binding ReportStatusMessage}" FontSize="14" TextColor="{AppThemeBinding Light=#92400E, Dark=#FCD34D}" />
-                    </HorizontalStackLayout>
-                    <ProgressBar Progress="{Binding ReportProgress}" ProgressColor="#F59E0B" />
-                </VerticalStackLayout>
-            </Border>
+            <!-- Search and Filters Header -->
+            <VerticalStackLayout Grid.Row="0" Padding="16" Spacing="12"
+                                 BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}">
+                <!-- Search Box -->
+                <Border StrokeShape="RoundRectangle 8"
+                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}"
+                        BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#1a1a1a}">
+                    <Grid Padding="12,10" ColumnDefinitions="Auto,*">
+                        <Label Grid.Column="0" Text="🔍" FontSize="14" VerticalOptions="Center" Margin="0,0,8,0" />
+                        <Entry Grid.Column="1" Placeholder="Search projects..."
+                               Text="{Binding SearchText}"
+                               BackgroundColor="Transparent"
+                               FontSize="13" />
+                    </Grid>
+                </Border>
 
-            <!-- Status Message (when not generating) -->
-            <Label Text="{Binding ReportStatusMessage}" FontSize="12" TextColor="Gray"
-                   IsVisible="{Binding IsGeneratingReport, Converter={StaticResource InvertedBoolConverter}}"
-                   Margin="0,0,0,5" />
-        </VerticalStackLayout>
-
-        <CollectionView Grid.Row="1" ItemsSource="{Binding Projects}" SelectionMode="Single"
-                       SelectedItem="{Binding SelectedProject}">
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:ProjectInstance">
-                    <Border Margin="0,5" Padding="15" StrokeShape="RoundRectangle 8"
-                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+                <!-- Filter Tabs -->
+                <HorizontalStackLayout Spacing="8">
+                    <Border StrokeShape="RoundRectangle 16" Padding="10,6"
+                            BackgroundColor="{Binding IsFilterAll, Converter={StaticResource BoolToFilterBackgroundConverter}}"
+                            Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}">
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=SelectProjectCommand}"
-                                                 CommandParameter="{Binding .}" />
+                            <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="All" />
                         </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="All" FontSize="12"
+                                   TextColor="{Binding IsFilterAll, Converter={StaticResource BoolToFilterTextConverter}}" />
+                            <Border StrokeShape="RoundRectangle 8" Padding="4,2"
+                                    BackgroundColor="{AppThemeBinding Light=#E2E8F0, Dark=#33FFFFFF}">
+                                <Label Text="{Binding TotalProjectCount}" FontSize="10" />
+                            </Border>
+                        </HorizontalStackLayout>
+                    </Border>
 
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
-                            <VerticalStackLayout Grid.Column="0">
-                                <HorizontalStackLayout Spacing="10">
-                                    <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
-                                    <Label Text="(Default)" FontSize="12" TextColor="Green"
-                                          IsVisible="{Binding IsDefault}" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                                <Label Text="{Binding TenantName}" FontSize="14" TextColor="Gray" />
-                                <Label FontSize="12" TextColor="DimGray">
+                    <Border StrokeShape="RoundRectangle 16" Padding="10,6"
+                            BackgroundColor="{Binding IsFilterConfigured, Converter={StaticResource BoolToFilterBackgroundConverter}}"
+                            Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="Configured" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="Configured" FontSize="12"
+                                   TextColor="{Binding IsFilterConfigured, Converter={StaticResource BoolToFilterTextConverter}}" />
+                            <Border StrokeShape="RoundRectangle 8" Padding="4,2"
+                                    BackgroundColor="{AppThemeBinding Light=#E2E8F0, Dark=#33FFFFFF}">
+                                <Label Text="{Binding ConfiguredProjectCount}" FontSize="10" />
+                            </Border>
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <Border StrokeShape="RoundRectangle 16" Padding="10,6"
+                            BackgroundColor="{Binding IsFilterNeedsPat, Converter={StaticResource BoolToFilterBackgroundConverter}}"
+                            Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="NeedsPat" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="Needs PAT" FontSize="12"
+                                   TextColor="{Binding IsFilterNeedsPat, Converter={StaticResource BoolToFilterTextConverter}}" />
+                            <Border StrokeShape="RoundRectangle 8" Padding="4,2"
+                                    BackgroundColor="{AppThemeBinding Light=#E2E8F0, Dark=#33FFFFFF}">
+                                <Label Text="{Binding NeedsPatProjectCount}" FontSize="10" />
+                            </Border>
+                        </HorizontalStackLayout>
+                    </Border>
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+            <!-- Project List with Groups -->
+            <CollectionView Grid.Row="1"
+                           ItemsSource="{Binding GroupedProjects}"
+                           SelectionMode="Single"
+                           SelectedItem="{Binding SelectedProject}"
+                           IsGrouped="True">
+
+                <CollectionView.GroupHeaderTemplate>
+                    <DataTemplate x:DataType="models:ProjectGroup">
+                        <Grid Padding="16,10" BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#1a1a1a}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0" Text="{Binding Name}"
+                                   FontSize="11" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                                   TextTransform="Uppercase" CharacterSpacing="0.5" />
+                            <Border Grid.Column="1" StrokeShape="RoundRectangle 10" Padding="8,2"
+                                    BackgroundColor="{AppThemeBinding Light=#E2E8F0, Dark=#404040}">
+                                <Label Text="{Binding Count, StringFormat='{0} projects'}" FontSize="10"
+                                       TextColor="{AppThemeBinding Light=#64748B, Dark=#94a3b8}" />
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.GroupHeaderTemplate>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:ProjectInstance">
+                        <Border Padding="12,10" Margin="8,4" StrokeThickness="0" StrokeShape="RoundRectangle 8"
+                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup Name="CommonStates">
+                                    <VisualState Name="Normal" />
+                                    <VisualState Name="Selected">
+                                        <VisualState.Setters>
+                                            <Setter Property="Stroke" Value="{AppThemeBinding Light=#3B82F6, Dark=#60A5FA}" />
+                                            <Setter Property="StrokeThickness" Value="2" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=SelectProjectCommand}"
+                                                     CommandParameter="{Binding .}" />
+                            </Grid.GestureRecognizers>
+
+                            <!-- Project Icon -->
+                            <Border Grid.Column="0" WidthRequest="40" HeightRequest="40"
+                                    StrokeShape="RoundRectangle 10" Margin="0,0,12,0">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#0078d4" Offset="0" />
+                                        <GradientStop Color="#00bcf2" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Label Text="🔷" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+
+                            <!-- Project Info -->
+                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}"
+                                       LineBreakMode="TailTruncation" />
+                                <Label FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}"
+                                       LineBreakMode="TailTruncation" Margin="0,2,0,0">
                                     <Label.Text>
-                                        <MultiBinding StringFormat="Source: {0} / {1} / {2}">
-                                            <Binding Path="SourceOrganization" />
+                                        <MultiBinding StringFormat="{}{0} / {1}">
                                             <Binding Path="SourceProject" />
                                             <Binding Path="SourceRepository" />
                                         </MultiBinding>
                                     </Label.Text>
                                 </Label>
-                                <Label Text="✓ PAT Configured" FontSize="11" TextColor="Green"
-                                       IsVisible="{Binding SourcePat, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
-                                <Label Text="⚠ No PAT - Click Edit" FontSize="11" TextColor="Orange"
-                                       IsVisible="{Binding SourcePat, Converter={StaticResource IsNullOrEmptyConverter}}" />
-                                <!-- CRM Link Indicator -->
-                                <Label FontSize="11" TextColor="#8B5CF6"
-                                       IsVisible="{Binding CrmProjectId, Converter={StaticResource IsNotNullOrEmptyConverter}}">
-                                    <Label.FormattedText>
-                                        <FormattedString>
-                                            <Span Text="🔗 CRM Linked" FontAttributes="Bold" />
-                                        </FormattedString>
-                                    </Label.FormattedText>
-                                </Label>
-                                <!-- Latest Commit Info -->
-                                <HorizontalStackLayout Spacing="5" IsVisible="{Binding LastCommitHash, Converter={StaticResource IsNotNullOrEmptyConverter}}">
-                                    <Label Text="📝" FontSize="11" />
-                                    <Label Text="{Binding CommitInfoDisplay}" FontSize="11" TextColor="#10B981" FontAttributes="Bold" />
-                                </HorizontalStackLayout>
-                                <!-- Validation Error -->
-                                <Label Text="{Binding ValidationError}" FontSize="11" TextColor="#EF4444"
-                                       IsVisible="{Binding ValidationError, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
-                                <!-- Validating Indicator -->
-                                <HorizontalStackLayout Spacing="5" IsVisible="{Binding IsValidating}">
-                                    <ActivityIndicator IsRunning="True" HeightRequest="12" WidthRequest="12" Color="#3B82F6" />
-                                    <Label Text="Validating..." FontSize="11" TextColor="#3B82F6" />
-                                </HorizontalStackLayout>
                             </VerticalStackLayout>
 
-                            <!-- Validate PAT Button -->
-                            <Button Grid.Column="1" Text="✓" FontSize="14" Padding="8,5"
-                                    BackgroundColor="#6366F1" TextColor="White"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=ValidateProjectCommand}"
-                                    CommandParameter="{Binding .}" Margin="0,0,5,0"
-                                    WidthRequest="36"
-                                    ToolTipProperties.Text="Validate PAT and fetch latest commit" />
+                            <!-- Status -->
+                            <VerticalStackLayout Grid.Column="2" VerticalOptions="Center" HorizontalOptions="End">
+                                <!-- PAT Status Badge -->
+                                <Border StrokeShape="RoundRectangle 10" Padding="8,3"
+                                        BackgroundColor="{Binding SourcePat, Converter={StaticResource PatToBackgroundConverter}}"
+                                        IsVisible="True">
+                                    <Label FontSize="10"
+                                           Text="{Binding SourcePat, Converter={StaticResource PatToStatusTextConverter}}"
+                                           TextColor="{Binding SourcePat, Converter={StaticResource PatToTextColorConverter}}" />
+                                </Border>
+                                <!-- Last Activity -->
+                                <Label Text="{Binding LastCommitDate, Converter={StaticResource DateToRelativeConverter}}"
+                                       FontSize="10" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}"
+                                       HorizontalOptions="End" Margin="0,4,0,0"
+                                       IsVisible="{Binding LastCommitDate, Converter={StaticResource IsNotNullConverter}}" />
+                            </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
 
-                            <!-- View Latest Report Button -->
-                            <Button Grid.Column="2" Text="View" FontSize="12" Padding="10,5"
-                                    BackgroundColor="#10B981" TextColor="White"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=ViewLatestReportCommand}"
-                                    CommandParameter="{Binding .}" Margin="0,0,5,0"
-                                    ToolTipProperties.Text="View latest report" />
+        <!-- Splitter Bar -->
+        <BoxView Grid.Column="1" BackgroundColor="{AppThemeBinding Light=#E2E8F0, Dark=#404040}" />
 
-                            <!-- Run/Refresh Report Button -->
-                            <Button Grid.Column="3" Text="⟳" FontSize="16" Padding="8,5"
-                                    BackgroundColor="#F59E0B" TextColor="White"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=RunReportCommand}"
-                                    CommandParameter="{Binding .}" Margin="0,0,10,0"
-                                    WidthRequest="40"
-                                    ToolTipProperties.Text="Generate new report" />
+        <!-- RIGHT PANEL - Project Details -->
+        <Grid Grid.Column="2" BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1a1a1a}">
+            <!-- Empty State (no project selected) -->
+            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                                IsVisible="{Binding SelectedProject, Converter={StaticResource IsNullConverter}}">
+                <Label Text="📋" FontSize="64" HorizontalOptions="Center" Opacity="0.5" />
+                <Label Text="Select a Project" FontSize="18" FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}"
+                       HorizontalOptions="Center" Margin="0,16,0,0" />
+                <Label Text="Choose a project from the list to view details" FontSize="14"
+                       TextColor="{AppThemeBinding Light=#CBD5E1, Dark=#64748b}"
+                       HorizontalOptions="Center" Margin="0,8,0,0" />
+            </VerticalStackLayout>
 
-                            <Button Grid.Column="4" Text="Edit" FontSize="12" Padding="10,5"
-                                    BackgroundColor="#3B82F6" TextColor="White"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=EditProjectCommand}"
-                                    CommandParameter="{Binding .}" Margin="0,0,10,0" />
+            <!-- Project Details (when selected) -->
+            <Grid IsVisible="{Binding SelectedProject, Converter={StaticResource IsNotNullConverter}}"
+                  RowDefinitions="Auto,*">
 
-                            <Button Grid.Column="5" Text="✕" FontSize="14"
-                                    BackgroundColor="Transparent" TextColor="Gray"
-                                    WidthRequest="30" HeightRequest="30" Padding="0"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:ProjectListViewModel}}, Path=DeleteProjectCommand}"
-                                    CommandParameter="{Binding .}" />
+                <!-- Detail Header -->
+                <Border Grid.Row="0" Padding="20,20,20,16"
+                        BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                        StrokeThickness="0,0,0,1"
+                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#404040}">
+                    <VerticalStackLayout Spacing="16">
+                        <!-- Title Row -->
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <!-- Icon and Name -->
+                            <HorizontalStackLayout Grid.Column="0" Spacing="12">
+                                <Border WidthRequest="48" HeightRequest="48" StrokeShape="RoundRectangle 12">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#0078d4" Offset="0" />
+                                            <GradientStop Color="#00bcf2" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Label Text="🔷" FontSize="24" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout VerticalOptions="Center">
+                                    <Label Text="{Binding SelectedProject.Name}" FontSize="22" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                    <Label FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}">
+                                        <Label.Text>
+                                            <MultiBinding StringFormat="{}{0} / {1} / {2}">
+                                                <Binding Path="SelectedProject.TenantName" />
+                                                <Binding Path="SelectedProject.SourceProject" />
+                                                <Binding Path="SelectedProject.SourceRepository" />
+                                            </MultiBinding>
+                                        </Label.Text>
+                                    </Label>
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+
+                            <!-- Action Buttons -->
+                            <HorizontalStackLayout Grid.Column="2" Spacing="8">
+                                <Button Text="🔄" WidthRequest="36" HeightRequest="36" Padding="0"
+                                        BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#404040}"
+                                        TextColor="{AppThemeBinding Light=#475569, Dark=#E2E8F0}"
+                                        Command="{Binding ValidateProjectCommand}"
+                                        CommandParameter="{Binding SelectedProject}"
+                                        ToolTipProperties.Text="Refresh" />
+                                <Button Text="✏️" WidthRequest="36" HeightRequest="36" Padding="0"
+                                        BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#404040}"
+                                        TextColor="{AppThemeBinding Light=#475569, Dark=#E2E8F0}"
+                                        Command="{Binding EditProjectCommand}"
+                                        CommandParameter="{Binding SelectedProject}"
+                                        ToolTipProperties.Text="Edit" />
+                            </HorizontalStackLayout>
                         </Grid>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
 
-        <!-- Edit Project Form -->
-        <Border Grid.Row="2" IsVisible="{Binding IsEditingProject}" Padding="15" StrokeShape="RoundRectangle 8"
-                BackgroundColor="{AppThemeBinding Light=#FFF8E1, Dark=#3D3D1D}" Margin="0,0,0,10">
-            <VerticalStackLayout Spacing="10">
-                <Label Text="Edit Project" FontAttributes="Bold" FontSize="16" />
+                        <!-- Quick Stats -->
+                        <HorizontalStackLayout Spacing="32">
+                            <VerticalStackLayout>
+                                <Label Text="{Binding SelectedProjectStats.CommitCount30d}" FontSize="24" FontAttributes="Bold" TextColor="#60a5fa" />
+                                <Label Text="COMMITS (30D)" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout>
+                                <Label Text="{Binding SelectedProjectStats.TasksDone}" FontSize="24" FontAttributes="Bold" TextColor="#34d399" />
+                                <Label Text="TASKS DONE" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout>
+                                <Label Text="{Binding SelectedProjectStats.InProgress}" FontSize="24" FontAttributes="Bold" TextColor="#fbbf24" />
+                                <Label Text="IN PROGRESS" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout>
+                                <Label Text="{Binding SelectedProjectStats.OpenPRs}" FontSize="24" FontAttributes="Bold" TextColor="#f87171" />
+                                <Label Text="PRS OPEN" FontSize="11" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
 
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Project Name" FontSize="12" TextColor="Gray" />
-                    <Entry Text="{Binding EditProjectName}" />
+                <!-- Detail Content (scrollable) -->
+                <ScrollView Grid.Row="1" Padding="24">
+                    <VerticalStackLayout Spacing="24">
+                        <!-- Info Cards Grid -->
+                        <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto">
+                            <!-- Project Info Card -->
+                            <Border Grid.Column="0" StrokeShape="RoundRectangle 12" Padding="16"
+                                    BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                                <VerticalStackLayout Spacing="12">
+                                    <HorizontalStackLayout Spacing="8">
+                                        <Label Text="📋" FontSize="14" />
+                                        <Label Text="Project Info" FontSize="12" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                                    </HorizontalStackLayout>
+
+                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="8">
+                                        <Label Grid.Row="0" Grid.Column="0" Text="Source" FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}" />
+                                        <Label Grid.Row="0" Grid.Column="1" Text="{Binding SelectedProject.SourceType}" FontSize="13" FontAttributes="Bold" HorizontalOptions="End" />
+
+                                        <Label Grid.Row="1" Grid.Column="0" Text="Organization" FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}" />
+                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding SelectedProject.TenantName}" FontSize="13" FontAttributes="Bold" HorizontalOptions="End" />
+
+                                        <Label Grid.Row="2" Grid.Column="0" Text="Repository" FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}" />
+                                        <Label Grid.Row="2" Grid.Column="1" Text="{Binding SelectedProject.SourceRepository}" FontSize="13" FontAttributes="Bold" HorizontalOptions="End" LineBreakMode="TailTruncation" />
+
+                                        <Label Grid.Row="3" Grid.Column="0" Text="CRM Link" FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}" />
+                                        <Label Grid.Row="3" Grid.Column="1"
+                                               Text="{Binding SelectedProject.CrmProjectName, Converter={StaticResource NullToTextConverter}, ConverterParameter='Not linked'}"
+                                               FontSize="13" FontAttributes="Bold" HorizontalOptions="End"
+                                               TextColor="{Binding SelectedProject.CrmProjectId, Converter={StaticResource NullToColorConverter}}" />
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Connection Status Card -->
+                            <Border Grid.Column="2" StrokeShape="RoundRectangle 12" Padding="16"
+                                    BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                                <VerticalStackLayout Spacing="12">
+                                    <HorizontalStackLayout Spacing="8">
+                                        <Label Text="🔗" FontSize="14" />
+                                        <Label Text="Connection Status" FontSize="12" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}" />
+                                    </HorizontalStackLayout>
+
+                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="8">
+                                        <Label Grid.Row="0" Grid.Column="0" Text="PAT Status" FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}" />
+                                        <Label Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding SelectedProject.SourcePat, Converter={StaticResource PatToStatusTextConverter}}"
+                                               TextColor="{Binding SelectedProject.SourcePat, Converter={StaticResource PatToTextColorConverter}}"
+                                               FontSize="13" FontAttributes="Bold" HorizontalOptions="End" />
+
+                                        <Label Grid.Row="1" Grid.Column="0" Text="Last Sync" FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}" />
+                                        <Label Grid.Row="1" Grid.Column="1"
+                                               Text="{Binding SelectedProject.LastCommitDate, Converter={StaticResource DateToRelativeConverter}}"
+                                               FontSize="13" FontAttributes="Bold" HorizontalOptions="End" />
+
+                                        <Label Grid.Row="2" Grid.Column="0" Text="Latest Commit" FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}" />
+                                        <Label Grid.Row="2" Grid.Column="1"
+                                               Text="{Binding SelectedProject.LastCommitHash, TargetNullValue='—'}"
+                                               FontSize="13" FontAttributes="Bold" HorizontalOptions="End" TextColor="#34d399" />
+
+                                        <Label Grid.Row="3" Grid.Column="0" Text="Validation" FontSize="13" TextColor="{AppThemeBinding Light=#94A3B8, Dark=#94a3b8}" />
+                                        <Label Grid.Row="3" Grid.Column="1"
+                                               Text="{Binding SelectedProject.ValidationError, TargetNullValue='✓ Valid'}"
+                                               FontSize="13" FontAttributes="Bold" HorizontalOptions="End"
+                                               TextColor="{Binding SelectedProject.ValidationError, Converter={StaticResource ErrorToColorConverter}}" />
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+                        </Grid>
+
+                        <!-- Recent Activity Card -->
+                        <Border StrokeShape="RoundRectangle 12" Padding="20"
+                                BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#242424}"
+                                Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#333}">
+                            <VerticalStackLayout Spacing="16">
+                                <Label Text="⚡ Recent Activity" FontSize="14" FontAttributes="Bold" />
+
+                                <VerticalStackLayout Spacing="0" BindableLayout.ItemsSource="{Binding RecentActivity}">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ActivityItem">
+                                            <Grid Padding="0,10" ColumnDefinitions="Auto,*">
+                                                <Ellipse Grid.Column="0" WidthRequest="8" HeightRequest="8"
+                                                         Fill="{Binding Type, Converter={StaticResource ActivityTypeToColorConverter}}"
+                                                         Margin="0,6,12,0" VerticalOptions="Start" />
+                                                <VerticalStackLayout Grid.Column="1">
+                                                    <Label Text="{Binding Description}" FontSize="13"
+                                                           TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                                                    <Label Text="{Binding TimeAgo}" FontSize="11"
+                                                           TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}" Margin="0,2,0,0" />
+                                                </VerticalStackLayout>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </VerticalStackLayout>
+
+                                <!-- Empty state for activity -->
+                                <Label Text="No recent activity" FontSize="13"
+                                       TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748b}"
+                                       HorizontalOptions="Center"
+                                       IsVisible="{Binding RecentActivity.Count, Converter={StaticResource IsZeroConverter}}" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <!-- Open Dashboard Button -->
+                        <Button Text="📊 Open Full Dashboard"
+                                FontSize="15" FontAttributes="Bold"
+                                Padding="14"
+                                Clicked="OnOpenDashboardClicked">
+                            <Button.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#f97316" Offset="0" />
+                                    <GradientStop Color="#ea580c" Offset="1" />
+                                </LinearGradientBrush>
+                            </Button.Background>
+                        </Button>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Grid>
+        </Grid>
+
+        <!-- Edit Project Overlay -->
+        <Border Grid.ColumnSpan="3"
+                IsVisible="{Binding IsEditingProject}"
+                BackgroundColor="{AppThemeBinding Light=#80000000, Dark=#B3000000}">
+            <Border HorizontalOptions="Center" VerticalOptions="Center"
+                    WidthRequest="500" StrokeShape="RoundRectangle 16" Padding="24"
+                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#242424}">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Edit Project" FontSize="20" FontAttributes="Bold" />
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Project Name" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding EditProjectName}" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Tenant Name" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding EditTenantName}" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Personal Access Token (PAT)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding EditSourcePat}" IsPassword="True" Placeholder="Enter PAT" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Author Identifier (optional)" FontSize="12" TextColor="Gray" />
+                        <Entry Text="{Binding EditAuthorIdentifier}" Placeholder="Email or username" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Link to CRM Project (optional)" FontSize="12" TextColor="Gray" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Picker Grid.Column="0"
+                                    ItemsSource="{Binding AvailableCrmProjects}"
+                                    SelectedItem="{Binding SelectedCrmProject}"
+                                    ItemDisplayBinding="{Binding ProjectName}"
+                                    Title="Select CRM Project..." />
+                            <ActivityIndicator Grid.Column="1" IsRunning="{Binding IsLoadingCrmProjects}"
+                                              IsVisible="{Binding IsLoadingCrmProjects}"
+                                              WidthRequest="20" HeightRequest="20" Margin="10,0,0,0" />
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,16,0,0">
+                        <Button Text="Cancel" Command="{Binding CancelEditProjectCommand}"
+                               BackgroundColor="Gray" TextColor="White" />
+                        <Button Text="Save" Command="{Binding SaveEditProjectCommand}"
+                               BackgroundColor="#3B82F6" TextColor="White" />
+                    </HorizontalStackLayout>
                 </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Tenant Name" FontSize="12" TextColor="Gray" />
-                    <Entry Text="{Binding EditTenantName}" />
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Personal Access Token (PAT)" FontSize="12" TextColor="Gray" />
-                    <Entry Text="{Binding EditSourcePat}" IsPassword="True" Placeholder="Enter PAT for Azure DevOps/GitHub" />
-                    <Label Text="Required for fetching commits, PRs, and work items from remote" FontSize="10" TextColor="DimGray" />
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Author Identifier (optional)" FontSize="12" TextColor="Gray" />
-                    <Entry Text="{Binding EditAuthorIdentifier}" Placeholder="Email or username to filter commits" />
-                </VerticalStackLayout>
-
-                <!-- CRM Project Linking -->
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Link to CRM Project (optional)" FontSize="12" TextColor="Gray" />
-                    <Grid ColumnDefinitions="*,Auto">
-                        <Picker Grid.Column="0"
-                                ItemsSource="{Binding AvailableCrmProjects}"
-                                SelectedItem="{Binding SelectedCrmProject}"
-                                ItemDisplayBinding="{Binding ProjectName}"
-                                Title="Select CRM Project..." />
-                        <ActivityIndicator Grid.Column="1" IsRunning="{Binding IsLoadingCrmProjects}"
-                                          IsVisible="{Binding IsLoadingCrmProjects}"
-                                          WidthRequest="20" HeightRequest="20"
-                                          Margin="10,0,0,0" Color="#3B82F6" />
-                    </Grid>
-                    <Label Text="Links this project to a Dynamics 365 CRM project for timeline and milestone tracking"
-                           FontSize="10" TextColor="DimGray" />
-                </VerticalStackLayout>
-
-                <HorizontalStackLayout Spacing="10" HorizontalOptions="End" Margin="0,10,0,0">
-                    <Button Text="Cancel" Command="{Binding CancelEditProjectCommand}"
-                           BackgroundColor="Gray" TextColor="White" />
-                    <Button Text="Save" Command="{Binding SaveEditProjectCommand}"
-                           BackgroundColor="#3B82F6" TextColor="White" />
-                </HorizontalStackLayout>
-            </VerticalStackLayout>
+            </Border>
         </Border>
 
-        <!-- Add Project Form -->
-        <Border Grid.Row="2" IsVisible="{Binding IsAddingProject}" Padding="15" StrokeShape="RoundRectangle 8"
-                BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
-            <VerticalStackLayout Spacing="10">
-                <Label Text="Add New Project" FontAttributes="Bold" FontSize="16" />
-
-                <Entry Placeholder="Project Name" Text="{Binding NewProjectName}" />
-                <Entry Placeholder="Tenant Name (e.g., JourneyTeam)" Text="{Binding NewTenantName}" />
-                <Entry Placeholder="API Endpoint URL" Text="{Binding NewApiEndpoint}" />
-
-                <HorizontalStackLayout Spacing="10" HorizontalOptions="End">
-                    <Button Text="Cancel" Command="{Binding CancelAddProjectCommand}"
-                           BackgroundColor="Gray" TextColor="White" />
-                    <Button Text="Add" Command="{Binding AddProjectCommand}"
-                           BackgroundColor="#3B82F6" TextColor="White" />
-                </HorizontalStackLayout>
-            </VerticalStackLayout>
-        </Border>
-
-        <Button Grid.Row="2" Text="+ Add Project" Command="{Binding ShowAddProjectCommand}"
-               IsVisible="{Binding ShouldShowAddProjectButton}"
-               HorizontalOptions="End" />
-
-        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
-                          HorizontalOptions="Center" VerticalOptions="Center" Grid.RowSpan="3" />
+        <!-- Loading Overlay -->
+        <ActivityIndicator Grid.ColumnSpan="3" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center" VerticalOptions="Center" />
     </Grid>
 </ContentView>
