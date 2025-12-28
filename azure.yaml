@@ -5,10 +5,10 @@ metadata:
   template: standup-automation@1.0.0
 services:
   api:
-    project: src/Standup.Api
+    project: src/Functions/Standup.Api
     language: csharp
     host: function
   # teams:
-  #   project: src/Standup.Teams
+  #   project: src/Presentation/Web/Standup.Teams
   #   language: csharp
   #   host: appservice
