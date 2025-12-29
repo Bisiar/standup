@@ -25,6 +25,21 @@ public record CrmMilestone(
     public decimal? PercentComplete { get; init; }
 
     /// <summary>
+    /// Gets the estimated effort in hours.
+    /// </summary>
+    public decimal? EffortEstimated { get; init; }
+
+    /// <summary>
+    /// Gets the completed effort in hours.
+    /// </summary>
+    public decimal? EffortCompleted { get; init; }
+
+    /// <summary>
+    /// Gets the remaining effort in hours.
+    /// </summary>
+    public decimal? EffortRemaining { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the milestone is overdue.
     /// </summary>
     public bool IsOverdue => DateTime.UtcNow > DueDate && Status != "Completed";

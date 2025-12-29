@@ -165,7 +165,7 @@ public sealed class StandupBot : TeamsActivityHandler
         return Task.FromResult<IActivity>(MessageFactory.Attachment(card));
     }
 
-    private Task<IActivity> HandleUnknownCommandAsync(
+    private static Task<IActivity> HandleUnknownCommandAsync(
         ITurnContext turnContext,
         CancellationToken cancellationToken)
     {

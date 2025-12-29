@@ -68,7 +68,7 @@
   <!-- Copy wiki documentation to Resources/Documents at build time -->
   <Target Name="CopyWikiDocuments" BeforeTargets="Build">
     <ItemGroup>
-      <WikiFiles Include="$(ProjectDir)..\..\..\..\wiki\**\*.*" />
+      <WikiFiles Include="$(ProjectDir)..\..\..\..\docs\wiki\**\*.md" />
     </ItemGroup>
     <MakeDir Directories="$(ProjectDir)Resources\Documents" Condition="!Exists('$(ProjectDir)Resources\Documents')" />
     <Copy SourceFiles="@(WikiFiles)" DestinationFolder="$(ProjectDir)Resources\Documents\%(RecursiveDir)" SkipUnchangedFiles="true" />

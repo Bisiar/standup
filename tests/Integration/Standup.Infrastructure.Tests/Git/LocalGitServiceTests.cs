@@ -54,7 +54,7 @@ public class LocalGitServiceTests : IDisposable
         for (int i = 0; i < 5; i++)
         {
             var testFile = Path.Combine(_testRepoPath, $"file{i}.txt");
-            File.WriteAllText(testFile, $"Content {i}");
+            await File.WriteAllTextAsync(testFile, $"Content {i}");
             RunGitCommand($"add file{i}.txt");
             RunGitCommand($"commit -m \"Commit {i}\"");
         }
@@ -165,7 +165,7 @@ public class LocalGitServiceTests : IDisposable
     public void GetRepositoryName_WithValidPath_ReturnsDirectoryName()
     {
         // Act
-        var name = _service.GetRepositoryName(_testRepoPath);
+        var name = LocalGitService.GetRepositoryName(_testRepoPath);
 
         // Assert
         name.Should().NotBeNullOrEmpty();
@@ -177,7 +177,7 @@ public class LocalGitServiceTests : IDisposable
     {
         // Arrange - create a commit with known details
         var testFile = Path.Combine(_testRepoPath, "detailed.txt");
-        File.WriteAllText(testFile, "Detailed content");
+        await File.WriteAllTextAsync(testFile, "Detailed content");
         RunGitCommand("add detailed.txt");
         RunGitCommand("commit -m \"Test subject\" -m \"Test body line 1\" -m \"Test body line 2\"");
 
@@ -220,7 +220,10 @@ public class LocalGitServiceTests : IDisposable
             UseShellExecute = false
         };
         using var process = System.Diagnostics.Process.Start(startInfo);
-        process?.WaitForExit();
+        if (process != null)
+        {
+            await process.WaitForExitAsync();
+        }
 
         try
         {
@@ -273,6 +276,7 @@ public class LocalGitServiceTests : IDisposable
         }
 
         _disposed = true;
+        GC.SuppressFinalize(this);
     }
 
     private void InitializeTestRepository()

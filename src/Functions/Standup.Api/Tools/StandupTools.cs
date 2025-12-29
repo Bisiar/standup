@@ -10,6 +10,8 @@ namespace Standup.Api.Tools;
 [McpServerToolType]
 public sealed class StandupTools
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
     private readonly IMediator _mediator;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -45,7 +47,7 @@ public sealed class StandupTools
 
         var result = await _mediator.Send(command);
 
-        return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+        return JsonSerializer.Serialize(result, JsonOptions);
     }
 
     [McpServerTool]

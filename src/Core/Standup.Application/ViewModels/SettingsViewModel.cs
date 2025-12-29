@@ -15,6 +15,7 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly IProjectService _projectService;
     private readonly ILocalStandupService _localStandupService;
+    private readonly string _appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
     private IReportCacheService? _cacheService;
 
     /// <summary>
@@ -156,7 +157,7 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>
     /// Gets the application version.
     /// </summary>
-    public string AppVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
+    public string AppVersion => _appVersion;
 
     public List<SourceType> SourceTypes { get; } = [SourceType.AzureDevOps, SourceType.GitHub];
 

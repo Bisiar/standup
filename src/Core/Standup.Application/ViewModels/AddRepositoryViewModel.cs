@@ -369,7 +369,7 @@ public partial class AddRepositoryViewModel : ObservableObject
             // Only encrypt repo-level PAT if user explicitly wants to override org PAT
             if (UseRepoPat && !string.IsNullOrWhiteSpace(Pat))
             {
-                encryptedPat = _encryptionService.Encrypt(Pat);
+                encryptedPat = await _encryptionService.EncryptAsync(Pat);
             }
 
             var repository = new GroupedRepository

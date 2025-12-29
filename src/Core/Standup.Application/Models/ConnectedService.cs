@@ -56,4 +56,7 @@ public enum ServiceStatus
 
     /// <summary>Error status.</summary>
     Error,
+
+    /// <summary>Disconnected status.</summary>
+    Disconnected,
 }

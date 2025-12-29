@@ -545,7 +545,7 @@ public partial class ProjectListViewModel : ObservableObject
                 Project = project.SourceProject,
                 Repository = project.SourceRepository,
                 AuthorIdentifier = string.Empty, // Get all commits, not filtered by author
-                EncryptedPat = _encryptionService.Encrypt(project.SourcePat),
+                EncryptedPat = await _encryptionService.EncryptAsync(project.SourcePat),
                 ApiEndpoint = project.ApiEndpointOverride
             };
 
@@ -578,7 +578,7 @@ public partial class ProjectListViewModel : ObservableObject
         {
             Log.Error(ex, "Failed to validate project {ProjectName}", project.Name);
             project.ValidationError = ex.Message.Length > 30
-                ? ex.Message.Substring(0, 30) + "..."
+                ? string.Concat(ex.Message.AsSpan(0, 30), "...")
                 : ex.Message;
         }
         finally

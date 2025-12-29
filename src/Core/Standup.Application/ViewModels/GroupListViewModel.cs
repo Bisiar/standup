@@ -154,7 +154,7 @@ public partial class GroupListViewModel : ObservableObject
                 continue;
             }
 
-            if (inOriginSection && trimmed.StartsWith("["))
+            if (inOriginSection && trimmed.StartsWith('['))
             {
                 // Left the origin section
                 break;
@@ -510,7 +510,7 @@ public partial class GroupListViewModel : ObservableObject
                 Log.Information("PAT saved to org-level credential for {SourceType}/{Org}", NewRepoSourceType, NewRepoOrganization);
 
                 // Also encrypt for repo-level (for repo-specific PAT override scenarios)
-                encryptedPat = _encryptionService.Encrypt(NewRepoPat);
+                encryptedPat = await _encryptionService.EncryptAsync(NewRepoPat);
                 Log.Information("PAT also encrypted at repo-level for repository");
             }
 

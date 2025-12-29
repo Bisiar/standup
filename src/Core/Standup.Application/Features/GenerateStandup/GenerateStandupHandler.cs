@@ -81,7 +81,7 @@ public class GenerateStandupHandler : IRequestHandler<GenerateStandupCommand, St
             report.SentTo);
     }
 
-    private DateRange GetDateRange(GenerateStandupCommand request, UserPreferences preferences)
+    private static DateRange GetDateRange(GenerateStandupCommand request, UserPreferences preferences)
     {
         if (request.Since.HasValue && request.Until.HasValue)
         {

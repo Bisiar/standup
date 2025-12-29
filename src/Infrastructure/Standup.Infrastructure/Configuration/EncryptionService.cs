@@ -58,7 +58,6 @@ public class EncryptionService : IEncryptionService
 
     private static byte[] DeriveKey(string key)
     {
-        using var sha256 = SHA256.Create();
-        return sha256.ComputeHash(Encoding.UTF8.GetBytes(key));
+        return SHA256.HashData(Encoding.UTF8.GetBytes(key));
     }
 }

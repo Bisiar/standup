@@ -18,6 +18,14 @@ namespace Standup.Infrastructure.Integrations;
 /// </summary>
 public class Office365EmailService : IEmailIntegrationService
 {
+    private static readonly string[] MessageSelectFields =
+    [
+        "id", "subject", "bodyPreview", "from", "receivedDateTime",
+        "importance", "hasAttachments", "conversationId",
+    ];
+
+    private static readonly string[] MessageOrderBy = ["receivedDateTime desc"];
+
     private readonly Office365EmailOptions _options;
     private readonly IAISummaryService _aiService;
     private IPublicClientApplication? _msalApp;
@@ -70,7 +78,7 @@ public class Office365EmailService : IEmailIntegrationService
 
         try
         {
-            var graphClient = await CreateGraphClientAsync(cancellationToken);
+            using var graphClient = await CreateGraphClientAsync(cancellationToken);
             var user = await graphClient.Me.GetAsync(cancellationToken: cancellationToken);
             Log.Information("Office 365 Email connection validated for user: {UserEmail}", user?.Mail ?? user?.UserPrincipalName);
             return true;
@@ -137,7 +145,7 @@ public class Office365EmailService : IEmailIntegrationService
 
         try
         {
-            var graphClient = await CreateGraphClientAsync(cancellationToken);
+            using var graphClient = await CreateGraphClientAsync(cancellationToken);
             var emails = new List<ClientEmail>();
 
             foreach (var domain in clientDomains)
@@ -326,12 +334,8 @@ public class Office365EmailService : IEmailIntegrationService
                 requestConfiguration =>
                 {
                     requestConfiguration.QueryParameters.Filter = filter;
-                    requestConfiguration.QueryParameters.Select = new[]
-                    {
-                        "id", "subject", "bodyPreview", "from", "receivedDateTime",
-                        "importance", "hasAttachments", "conversationId"
-                    };
-                    requestConfiguration.QueryParameters.Orderby = new[] { "receivedDateTime desc" };
+                    requestConfiguration.QueryParameters.Select = MessageSelectFields;
+                    requestConfiguration.QueryParameters.Orderby = MessageOrderBy;
                     requestConfiguration.QueryParameters.Top = 50;
                 },
                 cancellationToken);

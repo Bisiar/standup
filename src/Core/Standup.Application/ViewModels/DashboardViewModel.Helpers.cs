@@ -20,6 +20,7 @@ public partial class DashboardViewModel
                 .Select(s => new ClientCodeMetrics
                 {
                     ClientCode = string.IsNullOrWhiteSpace(s.ClientCode) ? "General" : s.ClientCode,
+                    RepositoryName = s.Commits.FirstOrDefault()?.Repository,
                     Additions = s.Commits
                         .Where(c => c.CommittedAt >= PeriodStart && c.CommittedAt <= PeriodEnd)
                         .Sum(c => c.Additions),
@@ -42,10 +43,11 @@ public partial class DashboardViewModel
                 .ToDictionary(r => r.Repository, r => GetProjectDisplayName(r.Repository));
 
             var clientCodeData = filteredCommits
-                .GroupBy(c => repoToDisplayName.TryGetValue(c.Repository, out var name) ? name : GetProjectDisplayName(c.Repository))
+                .GroupBy(c => c.Repository)
                 .Select(g => new ClientCodeMetrics
                 {
-                    ClientCode = g.Key,
+                    ClientCode = repoToDisplayName.TryGetValue(g.Key, out var name) ? name : GetProjectDisplayName(g.Key),
+                    RepositoryName = g.Key,
                     Additions = g.Sum(c => c.Additions),
                     Deletions = g.Sum(c => c.Deletions),
                     CommitCount = g.Count(),

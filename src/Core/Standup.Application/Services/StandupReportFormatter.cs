@@ -501,7 +501,7 @@ public static class StandupReportFormatter
         }
 
         // Last resort: summarize from commits
-        if (section.Commits.Any())
+        if (section.Commits.Count > 0)
         {
             var firstCommit = section.Commits.First().Message.Split('\n')[0];
             return firstCommit.Length > 80 ? firstCommit[..77] + "..." : firstCommit;
@@ -571,7 +571,7 @@ public static class StandupReportFormatter
 
     private static void AppendCommitsSection(StringBuilder sb, ClientCodeSection section, int maxCommits = 10)
     {
-        if (!section.Commits.Any())
+        if (section.Commits.Count == 0)
         {
             return;
         }
@@ -598,7 +598,7 @@ public static class StandupReportFormatter
 
     private static void AppendPullRequestsSection(StringBuilder sb, ClientCodeSection section)
     {
-        if (!section.PullRequests.Any())
+        if (section.PullRequests.Count == 0)
         {
             return;
         }
@@ -614,7 +614,7 @@ public static class StandupReportFormatter
 
     private static void AppendWorkItemsSection(StringBuilder sb, ClientCodeSection section)
     {
-        if (!section.WorkItems.Any())
+        if (section.WorkItems.Count == 0)
         {
             return;
         }

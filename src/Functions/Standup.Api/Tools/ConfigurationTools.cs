@@ -11,6 +11,8 @@ namespace Standup.Api.Tools;
 [McpServerToolType]
 public sealed class ConfigurationTools
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
     private readonly IMediator _mediator;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -34,7 +36,7 @@ public sealed class ConfigurationTools
         var query = new ListRepositoriesQuery(userId);
         var result = await _mediator.Send(query);
 
-        return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+        return JsonSerializer.Serialize(result, JsonOptions);
     }
 
     [McpServerTool]
@@ -67,7 +69,7 @@ public sealed class ConfigurationTools
         var command = new AddRepositoryCommand(userId, dto);
         var result = await _mediator.Send(command);
 
-        return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+        return JsonSerializer.Serialize(result, JsonOptions);
     }
 
     [McpServerTool]
@@ -101,7 +103,7 @@ public sealed class ConfigurationTools
         var command = new AddRepositoryCommand(userId, dto);
         var result = await _mediator.Send(command);
 
-        return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+        return JsonSerializer.Serialize(result, JsonOptions);
     }
 
     private string? GetCurrentUserId()

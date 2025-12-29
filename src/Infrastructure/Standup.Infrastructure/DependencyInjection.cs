@@ -15,6 +15,8 @@ namespace Standup.Infrastructure;
 
 public static class DependencyInjection
 {
+    private static readonly string[] GraphScopes = ["https://graph.microsoft.com/.default"];
+
     public static IServiceCollection AddInfrastructureServices(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -47,7 +49,7 @@ public static class DependencyInjection
         services.AddScoped<GraphServiceClient>(sp =>
         {
             var credential = new DefaultAzureCredential();
-            return new GraphServiceClient(credential, new[] { "https://graph.microsoft.com/.default" });
+            return new GraphServiceClient(credential, GraphScopes);
         });
 
         // Notification services

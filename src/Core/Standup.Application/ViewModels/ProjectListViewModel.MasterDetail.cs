@@ -164,7 +164,7 @@ public partial class ProjectListViewModel
                 Project = project.SourceProject,
                 Repository = project.SourceRepository ?? string.Empty,
                 AuthorIdentifier = project.AuthorIdentifier ?? string.Empty,
-                EncryptedPat = _encryptionService.Encrypt(project.SourcePat),
+                EncryptedPat = await _encryptionService.EncryptAsync(project.SourcePat),
             };
 
             var since30d = DateTimeOffset.UtcNow.AddDays(-30);

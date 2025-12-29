@@ -434,5 +434,11 @@ dev-debug.log
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
 CLAUDE.md
+
+# Internal documentation (not published)
+docs/internal/
+docs/sessions/
+docs/tasks/
+docs/research/

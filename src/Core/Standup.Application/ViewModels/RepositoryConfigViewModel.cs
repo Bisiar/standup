@@ -171,7 +171,7 @@ public partial class RepositoryConfigViewModel : ObservableObject
                         Project = project.SourceProject,
                         Repository = project.SourceRepository ?? string.Empty,
                         EncryptedPat = !string.IsNullOrEmpty(project.SourcePat)
-                            ? _encryptionService.Encrypt(project.SourcePat)
+                            ? await _encryptionService.EncryptAsync(project.SourcePat)
                             : null,
                         AuthorIdentifier = project.AuthorIdentifier,
                         IsActive = true

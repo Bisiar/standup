@@ -9,6 +9,7 @@ public class GroupedRepository
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string ClientCode { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
     public SourceType SourceType { get; set; }
     public string Organization { get; set; } = string.Empty;
     public string? Project { get; set; }

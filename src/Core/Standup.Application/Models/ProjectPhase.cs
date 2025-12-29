@@ -13,6 +13,33 @@ namespace Standup.Application.Models;
 public record ProjectPhase(string Name, string Dates, PhaseStatus Status)
 {
     /// <summary>
+    /// Gets the estimated effort in hours.
+    /// </summary>
+    public decimal? EffortEstimated { get; init; }
+
+    /// <summary>
+    /// Gets the completed effort in hours.
+    /// </summary>
+    public decimal? EffortCompleted { get; init; }
+
+    /// <summary>
+    /// Gets the remaining effort in hours.
+    /// </summary>
+    public decimal? EffortRemaining { get; init; }
+
+    /// <summary>
+    /// Gets the effort display string showing completed hours.
+    /// </summary>
+    public string EffortDisplay => EffortCompleted is > 0
+        ? $"{EffortCompleted:N0}h completed"
+        : string.Empty;
+
+    /// <summary>
+    /// Gets a value indicating whether effort data is available.
+    /// </summary>
+    public bool HasEffortData => EffortCompleted is > 0;
+
+    /// <summary>
     /// Gets a value indicating whether the phase is complete.
     /// </summary>
     public bool IsComplete => Status == PhaseStatus.Complete;

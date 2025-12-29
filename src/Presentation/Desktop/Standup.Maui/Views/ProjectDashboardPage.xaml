@@ -83,14 +83,7 @@
                         <Label Text="📊" FontSize="24" />
                         <Label Text="OVERALL PROGRESS" FontSize="11" TextColor="#64748B" CharacterSpacing="0.5" />
                         <Label Text="{Binding OverallProgressPercent, StringFormat='{0}%'}" FontSize="32" FontAttributes="Bold" TextColor="#60A5FA" />
-                        <Label FontSize="12" TextColor="#64748B">
-                            <Label.Text>
-                                <MultiBinding StringFormat="{}{0} of {1} milestones">
-                                    <Binding Path="MilestonesCompleted" />
-                                    <Binding Path="TotalMilestones" />
-                                </MultiBinding>
-                            </Label.Text>
-                        </Label>
+                        <Label Text="{Binding MilestonesDisplay}" FontSize="12" TextColor="#64748B" />
                         <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 2" HeightRequest="4" StrokeThickness="0" Margin="0,8,0,0">
                             <Border BackgroundColor="#3B82F6" StrokeShape="RoundRectangle 2" HeightRequest="4"
                                     WidthRequest="{Binding OverallProgressPercent, Converter={StaticResource IntToBoolConverter}}"
@@ -110,14 +103,7 @@
                     <VerticalStackLayout Spacing="4">
                         <Label Text="🏃" FontSize="24" />
                         <Label Text="CURRENT SPRINT" FontSize="11" TextColor="#64748B" CharacterSpacing="0.5" />
-                        <Label FontSize="32" FontAttributes="Bold" TextColor="#A78BFA">
-                            <Label.Text>
-                                <MultiBinding StringFormat="{}{0}/{1}">
-                                    <Binding Path="CurrentSprintNumber" />
-                                    <Binding Path="TotalSprints" />
-                                </MultiBinding>
-                            </Label.Text>
-                        </Label>
+                        <Label Text="{Binding SprintDisplay}" FontSize="32" FontAttributes="Bold" TextColor="#A78BFA" />
                         <Label Text="{Binding SprintDaysRemaining, StringFormat='{0} days remaining'}" FontSize="12" TextColor="#64748B" />
                     </VerticalStackLayout>
                 </Border>
@@ -156,8 +142,8 @@
                     <VerticalStackLayout Spacing="4">
                         <Label Text="💰" FontSize="24" />
                         <Label Text="BUDGET USED" FontSize="11" TextColor="#64748B" CharacterSpacing="0.5" />
-                        <Label Text="{Binding BudgetUsed, StringFormat='${0:N1}K'}" FontSize="32" FontAttributes="Bold" TextColor="#FBBF24" />
-                        <Label Text="{Binding BudgetTotal, StringFormat='of ${0:N0}K allocated'}" FontSize="12" TextColor="#64748B" />
+                        <Label Text="{Binding BudgetUsedDisplay}" FontSize="32" FontAttributes="Bold" TextColor="#FBBF24" />
+                        <Label Text="{Binding BudgetTotalDisplay}" FontSize="12" TextColor="#64748B" />
                     </VerticalStackLayout>
                 </Border>
 
@@ -252,8 +238,15 @@
                             </Label>
                         </Grid>
 
-                        <!-- Phases List -->
+                        <!-- Phases List - only show if we have phases -->
                         <CollectionView ItemsSource="{Binding Phases}" SelectionMode="None">
+                            <CollectionView.EmptyView>
+                                <VerticalStackLayout Spacing="8" Padding="20">
+                                    <Label Text="📭" FontSize="32" HorizontalOptions="Center" />
+                                    <Label Text="No phases available" FontSize="14" FontAttributes="Bold" TextColor="#94A3B8" HorizontalOptions="Center" />
+                                    <Label Text="Connect to Dynamics 365 CRM to see project milestones" FontSize="12" TextColor="#64748B" HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </CollectionView.EmptyView>
                             <CollectionView.ItemTemplate>
                                 <DataTemplate x:DataType="models:ProjectPhase">
                                     <Grid ColumnDefinitions="Auto,*,Auto" Padding="12,0" Margin="0,0,0,12">
@@ -276,6 +269,8 @@
                                         <VerticalStackLayout Grid.Column="1" Spacing="2">
                                             <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" TextColor="#E2E8F0" />
                                             <Label Text="{Binding Dates}" FontSize="12" TextColor="#64748B" />
+                                            <Label Text="{Binding EffortDisplay}" FontSize="11" TextColor="#22C55E"
+                                                   IsVisible="{Binding HasEffortData}" />
                                         </VerticalStackLayout>
 
                                         <!-- Status Badge -->
@@ -383,6 +378,9 @@
                                 </Grid>
 
                                 <CollectionView ItemsSource="{Binding InProgressTasks}" SelectionMode="None">
+                                    <CollectionView.EmptyView>
+                                        <Label Text="No tasks in progress" FontSize="12" TextColor="#64748B" Padding="8" />
+                                    </CollectionView.EmptyView>
                                     <CollectionView.ItemTemplate>
                                         <DataTemplate x:DataType="models:ProjectTask">
                                             <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 12" Padding="16" Margin="0,0,0,10"
@@ -430,6 +428,9 @@
                                 </Grid>
 
                                 <CollectionView ItemsSource="{Binding InReviewTasks}" SelectionMode="None">
+                                    <CollectionView.EmptyView>
+                                        <Label Text="No tasks in review" FontSize="12" TextColor="#64748B" Padding="8" />
+                                    </CollectionView.EmptyView>
                                     <CollectionView.ItemTemplate>
                                         <DataTemplate x:DataType="models:ProjectTask">
                                             <Border BackgroundColor="#0F172A" StrokeShape="RoundRectangle 12" Padding="16" Margin="0,0,0,10"
@@ -490,6 +491,12 @@
                             </HorizontalStackLayout>
 
                             <CollectionView ItemsSource="{Binding RecentActivity}" SelectionMode="None" HeightRequest="200">
+                                <CollectionView.EmptyView>
+                                    <VerticalStackLayout Spacing="8" Padding="20">
+                                        <Label Text="📭" FontSize="32" HorizontalOptions="Center" />
+                                        <Label Text="No recent activity" FontSize="13" TextColor="#94A3B8" HorizontalOptions="Center" />
+                                    </VerticalStackLayout>
+                                </CollectionView.EmptyView>
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate x:DataType="models:ProjectActivity">
                                         <Grid ColumnDefinitions="Auto,*" Padding="0,8">
@@ -521,7 +528,24 @@
                                 <Label Text="🔗" FontSize="24" VerticalOptions="Center" />
                                 <VerticalStackLayout>
                                     <Label Text="Connected Services" FontSize="14" FontAttributes="Bold" TextColor="#E2E8F0" />
-                                    <Label Text="All systems operational" FontSize="12" TextColor="#22C55E" />
+                                    <Label FontSize="12">
+                                        <Label.Style>
+                                            <Style TargetType="Label">
+                                                <Setter Property="Text" Value="All systems operational" />
+                                                <Setter Property="TextColor" Value="#22C55E" />
+                                                <Style.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding AzureDevOpsConnectionFailed}" Value="True">
+                                                        <Setter Property="Text" Value="Connection issues detected" />
+                                                        <Setter Property="TextColor" Value="#F87171" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding CrmConnectionFailed}" Value="True">
+                                                        <Setter Property="Text" Value="Connection issues detected" />
+                                                        <Setter Property="TextColor" Value="#F87171" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Label.Style>
+                                    </Label>
                                 </VerticalStackLayout>
                             </HorizontalStackLayout>
 

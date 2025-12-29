@@ -234,7 +234,7 @@ public class GitConfigParser
     /// </summary>
     /// <param name="path">The directory path to check.</param>
     /// <returns>True if the directory contains a .git folder, false otherwise.</returns>
-    public bool IsGitRepository(string path)
+    public static bool IsGitRepository(string path)
     {
         var gitDir = Path.Combine(path, ".git");
         return Directory.Exists(gitDir);

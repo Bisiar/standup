@@ -11,6 +11,11 @@ public class ClientCodeMetrics
     public string ClientCode { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the repository name for navigation.
+    /// </summary>
+    public string? RepositoryName { get; set; }
+
+    /// <summary>
     /// Gets or sets the total lines added across all commits for this client.
     /// </summary>
     public int Additions { get; set; }

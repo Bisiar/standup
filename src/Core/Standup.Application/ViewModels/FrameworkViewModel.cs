@@ -38,6 +38,7 @@ public partial class FrameworkViewModel : ObservableObject
     public DashboardViewModel DashboardVm { get; }
     public SettingsViewModel SettingsVm { get; }
     public ReportViewModel ReportVm { get; }
+    public DocumentsViewModel DocsVm { get; }
 
     public FrameworkViewModel(
         StandupViewModel standupVm,
@@ -46,6 +47,7 @@ public partial class FrameworkViewModel : ObservableObject
         DashboardViewModel dashboardVm,
         SettingsViewModel settingsVm,
         ReportViewModel reportVm,
+        DocumentsViewModel docsVm,
         IFolderPickerService folderPickerService,
         IReportCacheService? cacheService = null)
     {
@@ -55,6 +57,7 @@ public partial class FrameworkViewModel : ObservableObject
         DashboardVm = dashboardVm;
         SettingsVm = settingsVm;
         ReportVm = reportVm;
+        DocsVm = docsVm;
         _folderPickerService = folderPickerService;
 
         // Wire up the folder picker for GroupListViewModel
@@ -114,13 +117,13 @@ public partial class FrameworkViewModel : ObservableObject
 
     /// <summary>
     /// Select a tab by index and trigger its load command.
-    /// Tab indexes: 0=Dashboard, 1=Standup, 2=Report (dynamic), 3=Groups, 4=Projects, 5=Settings.
+    /// Tab indexes: 0=Dashboard, 1=Standup, 2=Report (dynamic), 3=Groups, 4=Projects, 5=Settings, 6=Docs.
     /// </summary>
     [RelayCommand]
     private async Task SelectTabAsync(int index)
     {
-        // Allow 0-1, 3-5 always, 2 (Report) only if ShowReportTab is true
-        if (index < 0 || index > 5)
+        // Allow 0-1, 3-6 always, 2 (Report) only if ShowReportTab is true
+        if (index < 0 || index > 6)
         {
             return;
         }
@@ -139,6 +142,7 @@ public partial class FrameworkViewModel : ObservableObject
             3 => "Groups",
             4 => "Projects",
             5 => "Settings",
+            6 => "Docs",
             _ => string.Empty,
         };
 
@@ -169,6 +173,9 @@ public partial class FrameworkViewModel : ObservableObject
                     break;
                 case 5:
                     await SettingsVm.LoadCommand.ExecuteAsync(null);
+                    break;
+                case 6:
+                    await DocsVm.LoadDocumentsCommand.ExecuteAsync(null);
                     break;
             }
         }

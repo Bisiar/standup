@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Infrastructure\Standup.Infrastructure\Standup.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\src\Core\Standup.Application\Standup.Application.csproj" />
+    <ProjectReference Include="..\..\Common\Standup.Common.Tests\Standup.Common.Tests.csproj" />
   </ItemGroup>
 
 </Project>

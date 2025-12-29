@@ -175,7 +175,7 @@ public class GitConfigParserTests
         try
         {
             // Act
-            var result = _parser.IsGitRepository(tempDir);
+            var result = GitConfigParser.IsGitRepository(tempDir);
 
             // Assert
             result.Should().BeTrue();
@@ -196,7 +196,7 @@ public class GitConfigParserTests
         try
         {
             // Act
-            var result = _parser.IsGitRepository(tempDir);
+            var result = GitConfigParser.IsGitRepository(tempDir);
 
             // Assert
             result.Should().BeFalse();

@@ -1,9 +1,9 @@
 using FluentAssertions;
 using Standup.Application.Interfaces;
+using Standup.Common.Tests.Configuration;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Infrastructure.SourceProviders;
-using Standup.Infrastructure.Tests.Configuration;
 using Xunit;
 
 namespace Standup.Infrastructure.Tests.SourceProviders;
@@ -137,7 +137,7 @@ public class AzureDevOpsSourceProviderTests
 
         // Output standup format
         Console.WriteLine("## What I completed yesterday:");
-        if (commits.Any() || completedWorkItems.Any())
+        if (commits.Count > 0 || completedWorkItems.Count > 0)
         {
             foreach (var commit in commits)
             {
@@ -156,7 +156,7 @@ public class AzureDevOpsSourceProviderTests
 
         Console.WriteLine();
         Console.WriteLine("## What I'm working on today:");
-        if (inProgressWorkItems.Any())
+        if (inProgressWorkItems.Count > 0)
         {
             foreach (var item in inProgressWorkItems)
             {
@@ -170,7 +170,7 @@ public class AzureDevOpsSourceProviderTests
 
         Console.WriteLine();
         Console.WriteLine("## Open Pull Requests:");
-        if (openPRs.Any())
+        if (openPRs.Count > 0)
         {
             foreach (var pr in openPRs)
             {

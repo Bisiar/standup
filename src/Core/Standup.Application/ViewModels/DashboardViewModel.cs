@@ -31,6 +31,11 @@ public partial class DashboardViewModel : ObservableObject
     private List<CommitInfo> _localCommits = new();
 
     /// <summary>
+    /// Event raised when navigation to a project dashboard is requested.
+    /// </summary>
+    public event Action<string>? NavigateToProjectRequested;
+
+    /// <summary>
     /// Gets or sets the available groups.
     /// </summary>
     [ObservableProperty]
@@ -453,6 +458,23 @@ public partial class DashboardViewModel : ObservableObject
         SelectedPeriodIndex = 2;
         SetPeriodWeek();
         RefreshChartData();
+    }
+
+    /// <summary>
+    /// Navigates to the project dashboard for the specified project.
+    /// </summary>
+    /// <param name="metrics">The client code metrics containing repository info.</param>
+    [RelayCommand]
+    private void NavigateToProject(ClientCodeMetrics? metrics)
+    {
+        if (metrics == null)
+        {
+            return;
+        }
+
+        var repositoryName = metrics.RepositoryName ?? metrics.ClientCode;
+        Log.Information("Dashboard: Navigate to project requested for {Repository}", repositoryName);
+        NavigateToProjectRequested?.Invoke(repositoryName);
     }
 
     private void SetPeriodYesterday()

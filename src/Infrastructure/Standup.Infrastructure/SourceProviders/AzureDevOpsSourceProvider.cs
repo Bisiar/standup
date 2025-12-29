@@ -12,6 +12,17 @@ namespace Standup.Infrastructure.SourceProviders;
 
 public class AzureDevOpsSourceProvider : ISourceProvider
 {
+    private static readonly string[] WorkItemFields =
+    [
+        "System.Id",
+        "System.Title",
+        "System.WorkItemType",
+        "System.State",
+        "System.AssignedTo",
+        "System.Tags",
+        "System.Parent",
+    ];
+
     private readonly IEncryptionService _encryptionService;
 
     public AzureDevOpsSourceProvider(IEncryptionService encryptionService)
@@ -26,7 +37,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         CancellationToken cancellationToken = default)
     {
         var connection = await CreateConnectionAsync(repository);
-        var gitClient = connection.GetClient<GitHttpClient>();
+        var gitClient = await connection.GetClientAsync<GitHttpClient>();
 
         var repos = await gitClient.GetRepositoriesAsync(repository.Project, cancellationToken: cancellationToken);
         var repo = repos.FirstOrDefault(r => r.Name.Equals(repository.Repository, StringComparison.OrdinalIgnoreCase));
@@ -80,7 +91,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         CancellationToken cancellationToken = default)
     {
         var connection = await CreateConnectionAsync(repository);
-        var gitClient = connection.GetClient<GitHttpClient>();
+        var gitClient = await connection.GetClientAsync<GitHttpClient>();
 
         var repos = await gitClient.GetRepositoriesAsync(repository.Project, cancellationToken: cancellationToken);
         var repo = repos.FirstOrDefault(r => r.Name.Equals(repository.Repository, StringComparison.OrdinalIgnoreCase));
@@ -115,7 +126,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
                 CreatedAt: pr.CreationDate,
                 Description: pr.Description,
                 IsDraft: pr.IsDraft ?? false,
-                ReviewerCount: pr.Reviewers?.Count() ?? 0));
+                ReviewerCount: pr.Reviewers?.Length ?? 0));
     }
 
     public async Task<IEnumerable<PullRequestInfo>> GetMergedPullRequestsAsync(
@@ -125,7 +136,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         CancellationToken cancellationToken = default)
     {
         var connection = await CreateConnectionAsync(repository);
-        var gitClient = connection.GetClient<GitHttpClient>();
+        var gitClient = await connection.GetClientAsync<GitHttpClient>();
 
         var repos = await gitClient.GetRepositoriesAsync(repository.Project, cancellationToken: cancellationToken);
         var repo = repos.FirstOrDefault(r => r.Name.Equals(repository.Repository, StringComparison.OrdinalIgnoreCase));
@@ -161,7 +172,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
                 CreatedAt: pr.CreationDate,
                 Description: pr.Description,
                 IsDraft: false,
-                ReviewerCount: pr.Reviewers?.Count() ?? 0));
+                ReviewerCount: pr.Reviewers?.Length ?? 0));
     }
 
     public async Task<IEnumerable<WorkItemInfo>> GetInProgressWorkItemsAsync(
@@ -169,7 +180,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         CancellationToken cancellationToken = default)
     {
         var connection = await CreateConnectionAsync(repository);
-        var witClient = connection.GetClient<WorkItemTrackingHttpClient>();
+        var witClient = await connection.GetClientAsync<WorkItemTrackingHttpClient>();
 
         var query = $@"
             SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.AssignedTo], [System.Tags], [System.Parent]
@@ -189,7 +200,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         CancellationToken cancellationToken = default)
     {
         var connection = await CreateConnectionAsync(repository);
-        var witClient = connection.GetClient<WorkItemTrackingHttpClient>();
+        var witClient = await connection.GetClientAsync<WorkItemTrackingHttpClient>();
 
         var query = $@"
             SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.AssignedTo], [System.Tags], [System.Parent]
@@ -211,7 +222,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         try
         {
             var connection = await CreateConnectionAsync(repository);
-            var gitClient = connection.GetClient<GitHttpClient>();
+            var gitClient = await connection.GetClientAsync<GitHttpClient>();
             await gitClient.GetRepositoriesAsync(repository.Project, cancellationToken: cancellationToken);
             return true;
         }
@@ -247,7 +258,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         return new VssConnection(orgUrl, new VssCredentials());
     }
 
-    private async Task<IEnumerable<WorkItemInfo>> ExecuteWorkItemQueryAsync(
+    private static async Task<IEnumerable<WorkItemInfo>> ExecuteWorkItemQueryAsync(
         WorkItemTrackingHttpClient client,
         SourceRepository repository,
         string query,
@@ -264,7 +275,7 @@ public class AzureDevOpsSourceProvider : ISourceProvider
         var ids = result.WorkItems.Select(wi => wi.Id).ToArray();
         var workItems = await client.GetWorkItemsAsync(
             ids,
-            new[] { "System.Id", "System.Title", "System.WorkItemType", "System.State", "System.AssignedTo", "System.Tags", "System.Parent" },
+            WorkItemFields,
             cancellationToken: cancellationToken);
 
         return workItems.Select(wi => new WorkItemInfo(

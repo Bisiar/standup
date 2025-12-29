@@ -35,7 +35,7 @@ public sealed class CredentialService
         string plainTextPat,
         CancellationToken cancellationToken = default)
     {
-        var encryptedPat = _encryptionService.Encrypt(plainTextPat);
+        var encryptedPat = await _encryptionService.EncryptAsync(plainTextPat);
 
         var existing = await _credentialRepository.GetByOrgAsync(sourceType, organization, cancellationToken);
 

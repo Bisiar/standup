@@ -206,8 +206,8 @@ public class DynamicsCrmService : ICrmProjectService
             await EnsureAuthenticatedAsync(cancellationToken);
 
             // Query for project tasks (milestones) using Dynamics 365 Project Operations msdyn_projecttask entity
-            // Using standard D365 Project Operations field names
-            var query = $"msdyn_projecttasks?$filter=_msdyn_project_value eq '{projectId}'&$orderby=msdyn_scheduledend asc&$select=msdyn_projecttaskid,msdyn_subject,msdyn_description,msdyn_scheduledend,msdyn_progress,statecode";
+            // Using standard D365 Project Operations field names including effort tracking
+            var query = $"msdyn_projecttasks?$filter=_msdyn_project_value eq '{projectId}'&$orderby=msdyn_scheduledend asc&$select=msdyn_projecttaskid,msdyn_subject,msdyn_description,msdyn_scheduledend,msdyn_progress,msdyn_effort,msdyn_effortcompleted,msdyn_effortremaining,statecode";
             var apiUrl = $"{_options.InstanceUrl}/api/data/v9.2/{query}";
 
             Log.Debug("Fetching CRM milestones for project: {ProjectId}", projectId);
@@ -341,7 +341,10 @@ public class DynamicsCrmService : ICrmProjectService
         {
             Status = status,
             Description = GetStringProperty(data, "msdyn_description"),
-            PercentComplete = GetDecimalProperty(data, "msdyn_progress")
+            PercentComplete = GetDecimalProperty(data, "msdyn_progress"),
+            EffortEstimated = GetDecimalProperty(data, "msdyn_effort"),
+            EffortCompleted = GetDecimalProperty(data, "msdyn_effortcompleted"),
+            EffortRemaining = GetDecimalProperty(data, "msdyn_effortremaining")
         };
     }
 

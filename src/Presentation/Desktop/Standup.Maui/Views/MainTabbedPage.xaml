@@ -43,6 +43,9 @@
                                      BindingContext="{Binding SettingsVm}"
                                      IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=5}" />
 
+        <components:DocsTabView Grid.Row="0"
+                                BindingContext="{Binding DocsVm}"
+                                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type viewModels:FrameworkViewModel}}, Path=SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=6}" />
 
         <!-- Tab Bar -->
         <Border Grid.Row="1" BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1E1E1E}"
@@ -161,6 +164,25 @@
                         </DataTrigger>
                         <DataTrigger TargetType="Button"
                                      Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=5}"
+                                     Value="False">
+                            <Setter Property="BackgroundColor" Value="DimGray" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <Button Text="Docs"
+                        Command="{Binding SelectTabCommand}"
+                        CommandParameter="{x:Int32 6}"
+                        WidthRequest="100"
+                        TextColor="White">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex}"
+                                     Value="6">
+                            <Setter Property="BackgroundColor" Value="#F59E0B" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=6}"
                                      Value="False">
                             <Setter Property="BackgroundColor" Value="DimGray" />
                         </DataTrigger>

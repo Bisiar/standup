@@ -282,7 +282,7 @@ public static class StandupHtmlBuilder
 
     private static void AppendCommitsSection(StringBuilder sb, ClientCodeSection section, string color)
     {
-        if (!section.Commits.Any())
+        if (section.Commits.Count == 0)
         {
             return;
         }
@@ -305,7 +305,7 @@ public static class StandupHtmlBuilder
 
     private static void AppendPullRequestsSection(StringBuilder sb, ClientCodeSection section, string color)
     {
-        if (!section.PullRequests.Any())
+        if (section.PullRequests.Count == 0)
         {
             return;
         }
@@ -328,7 +328,7 @@ public static class StandupHtmlBuilder
 
     private static void AppendWorkItemsSection(StringBuilder sb, ClientCodeSection section, string color)
     {
-        if (!section.WorkItems.Any())
+        if (section.WorkItems.Count == 0)
         {
             return;
         }

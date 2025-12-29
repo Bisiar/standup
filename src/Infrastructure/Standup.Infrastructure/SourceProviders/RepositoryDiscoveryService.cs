@@ -53,7 +53,7 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
             var credentials = new VssBasicCredential(string.Empty, pat);
             using var connection = new VssConnection(orgUrl, credentials);
 
-            var projectClient = connection.GetClient<ProjectHttpClient>();
+            var projectClient = await connection.GetClientAsync<ProjectHttpClient>();
             var projects = await projectClient.GetProjects();
 
             return projects.Select(p => p.Name).OrderBy(n => n);
@@ -142,7 +142,7 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
         var credentials = new VssBasicCredential(string.Empty, pat);
         using var connection = new VssConnection(orgUrl, credentials);
 
-        var gitClient = connection.GetClient<GitHttpClient>();
+        var gitClient = await connection.GetClientAsync<GitHttpClient>();
 
         IEnumerable<GitRepository> repos;
 
@@ -153,7 +153,7 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
         else
         {
             // Get repos from all projects
-            var projectClient = connection.GetClient<ProjectHttpClient>();
+            var projectClient = await connection.GetClientAsync<ProjectHttpClient>();
             var projects = await projectClient.GetProjects();
 
             var allRepos = new List<GitRepository>();
@@ -182,7 +182,7 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
             DefaultBranch: r.DefaultBranch));
     }
 
-    private async Task<bool> ValidateGitHubPatAsync(string organization, string pat)
+    private static async Task<bool> ValidateGitHubPatAsync(string organization, string pat)
     {
         var client = CreateGitHubClient(pat);
 
@@ -198,7 +198,7 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
         }
     }
 
-    private async Task<bool> ValidateAzureDevOpsPatAsync(
+    private static async Task<bool> ValidateAzureDevOpsPatAsync(
         string organization,
         string pat,
         CancellationToken cancellationToken)
@@ -209,7 +209,7 @@ public sealed class RepositoryDiscoveryService : IRepositoryDiscoveryService
             var credentials = new VssBasicCredential(string.Empty, pat);
             using var connection = new VssConnection(orgUrl, credentials);
 
-            var projectClient = connection.GetClient<ProjectHttpClient>();
+            var projectClient = await connection.GetClientAsync<ProjectHttpClient>();
 
             // Just try to get projects - if it works, the PAT is valid
             await projectClient.GetProjects(top: 1);

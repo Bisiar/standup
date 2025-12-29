@@ -1,8 +1,13 @@
 using System.ComponentModel;
+using Serilog;
+using Standup.Application.Interfaces;
+using Standup.Application.Models;
 using Standup.Application.ViewModels;
 using Telerik.Maui.Controls.Compatibility.Chart;
 
 namespace Standup.Maui.Views.Components;
+
+using System.Collections.ObjectModel;
 
 /// <summary>
 /// Code-behind for the Dashboard tab view that displays code metrics charts.
@@ -78,6 +83,7 @@ public partial class DashboardTabView
         if (_viewModel != null)
         {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.NavigateToProjectRequested -= OnNavigateToProjectRequested;
         }
 
         // Subscribe to new view model
@@ -85,21 +91,61 @@ public partial class DashboardTabView
         if (_viewModel != null)
         {
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.NavigateToProjectRequested += OnNavigateToProjectRequested;
 
             // Initial refresh if data is already available
-            if (_viewModel.ProjectDailyActivities.Count > 0)
-            {
-                RefreshTrendChartSeries();
-            }
+            if (_viewModel.ProjectDailyActivities.Count > 0) RefreshTrendChartSeries();
         }
+    }
+
+    private async void OnNavigateToProjectRequested(string repositoryName)
+    {
+        Log.Information("OnNavigateToProjectRequested called for repository: {Repository}", repositoryName);
+
+        // Get the project service to find the project by repository name
+        var projectService = MauiProgram.ServiceProvider?.GetService<IProjectService>();
+        if (projectService == null)
+        {
+            Log.Error("Failed to resolve IProjectService from DI");
+            return;
+        }
+
+        // Find the project that has this repository
+        var projects = await projectService.GetProjectsAsync();
+        IEnumerable<ProjectInstance> projectInstances = projects.ToList();
+        var project = projectInstances.FirstOrDefault(p =>
+            p.Name.Equals(repositoryName, StringComparison.OrdinalIgnoreCase) ||
+            (p.SourceRepository?.Equals(repositoryName, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (p.SourceRepository?.EndsWith($"/{repositoryName}", StringComparison.OrdinalIgnoreCase) ?? false) ||
+            repositoryName.EndsWith(p.Name, StringComparison.OrdinalIgnoreCase));
+
+        if (project == null)
+        {
+            Log.Warning(
+                "No project found for repository: {Repository}. Available projects: {Projects}",
+                repositoryName,
+                string.Join(", ", projectInstances.Select(p => p.Name)));
+            return;
+        }
+
+        Log.Information("Found project: {ProjectName} for repository: {Repository}", project.Name, repositoryName);
+
+        // Get the dashboard page from DI and navigate
+        var page = MauiProgram.ServiceProvider?.GetService<ProjectDashboardPage>();
+        if (page == null)
+        {
+            Log.Error("Failed to resolve ProjectDashboardPage from DI");
+            return;
+        }
+
+        page.LoadProject(project);
+        await Navigation.PushAsync(page);
+        Log.Information("Dashboard page pushed to navigation stack");
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(DashboardViewModel.ProjectDailyActivities))
-        {
-            RefreshTrendChartSeries();
-        }
+        if (e.PropertyName == nameof(DashboardViewModel.ProjectDailyActivities)) RefreshTrendChartSeries();
     }
 
     /// <summary>
@@ -107,27 +153,21 @@ public partial class DashboardTabView
     /// </summary>
     private void RefreshTrendChartSeries()
     {
-        if (_viewModel == null || DailyTrendChart == null)
-        {
-            return;
-        }
+        if (_viewModel == null || DailyTrendChart == null) return;
 
         // Clear existing series
         DailyTrendChart.Series.Clear();
         TrendChartLegend.Children.Clear();
 
         var projectData = _viewModel.ProjectDailyActivities;
-        if (projectData.Count == 0)
-        {
-            return;
-        }
+        if (projectData.Count == 0) return;
 
         int colorIndex = 0;
         foreach (var kvp in projectData)
         {
-            var projectName = kvp.Key;
-            var dailyData = kvp.Value;
-            var color = ProjectColors[colorIndex % ProjectColors.Length];
+            string projectName = kvp.Key;
+            ObservableCollection<ProjectDailyActivity> dailyData = kvp.Value;
+            Color color = ProjectColors[colorIndex % ProjectColors.Length];
 
             // Create LineSeries for this project
             var lineSeries = new LineSeries
@@ -143,7 +183,7 @@ public partial class DashboardTabView
             DailyTrendChart.Series.Add(lineSeries);
 
             // Add legend item
-            var legendItem = CreateLegendItem(projectName, color);
+            View legendItem = CreateLegendItem(projectName, color);
             TrendChartLegend.Children.Add(legendItem);
 
             colorIndex++;

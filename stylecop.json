@@ -2,21 +2,26 @@
   "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/master/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
   "settings": {
     "documentationRules": {
-      "companyName": "Standup",
+      "companyName": "SummitTools",
       "copyrightText": "Copyright (c) {companyName}. All rights reserved.",
       "documentExposedElements": true,
-      "documentInternalElements": false,
+      "documentInternalElements": true,
       "documentPrivateElements": false,
       "documentPrivateFields": false,
+      "documentInterfaces": true,
       "xmlHeader": false
     },
     "orderingRules": {
-      "usingDirectivesPlacement": "outsideNamespace",
-      "systemUsingDirectivesFirst": true
+      "usingDirectivesPlacement": "insideNamespace",
+      "systemUsingDirectivesFirst": true,
+      "blankLinesBetweenUsingGroups": "require"
     },
     "namingRules": {
-      "allowCommonHungarianPrefixes": true,
-      "allowedHungarianPrefixes": [ "id" ]
+      "allowCommonHungarianPrefixes": false,
+      "allowedHungarianPrefixes": []
+    },
+    "layoutRules": {
+      "newlineAtEndOfFile": "require"
     }
   }
 }

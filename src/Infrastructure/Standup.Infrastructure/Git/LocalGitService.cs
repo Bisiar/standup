@@ -267,7 +267,7 @@ public class LocalGitService
     /// </summary>
     /// <param name="localPath">Path to the local git repository.</param>
     /// <returns>The repository name (directory name).</returns>
-    public string GetRepositoryName(string localPath)
+    public static string GetRepositoryName(string localPath)
     {
         return new DirectoryInfo(localPath).Name;
     }

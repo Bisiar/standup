@@ -1,8 +1,8 @@
 using FluentAssertions;
 using Serilog;
+using Standup.Common.Tests.Configuration;
 using Standup.Domain.Enums;
 using Standup.Infrastructure.SourceProviders;
-using Standup.Infrastructure.Tests.Configuration;
 using Xunit;
 
 namespace Standup.Infrastructure.Tests.SourceProviders;

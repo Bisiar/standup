@@ -371,13 +371,35 @@
                                         SelectionMode="None">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate x:DataType="models:ClientCodeMetrics">
-                                    <Grid ColumnDefinitions="60,*,100" Margin="0,6">
-                                        <Label Grid.Column="0"
-                                               Text="{Binding ClientCode}"
-                                               FontSize="12"
-                                               FontAttributes="Bold"
-                                               TextColor="#F59E0B"
-                                               VerticalOptions="Center" />
+                                    <Border BackgroundColor="Transparent" Padding="8,6" Margin="0,2" StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 8">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:DashboardViewModel}}, Path=NavigateToProjectCommand}"
+                                                CommandParameter="{Binding}" />
+                                        </Border.GestureRecognizers>
+                                        <VisualStateManager.VisualStateGroups>
+                                            <VisualStateGroup Name="CommonStates">
+                                                <VisualState Name="Normal">
+                                                    <VisualState.Setters>
+                                                        <Setter Property="BackgroundColor" Value="Transparent" />
+                                                    </VisualState.Setters>
+                                                </VisualState>
+                                                <VisualState Name="PointerOver">
+                                                    <VisualState.Setters>
+                                                        <Setter Property="BackgroundColor" Value="#334155" />
+                                                    </VisualState.Setters>
+                                                </VisualState>
+                                            </VisualStateGroup>
+                                        </VisualStateManager.VisualStateGroups>
+                                        <Grid ColumnDefinitions="100,*,100">
+                                            <Label Grid.Column="0"
+                                                   Text="{Binding ClientCode}"
+                                                   FontSize="13"
+                                                   FontAttributes="Bold"
+                                                   TextColor="#E2E8F0"
+                                                   VerticalOptions="Center"
+                                                   LineBreakMode="TailTruncation" />
 
                                         <!-- Stacked Bar with percentage-based sizing -->
                                         <AbsoluteLayout Grid.Column="1" HeightRequest="20">
@@ -425,7 +447,8 @@
                                                 </MultiBinding>
                                             </Label.Text>
                                         </Label>
-                                    </Grid>
+                                        </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>
                         </CollectionView>

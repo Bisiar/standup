@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Standup.Infrastructure.Configuration;
 using Xunit;
 
-namespace Standup.Infrastructure.Tests.Configuration;
+namespace Standup.Common.Tests.Configuration;
 
 public sealed class EncryptionServiceTests
 {

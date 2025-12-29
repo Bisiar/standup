@@ -6,6 +6,8 @@ This guide covers all configuration options for the Standup Automation Platform.
 
 ### API Configuration (`appsettings.json`)
 
+> **Note:** The values below are examples. Replace with your actual Azure resource endpoints.
+
 ```json
 {
   "AIFoundry": {
@@ -38,15 +40,16 @@ The MAUI app supports multiple project instances for different organizations.
 
 ### Adding a Project
 
-```csharp
-// Stored securely on device
+> **Example:** Project configuration structure (values are placeholders).
+
+```json
 {
   "Id": "guid",
-  "Name": "JourneyTeam",
-  "TenantName": "JourneyTeam",
-  "ApiEndpoint": "https://standup-jt.azurewebsites.net",
-  "UserId": "entra-object-id",
-  "TenantId": "entra-tenant-id",
+  "Name": "My Organization",
+  "TenantName": "My Organization",
+  "ApiEndpoint": "https://your-standup-api.azurewebsites.net",
+  "UserId": "your-entra-object-id",
+  "TenantId": "your-entra-tenant-id",
   "IsDefault": true
 }
 ```
@@ -61,6 +64,8 @@ The MAUI app supports multiple project instances for different organizations.
 
 ### GitHub Repository
 
+> **Example:** Replace with your actual GitHub organization and repository.
+
 ```json
 {
   "SourceType": "GitHub",
@@ -68,15 +73,19 @@ The MAUI app supports multiple project instances for different organizations.
   "Repository": "your-repo",
   "AuthorIdentifier": "your-github-username",
   "DefaultBranch": "main",
-  "PersonalAccessToken": "ghp_..." // Optional for private repos
+  "PersonalAccessToken": "ghp_xxxxxxxxxxxx"
 }
 ```
+
+*Note: PersonalAccessToken is optional for public repositories.*
 
 **Required GitHub PAT Permissions:**
 - `repo` (for private repositories)
 - `read:user`
 
 ### Azure DevOps Repository
+
+> **Example:** Replace with your actual Azure DevOps organization and project.
 
 ```json
 {
@@ -86,7 +95,7 @@ The MAUI app supports multiple project instances for different organizations.
   "Repository": "your-repo",
   "AuthorIdentifier": "your.email@company.com",
   "DefaultBranch": "main",
-  "PersonalAccessToken": "..."
+  "PersonalAccessToken": "your-pat-token"
 }
 ```
 

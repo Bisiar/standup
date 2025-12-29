@@ -60,7 +60,7 @@ public sealed partial class LocalStandupService : ILocalStandupService
             Repository = repository,
             SourceType = sourceType,
             AuthorIdentifier = authorIdentifier ?? string.Empty,
-            EncryptedPat = _encryptionService.Encrypt(pat)
+            EncryptedPat = await _encryptionService.EncryptAsync(pat)
         };
 
         var since = DateTimeOffset.UtcNow.AddDays(-1);
@@ -183,7 +183,7 @@ public sealed partial class LocalStandupService : ILocalStandupService
                     Repository = repository,
                     SourceType = sourceType,
                     AuthorIdentifier = authorIdentifier ?? string.Empty,
-                    EncryptedPat = _encryptionService.Encrypt(pat)
+                    EncryptedPat = await _encryptionService.EncryptAsync(pat)
                 };
 
                 var provider = sourceType == SourceType.AzureDevOps
@@ -252,7 +252,7 @@ public sealed partial class LocalStandupService : ILocalStandupService
             Project = project,
             Repository = repository,
             SourceType = sourceType,
-            EncryptedPat = _encryptionService.Encrypt(pat)
+            EncryptedPat = await _encryptionService.EncryptAsync(pat)
         };
 
         try
@@ -588,7 +588,7 @@ public sealed partial class LocalStandupService : ILocalStandupService
                 Repository = repo.Repository,
                 SourceType = repo.SourceType,
                 AuthorIdentifier = repo.AuthorIdentifier ?? string.Empty,
-                EncryptedPat = _encryptionService.Encrypt(pat)
+                EncryptedPat = await _encryptionService.EncryptAsync(pat)
             };
 
             var provider = repo.SourceType == SourceType.AzureDevOps
