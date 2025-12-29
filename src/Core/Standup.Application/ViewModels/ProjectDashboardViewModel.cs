@@ -7,9 +7,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Serilog;
 using Standup.Application.Interfaces;
+using Standup.Application.Mappers;
 using Standup.Application.Models;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
+using Standup.Domain.Interfaces;
 using Standup.Domain.ValueObjects;
 
 namespace Standup.Application.ViewModels;
@@ -19,9 +21,10 @@ namespace Standup.Application.ViewModels;
 /// </summary>
 public partial class ProjectDashboardViewModel : ObservableObject
 {
-    private readonly ISourceProviderFactory? _sourceProviderFactory;
-    private readonly IEncryptionService? _encryptionService;
-    private readonly ILocalStandupService? _localStandupService;
+    private readonly ISourceProviderFactory _sourceProviderFactory;
+    private readonly IEncryptionService _encryptionService;
+    private readonly ILocalStandupService _localStandupService;
+    private readonly ICrmProjectService _crmProjectService;
 
     [ObservableProperty]
     private ProjectInstance? project;
@@ -55,68 +58,120 @@ public partial class ProjectDashboardViewModel : ObservableObject
 
     // Metrics
     [ObservableProperty]
-    private int overallProgressPercent = 68;
+    private int overallProgressPercent;
 
     [ObservableProperty]
-    private int milestonesCompleted = 8;
+    [NotifyPropertyChangedFor(nameof(MilestonesDisplay))]
+    private int milestonesCompleted;
 
     [ObservableProperty]
-    private int totalMilestones = 12;
+    [NotifyPropertyChangedFor(nameof(MilestonesDisplay))]
+    private int totalMilestones;
 
     [ObservableProperty]
-    private int currentSprintNumber = 8;
+    [NotifyPropertyChangedFor(nameof(SprintDisplay))]
+    private int currentSprintNumber;
 
     [ObservableProperty]
-    private int totalSprints = 12;
+    [NotifyPropertyChangedFor(nameof(SprintDisplay))]
+    private int totalSprints;
 
     [ObservableProperty]
-    private int sprintDaysRemaining = 5;
+    private int sprintDaysRemaining;
 
     [ObservableProperty]
-    private int tasksCompleted = 147;
+    private int tasksCompleted;
 
     [ObservableProperty]
-    private int totalTasks = 186;
+    private int totalTasks;
 
     [ObservableProperty]
-    private int taskCompletionPercent = 79;
+    private int taskCompletionPercent;
 
     [ObservableProperty]
-    private decimal budgetUsed = 124.5m;
+    [NotifyPropertyChangedFor(nameof(BudgetUsedDisplay))]
+    [NotifyPropertyChangedFor(nameof(BudgetTotalDisplay))]
+    private decimal budgetUsed;
 
     [ObservableProperty]
-    private decimal budgetTotal = 185m;
+    [NotifyPropertyChangedFor(nameof(BudgetUsedDisplay))]
+    [NotifyPropertyChangedFor(nameof(BudgetTotalDisplay))]
+    private decimal budgetTotal;
 
     [ObservableProperty]
-    private int budgetPercent = 67;
+    private int budgetPercent;
 
     [ObservableProperty]
-    private int daysRemaining = 42;
+    private int daysRemaining;
 
     // Sprint Progress
     [ObservableProperty]
-    private string sprintDates = "Dec 16 - Dec 30, 2025";
+    private string sprintDates = string.Empty;
 
     [ObservableProperty]
-    private int sprintDoneCount = 18;
+    private int sprintDoneCount;
 
     [ObservableProperty]
-    private int sprintReviewCount = 6;
+    private int sprintReviewCount;
 
     [ObservableProperty]
-    private int sprintProgressCount = 8;
+    private int sprintProgressCount;
 
     [ObservableProperty]
-    private int sprintTodoCount = 8;
+    private int sprintTodoCount;
 
     [ObservableProperty]
-    private double sprintDonePercent = 45;
+    private double sprintDonePercent;
 
     [ObservableProperty]
-    private double sprintReviewPercent = 15;
+    private double sprintReviewPercent;
 
     [ObservableProperty]
-    private double sprintProgressPercent = 20;
+    private double sprintProgressPercent;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether CRM data is available (for budget, progress, milestones).
+    /// </summary>
+    [ObservableProperty]
+    private bool hasCrmData;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether sprint/iteration data is available.
+    /// </summary>
+    [ObservableProperty]
+    private bool hasSprintData;
+
+    /// <summary>
+    /// Gets the budget display text.
+    /// </summary>
+    public string BudgetUsedDisplay => BudgetTotal > 0 ? $"${BudgetUsed:N1}K" : "—";
+
+    /// <summary>
+    /// Gets the budget total display text.
+    /// </summary>
+    public string BudgetTotalDisplay => BudgetTotal > 0 ? $"of ${BudgetTotal:N0}K allocated" : "Not configured";
+
+    /// <summary>
+    /// Gets the milestones display text.
+    /// </summary>
+    public string MilestonesDisplay => TotalMilestones > 0 ? $"{MilestonesCompleted} of {TotalMilestones} milestones" : "No milestones";
+
+    /// <summary>
+    /// Gets the sprint display text.
+    /// </summary>
+    public string SprintDisplay => TotalSprints > 0 ? $"{CurrentSprintNumber}/{TotalSprints}" : "—";
+
+    /// <summary>
+    /// Gets or sets a value indicating whether Azure DevOps connection failed.
+    /// </summary>
+    [ObservableProperty]
+    private bool azureDevOpsConnectionFailed;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether CRM connection failed.
+    /// </summary>
+    [ObservableProperty]
+    private bool crmConnectionFailed;
 
     /// <summary>
     /// Gets the project phases/timeline.
@@ -154,14 +209,17 @@ public partial class ProjectDashboardViewModel : ObservableObject
     /// <param name="sourceProviderFactory">The source provider factory for remote API access.</param>
     /// <param name="encryptionService">The encryption service for PAT handling.</param>
     /// <param name="localStandupService">The local standup service for local git access.</param>
+    /// <param name="crmProjectService">The CRM project service for Dynamics 365 data.</param>
     public ProjectDashboardViewModel(
-        ISourceProviderFactory? sourceProviderFactory = null,
-        IEncryptionService? encryptionService = null,
-        ILocalStandupService? localStandupService = null)
+        ISourceProviderFactory sourceProviderFactory,
+        IEncryptionService encryptionService,
+        ILocalStandupService localStandupService,
+        ICrmProjectService crmProjectService)
     {
         _sourceProviderFactory = sourceProviderFactory;
         _encryptionService = encryptionService;
         _localStandupService = localStandupService;
+        _crmProjectService = crmProjectService;
     }
 
     /// <summary>
@@ -194,75 +252,17 @@ public partial class ProjectDashboardViewModel : ObservableObject
         await LoadProjectDataAsync(projectInstance);
     }
 
-    private static string GetInitials(string? name)
-    {
-        if (string.IsNullOrEmpty(name))
-        {
-            return "??";
-        }
-
-        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length >= 2)
-        {
-            return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
-        }
-
-        return name.Length >= 2 ? name[..2].ToUpperInvariant() : name.ToUpperInvariant();
-    }
-
-    private static string GetRelativeTime(DateTimeOffset timestamp)
-    {
-        var diff = DateTimeOffset.UtcNow - timestamp;
-
-        if (diff.TotalMinutes < 60)
-        {
-            return $"{(int)diff.TotalMinutes}m ago";
-        }
-
-        if (diff.TotalHours < 24)
-        {
-            return $"{(int)diff.TotalHours}h ago";
-        }
-
-        if (diff.TotalDays < 7)
-        {
-            return $"{(int)diff.TotalDays}d ago";
-        }
-
-        return timestamp.ToString("MMM dd");
-    }
-
-    private static TaskPriority MapPriority(List<string>? tags)
-    {
-        if (tags == null)
-        {
-            return TaskPriority.Medium;
-        }
-
-        if (tags.Any(t => t.Contains("high", StringComparison.OrdinalIgnoreCase) ||
-                         t.Contains("critical", StringComparison.OrdinalIgnoreCase)))
-        {
-            return TaskPriority.High;
-        }
-
-        if (tags.Any(t => t.Contains("low", StringComparison.OrdinalIgnoreCase)))
-        {
-            return TaskPriority.Low;
-        }
-
-        return TaskPriority.Medium;
-    }
-
     private async Task LoadProjectDataAsync(ProjectInstance projectInstance)
     {
-        // Check data sources: LocalPath for commits (no PAT), PAT for PRs/work items
+        // Check data sources: LocalPath for commits (no PAT), PAT for PRs/work items, CRM for project management
         bool hasLocalPath = !string.IsNullOrEmpty(projectInstance.LocalPath);
         bool hasPat = !string.IsNullOrEmpty(projectInstance.SourcePat);
+        bool hasCrmProject = !string.IsNullOrEmpty(projectInstance.CrmProjectId);
 
-        if (!hasLocalPath && !hasPat)
+        if (!hasLocalPath && !hasPat && !hasCrmProject)
         {
-            Log.Warning("ProjectDashboard: No LocalPath or PAT configured for {ProjectName}, using sample data", projectInstance.Name);
-            LoadSampleData();
+            Log.Warning("ProjectDashboard: No LocalPath, PAT, or CRM project configured for {ProjectName}", projectInstance.Name);
+            LastSyncText = "No data sources configured";
             return;
         }
 
@@ -271,10 +271,14 @@ public partial class ProjectDashboardViewModel : ObservableObject
         try
         {
             Log.Information(
-                "ProjectDashboard: Loading data for {ProjectName} (LocalPath: {HasLocal}, PAT: {HasPat})",
+                "ProjectDashboard: Loading data for {ProjectName} (LocalPath: {HasLocal}, PAT: {HasPat}, CRM: {HasCrm})",
                 projectInstance.Name,
                 hasLocalPath,
-                hasPat);
+                hasPat,
+                hasCrmProject);
+
+            // Fetch CRM project data for timeline, milestones, budget, progress
+            await LoadCrmDataAsync(projectInstance);
 
             var since30d = DateTimeOffset.UtcNow.AddDays(-30);
             var until = DateTimeOffset.UtcNow;
@@ -312,6 +316,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
             if (hasPat && _sourceProviderFactory != null && _encryptionService != null)
             {
                 Log.Information("ProjectDashboard: Fetching PRs and work items from remote API");
+                bool apiCallFailed = false;
 
                 var sourceRepo = new SourceRepository
                 {
@@ -321,7 +326,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
                     Project = projectInstance.SourceProject,
                     Repository = projectInstance.SourceRepository ?? string.Empty,
                     AuthorIdentifier = projectInstance.AuthorIdentifier ?? string.Empty,
-                    EncryptedPat = _encryptionService.Encrypt(projectInstance.SourcePat!),
+                    EncryptedPat = await _encryptionService.EncryptAsync(projectInstance.SourcePat!),
                 };
 
                 var provider = _sourceProviderFactory.GetProvider(projectInstance.SourceType);
@@ -338,6 +343,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
                     catch (Exception ex)
                     {
                         Log.Warning(ex, "ProjectDashboard: Failed to fetch commits from API");
+                        apiCallFailed = true;
                     }
                 }
 
@@ -351,6 +357,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "ProjectDashboard: Failed to fetch PRs from API");
+                    apiCallFailed = true;
                 }
 
                 // Fetch in-progress work items (failure doesn't affect other data)
@@ -363,6 +370,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "ProjectDashboard: Failed to fetch in-progress work items from API");
+                    apiCallFailed = true;
                 }
 
                 // Fetch completed work items (failure doesn't affect other data)
@@ -375,7 +383,10 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "ProjectDashboard: Failed to fetch completed work items from API");
+                    apiCallFailed = true;
                 }
+
+                AzureDevOpsConnectionFailed = apiCallFailed;
             }
 
             Log.Information(
@@ -406,19 +417,41 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 SprintReviewPercent = (SprintReviewCount * 100.0) / totalSprintItems;
             }
 
-            // Map to UI collections
-            MapRecentActivity(commits, prs, completed);
-            MapInProgressTasks(inProgress);
-            MapInReviewTasks(prs);
-            MapTeamMembers(commits);
-            UpdateConnectedServices(projectInstance.SourceType, hasLocalPath, hasPat);
+            // Map data to UI collections using mapper
+            RecentActivity.Clear();
+            foreach (var activity in ProjectDashboardMapper.MapRecentActivity(commits, prs, completed))
+            {
+                RecentActivity.Add(activity);
+            }
 
+            InProgressTasks.Clear();
+            foreach (var task in ProjectDashboardMapper.MapInProgressTasks(inProgress))
+            {
+                InProgressTasks.Add(task);
+            }
+
+            InReviewTasks.Clear();
+            foreach (var task in ProjectDashboardMapper.MapInReviewTasks(prs))
+            {
+                InReviewTasks.Add(task);
+            }
+
+            TeamMembers.Clear();
+            foreach (var member in ProjectDashboardMapper.MapTeamMembers(commits))
+            {
+                TeamMembers.Add(member);
+            }
+
+            UpdateConnectedServices(projectInstance.SourceType, hasLocalPath, hasPat, hasCrmProject);
+
+            // Phases only come from CRM - never fabricate them.
+            // If CRM didn't provide any, leave Phases empty.
             LastSyncText = "Just now";
         }
         catch (Exception ex)
         {
             Log.Error(ex, "ProjectDashboard: Failed to load data for project {ProjectName}", projectInstance.Name);
-            LoadSampleData();
+            LastSyncText = "Error loading data";
         }
         finally
         {
@@ -426,100 +459,11 @@ public partial class ProjectDashboardViewModel : ObservableObject
         }
     }
 
-    private void MapRecentActivity(List<CommitInfo> commits, List<PullRequestInfo> prs, List<WorkItemInfo> completed)
-    {
-        RecentActivity.Clear();
-
-        // Add commits as activity
-        foreach (var commit in commits.OrderByDescending(c => c.CommittedAt).Take(5))
-        {
-            RecentActivity.Add(new ProjectActivity(
-                ActivityType.Commit,
-                commit.Author ?? "Unknown",
-                commit.Subject,
-                GetRelativeTime(commit.CommittedAt)));
-        }
-
-        // Add completed work items
-        foreach (var item in completed.Take(3))
-        {
-            RecentActivity.Add(new ProjectActivity(
-                ActivityType.Task,
-                item.AssignedTo ?? "Unknown",
-                $"completed {item.Title}",
-                "Recently"));
-        }
-
-        // Add PRs
-        foreach (var pr in prs.OrderByDescending(p => p.CreatedAt).Take(2))
-        {
-            RecentActivity.Add(new ProjectActivity(
-                ActivityType.PullRequest,
-                "Developer",
-                $"opened PR #{pr.Id}: {pr.Title}",
-                GetRelativeTime(pr.CreatedAt)));
-        }
-    }
-
-    private void MapInProgressTasks(List<WorkItemInfo> inProgress)
-    {
-        InProgressTasks.Clear();
-
-        foreach (var item in inProgress.Take(5))
-        {
-            var initials = GetInitials(item.AssignedTo);
-            InProgressTasks.Add(new ProjectTask(
-                item.Id,
-                item.Title,
-                initials,
-                item.AssignedTo ?? "Unassigned",
-                MapPriority(item.Tags),
-                DateTimeOffset.UtcNow.AddDays(7))); // Default due date
-        }
-    }
-
-    private void MapInReviewTasks(List<PullRequestInfo> prs)
-    {
-        InReviewTasks.Clear();
-
-        foreach (var pr in prs.Take(5))
-        {
-            InReviewTasks.Add(new ProjectTask(
-                $"PR-{pr.Id}",
-                pr.Title,
-                "PR",
-                "Reviewer",
-                pr.IsDraft ? TaskPriority.Low : TaskPriority.Medium,
-                pr.CreatedAt.AddDays(3)));
-        }
-    }
-
-    private void MapTeamMembers(List<CommitInfo> commits)
-    {
-        TeamMembers.Clear();
-
-        // Extract unique authors from commits
-        var authorStats = commits
-            .Where(c => !string.IsNullOrEmpty(c.Author))
-            .GroupBy(c => c.Author!)
-            .Select(g => new { Author = g.Key, CommitCount = g.Count() })
-            .OrderByDescending(x => x.CommitCount)
-            .Take(5);
-
-        foreach (var author in authorStats)
-        {
-            var initials = GetInitials(author.Author);
-            TeamMembers.Add(new TeamMember(
-                author.Author,
-                initials,
-                "Developer",
-                TeamRole.Developer,
-                author.CommitCount,
-                MemberStatus.Active));
-        }
-    }
-
-    private void UpdateConnectedServices(Domain.Enums.SourceType projectSourceType, bool hasLocalPath, bool hasPat)
+    private void UpdateConnectedServices(
+        Domain.Enums.SourceType projectSourceType,
+        bool hasLocalPath,
+        bool hasPat,
+        bool hasCrmProject)
     {
         ConnectedServices.Clear();
 
@@ -529,17 +473,132 @@ public partial class ProjectDashboardViewModel : ObservableObject
             ConnectedServices.Add(new ConnectedService("Local Git", "📁", ServiceStatus.Connected));
         }
 
-        // Remote source connection - only show if PAT is configured
+        // Remote source connection - show actual status
         if (hasPat)
         {
+            var adoStatus = AzureDevOpsConnectionFailed ? ServiceStatus.Error : ServiceStatus.Connected;
             if (projectSourceType == Domain.Enums.SourceType.AzureDevOps)
             {
-                ConnectedServices.Add(new ConnectedService("Azure DevOps", "🔷", ServiceStatus.Connected));
+                ConnectedServices.Add(new ConnectedService("Azure DevOps", "🔷", adoStatus));
             }
             else
             {
-                ConnectedServices.Add(new ConnectedService("GitHub", "🐙", ServiceStatus.Connected));
+                ConnectedServices.Add(new ConnectedService("GitHub", "🐙", adoStatus));
             }
+        }
+
+        // CRM/Project connection - show actual status
+        if (hasCrmProject)
+        {
+            var crmStatus = CrmConnectionFailed ? ServiceStatus.Error : ServiceStatus.Connected;
+            ConnectedServices.Add(new ConnectedService("Dynamics 365 CRM", "📊", crmStatus));
+        }
+    }
+
+    private async Task LoadCrmDataAsync(ProjectInstance projectInstance)
+    {
+        if (_crmProjectService == null)
+        {
+            Log.Debug("ProjectDashboard: CRM service not available, skipping CRM data fetch");
+            CrmConnectionFailed = !string.IsNullOrEmpty(projectInstance.CrmProjectId);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(projectInstance.CrmProjectId))
+        {
+            Log.Debug("ProjectDashboard: No CRM project ID configured for {ProjectName}", projectInstance.Name);
+            return;
+        }
+
+        try
+        {
+            Log.Information("ProjectDashboard: Fetching CRM data for project ID {CrmProjectId}", projectInstance.CrmProjectId);
+
+            // Fetch project details from CRM
+            var crmProject = await _crmProjectService.GetProjectByIdAsync(projectInstance.CrmProjectId);
+
+            if (crmProject != null)
+            {
+                HasCrmData = true;
+                Log.Information(
+                    "ProjectDashboard: Retrieved CRM project {ProjectName}, Progress: {Progress}%",
+                    crmProject.ProjectName,
+                    crmProject.PercentComplete);
+
+                // Map CRM project data to dashboard properties
+                if (crmProject.StartDate.HasValue)
+                {
+                    StartDate = new DateTimeOffset(crmProject.StartDate.Value, TimeSpan.Zero);
+                }
+
+                if (crmProject.EndDate.HasValue)
+                {
+                    TargetDate = new DateTimeOffset(crmProject.EndDate.Value, TimeSpan.Zero);
+                }
+
+                if (crmProject.PercentComplete.HasValue)
+                {
+                    OverallProgressPercent = (int)Math.Round(crmProject.PercentComplete.Value);
+                }
+
+                // Map budget data if available
+                if (crmProject.BudgetHours.HasValue)
+                {
+                    BudgetTotal = crmProject.BudgetHours.Value;
+                }
+
+                if (crmProject.HoursUsed.HasValue)
+                {
+                    BudgetUsed = crmProject.HoursUsed.Value;
+                }
+
+                if (BudgetTotal > 0)
+                {
+                    BudgetPercent = (int)Math.Round((BudgetUsed / BudgetTotal) * 100);
+                }
+
+                // Map status to health
+                HealthStatus = crmProject.Status == "Active" ? "On Track" : crmProject.Status;
+                IsOnTrack = crmProject.Status == "Active";
+            }
+            else
+            {
+                CrmConnectionFailed = true;
+            }
+
+            // Fetch milestones from CRM for project timeline/phases
+            var milestones = await _crmProjectService.GetUpcomingMilestonesAsync(projectInstance.CrmProjectId);
+
+            if (milestones.Count > 0)
+            {
+                Log.Information("ProjectDashboard: Retrieved {Count} milestones from CRM", milestones.Count);
+
+                Phases.Clear();
+                TotalMilestones = milestones.Count;
+                MilestonesCompleted = milestones.Count(m => m.PercentComplete >= 100);
+
+                foreach (var milestone in milestones)
+                {
+                    var status = milestone.PercentComplete >= 100 ? PhaseStatus.Complete :
+                                 milestone.PercentComplete > 0 ? PhaseStatus.InProgress :
+                                 PhaseStatus.Pending;
+
+                    Phases.Add(new ProjectPhase(
+                        milestone.Name,
+                        $"Due: {milestone.DueDate:MMM dd, yyyy}",
+                        status)
+                    {
+                        EffortEstimated = milestone.EffortEstimated,
+                        EffortCompleted = milestone.EffortCompleted,
+                        EffortRemaining = milestone.EffortRemaining,
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "ProjectDashboard: Failed to fetch CRM data for project {ProjectId}", projectInstance.CrmProjectId);
+            CrmConnectionFailed = true;
         }
     }
 
@@ -547,67 +606,17 @@ public partial class ProjectDashboardViewModel : ObservableObject
     /// Gets the command to go back to the projects list.
     /// </summary>
     [RelayCommand]
-    private void GoBack()
-    {
-        // Navigation will be handled by the page
-    }
+    private void GoBack() => Log.Debug("GoBack requested for project {ProjectName}", ProjectName);
 
     /// <summary>
     /// Gets the command to view the Gantt chart.
     /// </summary>
     [RelayCommand]
-    private void ViewGantt()
-    {
-        // Future feature
-    }
+    private void ViewGantt() => Log.Debug("ViewGantt requested for project {ProjectName}", ProjectName);
 
     /// <summary>
     /// Gets the command to view the task board.
     /// </summary>
     [RelayCommand]
-    private void ViewBoard()
-    {
-        // Future feature
-    }
-
-    private void LoadSampleData()
-    {
-        // Sample phases
-        Phases.Clear();
-        Phases.Add(new ProjectPhase("Phase 1: Foundation", "Jan 15 - Feb 28", PhaseStatus.Complete));
-        Phases.Add(new ProjectPhase("Phase 2: Core Agents", "Mar 1 - Apr 15", PhaseStatus.Complete));
-        Phases.Add(new ProjectPhase("Phase 3: Orchestration", "Apr 16 - May 31", PhaseStatus.InProgress));
-        Phases.Add(new ProjectPhase("Phase 4: Production", "Jun 1 - Jun 30", PhaseStatus.Pending));
-
-        // Sample team members
-        TeamMembers.Clear();
-        TeamMembers.Add(new TeamMember("James Mitchell", "JM", "Lead Architect", TeamRole.Lead, 12, MemberStatus.Active));
-        TeamMembers.Add(new TeamMember("Sarah Chen", "SC", "Backend Developer", TeamRole.Developer, 8, MemberStatus.Active));
-        TeamMembers.Add(new TeamMember("Marcus Johnson", "MJ", "Frontend Developer", TeamRole.Developer, 6, MemberStatus.Away));
-        TeamMembers.Add(new TeamMember("Emily Rodriguez", "ER", "QA Engineer", TeamRole.QA, 15, MemberStatus.Active));
-        TeamMembers.Add(new TeamMember("David Kim", "DK", "DevOps Engineer", TeamRole.DevOps, 4, MemberStatus.Active));
-
-        // Sample tasks
-        InProgressTasks.Clear();
-        InProgressTasks.Add(new ProjectTask("SHERP-342", "Implement multi-agent orchestration with Azure AI Foundry", "JM", "James M.", TaskPriority.High, new DateTimeOffset(2025, 12, 28, 0, 0, 0, TimeSpan.Zero)));
-        InProgressTasks.Add(new ProjectTask("SHERP-345", "Add storage queue integration for async processing", "SC", "Sarah C.", TaskPriority.Medium, new DateTimeOffset(2025, 12, 29, 0, 0, 0, TimeSpan.Zero)));
-        InProgressTasks.Add(new ProjectTask("SHERP-348", "Create MCP server endpoint documentation", "MJ", "Marcus J.", TaskPriority.Low, new DateTimeOffset(2025, 12, 30, 0, 0, 0, TimeSpan.Zero)));
-
-        InReviewTasks.Clear();
-        InReviewTasks.Add(new ProjectTask("SHERP-338", "Azure Functions v4 isolated worker migration", "DK", "David K.", TaskPriority.High, new DateTimeOffset(2025, 12, 25, 0, 0, 0, TimeSpan.Zero)) { IsOverdue = true });
-        InReviewTasks.Add(new ProjectTask("SHERP-340", "Integration tests for agent communication", "ER", "Emily R.", TaskPriority.Medium, new DateTimeOffset(2025, 12, 27, 0, 0, 0, TimeSpan.Zero)));
-
-        // Sample activity
-        RecentActivity.Clear();
-        RecentActivity.Add(new ProjectActivity(ActivityType.Commit, "James M.", "pushed 3 commits to feature/agent-orchestration", "15 minutes ago"));
-        RecentActivity.Add(new ProjectActivity(ActivityType.Task, "Sarah C.", "completed SHERP-336", "1 hour ago"));
-        RecentActivity.Add(new ProjectActivity(ActivityType.PullRequest, "David K.", "opened PR #127 for Azure Functions migration", "2 hours ago"));
-        RecentActivity.Add(new ProjectActivity(ActivityType.Deployment, string.Empty, "Deployed v0.8.4 to staging environment", "4 hours ago"));
-
-        // Connected services
-        ConnectedServices.Clear();
-        ConnectedServices.Add(new ConnectedService("Azure DevOps", "🔷", ServiceStatus.Connected));
-        ConnectedServices.Add(new ConnectedService("GitHub", "🐙", ServiceStatus.Syncing));
-        ConnectedServices.Add(new ConnectedService("Azure Portal", "☁️", ServiceStatus.Connected));
-    }
+    private void ViewBoard() => Log.Debug("ViewBoard requested for project {ProjectName}", ProjectName);
 }

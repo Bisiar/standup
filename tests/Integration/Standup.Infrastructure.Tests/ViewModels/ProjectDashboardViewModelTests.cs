@@ -1,11 +1,15 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Standup.Application.Interfaces;
 using Standup.Application.Models;
 using Standup.Application.ViewModels;
 using Standup.Common.Tests.Configuration;
 using Standup.Domain.Enums;
+using Standup.Domain.Interfaces;
+using Standup.Infrastructure.Configuration;
 using Standup.Infrastructure.Git;
+using Standup.Infrastructure.Integrations;
 using Standup.Infrastructure.Services;
 using Standup.Infrastructure.SourceProviders;
 using Xunit;
@@ -16,7 +20,7 @@ namespace Standup.Infrastructure.Tests.ViewModels;
 /// Integration tests for ProjectDashboardViewModel with real source providers.
 /// Tests both local git (no PAT) and remote API (with PAT) scenarios.
 /// </summary>
-public class ProjectDashboardViewModelTests
+public class ProjectDashboardViewModelTests : IDisposable
 {
     /// <summary>
     /// Path to this repository for local git testing (no PAT required).
@@ -26,13 +30,16 @@ public class ProjectDashboardViewModelTests
     private readonly TestEncryptionService _encryptionService;
     private readonly ISourceProviderFactory _sourceProviderFactory;
     private readonly ILocalStandupService _localStandupService;
-    private readonly string? _pat;
+    private readonly ICrmProjectService _crmProjectService;
+    private readonly HttpClient _httpClient;
+    private readonly string _pat;
+    private readonly bool _crmIsConfigured;
 
     public ProjectDashboardViewModelTests()
     {
         // Load environment variables from .env file (PAT is optional for local tests)
         TestEnvironmentLoader.LoadEnvironmentVariables();
-        _pat = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT");
+        _pat = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT") ?? string.Empty;
         _encryptionService = new TestEncryptionService();
 
         // Set up DI container
@@ -42,16 +49,41 @@ public class ProjectDashboardViewModelTests
         services.AddSingleton<AzureDevOpsSourceProvider>();
         services.AddSingleton<LocalGitService>();
         services.AddSingleton<ILocalStandupService, LocalStandupService>();
+
         var serviceProvider = services.BuildServiceProvider();
 
         _sourceProviderFactory = new SourceProviderFactory(serviceProvider);
         _localStandupService = serviceProvider.GetRequiredService<ILocalStandupService>();
+
+        // Set up CRM service directly
+        var crmOptions = new DynamicsCrmOptions
+        {
+            InstanceUrl = Environment.GetEnvironmentVariable("CRM_INSTANCE_URL") ?? string.Empty,
+            TenantId = Environment.GetEnvironmentVariable("CRM_TENANT_ID") ?? string.Empty,
+            ClientId = Environment.GetEnvironmentVariable("CRM_CLIENT_ID") ?? string.Empty,
+            ClientSecret = Environment.GetEnvironmentVariable("CRM_CLIENT_SECRET") ?? string.Empty,
+            Enabled = true,
+        };
+
+        _crmIsConfigured = !string.IsNullOrEmpty(crmOptions.InstanceUrl) &&
+                           !string.IsNullOrEmpty(crmOptions.ClientSecret);
+
+        _httpClient = new HttpClient();
+        _crmProjectService = new DynamicsCrmService(Options.Create(crmOptions), _httpClient);
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>
     /// Comprehensive test that validates ALL dashboard data sources.
     /// Maps each UI section to its data source and verifies population.
     /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task LoadProjectAsync_WithLocalPath_ValidatesAllDashboardData()
     {
@@ -59,7 +91,8 @@ public class ProjectDashboardViewModelTests
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService);
+            _localStandupService,
+            _crmProjectService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -250,6 +283,7 @@ public class ProjectDashboardViewModelTests
     /// <summary>
     /// Full integration test with BOTH local git AND PAT for complete dashboard data.
     /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task LoadProjectAsync_WithLocalPathAndPat_FetchesAllData()
     {
@@ -265,7 +299,7 @@ public class ProjectDashboardViewModelTests
         Console.WriteLine($"_localStandupService: {(_localStandupService != null ? "Available" : "NULL")}");
         Console.WriteLine($"_sourceProviderFactory: {(_sourceProviderFactory != null ? "Available" : "NULL")}");
         Console.WriteLine($"_encryptionService: {(_encryptionService != null ? "Available" : "NULL")}");
-        Console.WriteLine($"PAT length: {_pat?.Length}");
+        Console.WriteLine($"PAT length: {_pat.Length}");
         Console.WriteLine();
 
         // Test LocalStandupService directly first
@@ -277,7 +311,7 @@ public class ProjectDashboardViewModelTests
                 LocalPath = LocalRepoPath,
                 SourceType = SourceType.GitHub,
             };
-            var commits = await _localStandupService.GetLocalCommitsAsync(
+            var commits = await _localStandupService!.GetLocalCommitsAsync(
                 new[] { testRepo },
                 DateTimeOffset.UtcNow.AddDays(-30),
                 DateTimeOffset.UtcNow);
@@ -296,9 +330,10 @@ public class ProjectDashboardViewModelTests
 
         // Arrange - Use BOTH local path AND PAT
         var viewModel = new ProjectDashboardViewModel(
-            _sourceProviderFactory,
-            _encryptionService,
-            _localStandupService);
+            _sourceProviderFactory!,
+            _encryptionService!,
+            _localStandupService!,
+            _crmProjectService!);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -394,16 +429,18 @@ public class ProjectDashboardViewModelTests
     }
 
     /// <summary>
-    /// Tests that with no data sources, sample data is loaded correctly.
+    /// Tests that with no data sources, collections remain empty (no sample data fallback).
     /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
-    public async Task LoadProjectAsync_WithNoDataSources_LoadsSampleData()
+    public async Task LoadProjectAsync_WithNoDataSources_ShowsNoDataConfigured()
     {
-        // Arrange - No LocalPath and no PAT
+        // Arrange - No LocalPath, no PAT, no CRM
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService);
+            _localStandupService,
+            _crmProjectService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -420,27 +457,22 @@ public class ProjectDashboardViewModelTests
         // Act
         await viewModel.LoadProjectAsync(project);
 
-        // Assert - Sample data should be loaded
-        Console.WriteLine("=== SAMPLE DATA VALIDATION ===");
-        Console.WriteLine($"Recent Activity: {viewModel.RecentActivity.Count} items (sample)");
-        Console.WriteLine($"Team Members: {viewModel.TeamMembers.Count} members (sample)");
-        Console.WriteLine($"In Progress: {viewModel.InProgressTasks.Count} tasks (sample)");
-        Console.WriteLine($"In Review: {viewModel.InReviewTasks.Count} PRs (sample)");
-        Console.WriteLine($"Phases: {viewModel.Phases.Count} phases (sample)");
-        Console.WriteLine($"Connected Services: {viewModel.ConnectedServices.Count} services (sample)");
+        // Assert - No sample data fallback, collections should be empty
+        Console.WriteLine("=== NO DATA SOURCES TEST ===");
+        Console.WriteLine($"LastSyncText: {viewModel.LastSyncText}");
+        Console.WriteLine($"Recent Activity: {viewModel.RecentActivity.Count} items");
+        Console.WriteLine($"Team Members: {viewModel.TeamMembers.Count} members");
 
-        // Sample data should populate all collections
-        viewModel.RecentActivity.Should().NotBeEmpty("sample data includes activity");
-        viewModel.TeamMembers.Should().NotBeEmpty("sample data includes team");
-        viewModel.InProgressTasks.Should().NotBeEmpty("sample data includes tasks");
-        viewModel.InReviewTasks.Should().NotBeEmpty("sample data includes PRs");
-        viewModel.Phases.Should().NotBeEmpty("sample data includes phases");
-        viewModel.ConnectedServices.Should().NotBeEmpty("sample data includes services");
+        // Without data sources, LastSyncText should indicate no configuration
+        viewModel.LastSyncText.Should().Be("No data sources configured");
+        viewModel.RecentActivity.Should().BeEmpty("no data sources means no activity");
+        viewModel.TeamMembers.Should().BeEmpty("no data sources means no team");
     }
 
     /// <summary>
     /// Tests local git performance - should be fast without network calls.
     /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task LoadProjectAsync_WithLocalPath_CompletesQuickly()
     {
@@ -448,7 +480,8 @@ public class ProjectDashboardViewModelTests
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService);
+            _localStandupService,
+            _crmProjectService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -471,6 +504,7 @@ public class ProjectDashboardViewModelTests
     /// <summary>
     /// Tests that team members are correctly derived from commit authors.
     /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task LoadProjectAsync_MapsCommitAuthorsToTeamMembers()
     {
@@ -478,7 +512,8 @@ public class ProjectDashboardViewModelTests
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService);
+            _localStandupService,
+            _crmProjectService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -511,6 +546,7 @@ public class ProjectDashboardViewModelTests
     /// <summary>
     /// Tests that connected services correctly reflect data sources.
     /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task LoadProjectAsync_ConnectedServicesReflectDataSources()
     {
@@ -518,7 +554,8 @@ public class ProjectDashboardViewModelTests
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService);
+            _localStandupService,
+            _crmProjectService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),

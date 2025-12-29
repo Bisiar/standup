@@ -76,8 +76,8 @@ public static class MauiProgram
             // Configure from environment or preferences
             builder.Services.Configure<AIFoundryOptions>(options =>
             {
-                options.Endpoint = Preferences.Get("AIFoundry__Endpoint", "https://cog-vtht5f2batt7q.openai.azure.com/");
-                options.DeploymentName = Preferences.Get("AIFoundry__DeploymentName", "gpt-4o");
+                options.Endpoint = Preferences.Get("AIFoundry__Endpoint", string.Empty);
+                options.DeploymentName = Preferences.Get("AIFoundry__DeploymentName", string.Empty);
                 options.ApiKey = Preferences.Get("AIFoundry__ApiKey", string.Empty);
 
                 // Use Azure Identity (DefaultAzureCredential) when no API key is provided
@@ -90,20 +90,21 @@ public static class MauiProgram
             });
             builder.Services.AddSingleton<IAISummaryService, AIFoundrySummaryService>();
 
-            // Dynamics 365 CRM Integration - using JTP CRM instance
+            // Dynamics 365 CRM Integration - credentials must be configured in Settings
             builder.Services.Configure<DynamicsCrmOptions>(options =>
             {
-                options.InstanceUrl = Preferences.Get("DynamicsCrm__InstanceUrl", "string.Empty");
-                options.TenantId = Preferences.Get("DynamicsCrm__TenantId", "string.Empty");
-                options.ClientId = Preferences.Get("DynamicsCrm__ClientId", "string.Empty");
-                options.ClientSecret = Preferences.Get("DynamicsCrm__ClientSecret", "string.Empty");
-                options.Enabled = Preferences.Get("DynamicsCrm__Enabled", true);
+                options.InstanceUrl = Preferences.Get("DynamicsCrm__InstanceUrl", string.Empty);
+                options.TenantId = Preferences.Get("DynamicsCrm__TenantId", string.Empty);
+                options.ClientId = Preferences.Get("DynamicsCrm__ClientId", string.Empty);
+                options.ClientSecret = Preferences.Get("DynamicsCrm__ClientSecret", string.Empty);
+                options.Enabled = Preferences.Get("DynamicsCrm__Enabled", false);
 
+                var isConfigured = !string.IsNullOrEmpty(options.InstanceUrl) &&
+                                   !string.IsNullOrEmpty(options.ClientSecret);
                 Log.Information(
-                    "Dynamics CRM configured: InstanceUrl={InstanceUrl}, TenantId={TenantId}, Enabled={Enabled}",
-                    options.InstanceUrl,
-                    options.TenantId,
-                    options.Enabled);
+                    "Dynamics CRM: Configured={IsConfigured}, InstanceUrl={InstanceUrl}",
+                    isConfigured,
+                    string.IsNullOrEmpty(options.InstanceUrl) ? "(not set)" : options.InstanceUrl);
             });
             builder.Services.AddHttpClient<ICrmProjectService, DynamicsCrmService>();
 
@@ -205,7 +206,7 @@ public static class MauiProgram
         try
         {
             // Write to project directory logs folder for debugging
-            var projectLogPath = "/Users/james/Source/github.com.bisiar/standup/src/Standup.Maui/logs";
+            var projectLogPath = "/Users/james/Source/github.com.bisiar/standup/src/Presentation/Desktop/Standup.Maui/logs";
             Directory.CreateDirectory(projectLogPath);
             var logFileName = Path.Combine(projectLogPath, "standup_maui_.log");
 

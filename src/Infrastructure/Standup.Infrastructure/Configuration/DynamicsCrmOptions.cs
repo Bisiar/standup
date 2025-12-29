@@ -11,7 +11,7 @@ public class DynamicsCrmOptions
     public const string SectionName = "DynamicsCrm";
 
     /// <summary>
-    /// Gets or sets the CRM instance URL (e.g., ***REMOVED***).
+    /// Gets or sets the CRM instance URL (e.g., https://jtp.crm.dynamics.com).
     /// </summary>
     public string InstanceUrl { get; set; } = string.Empty;
 

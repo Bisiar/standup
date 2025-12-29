@@ -13,8 +13,8 @@ public partial class SettingsPage : ContentPage
         viewModel.LoadAISettingsRequested += () =>
         {
             return (
-                Preferences.Get("AIFoundry__Endpoint", "https://cog-vtht5f2batt7q.openai.azure.com/"),
-                Preferences.Get("AIFoundry__DeploymentName", "gpt-4o"),
+                Preferences.Get("AIFoundry__Endpoint", string.Empty),
+                Preferences.Get("AIFoundry__DeploymentName", string.Empty),
                 Preferences.Get("AIFoundry__ApiKey", string.Empty));
         };
 

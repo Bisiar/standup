@@ -47,8 +47,8 @@ public class AIFoundrySummaryServiceIntegrationTests
         var result = await service.GenerateSummaryAsync(testData, new SummaryOptions(Type: SummaryType.Technical));
 
         // Assert
-        _output.WriteLine($"Result length: {result?.Length ?? 0}");
-        _output.WriteLine($"Result preview: {result?[..Math.Min(200, result?.Length ?? 0)]}...");
+        _output.WriteLine($"Result length: {result.Length}");
+        _output.WriteLine($"Result preview: {result[..Math.Min(200, result.Length)]}...");
 
         result.Should().NotBeNullOrEmpty("AI should return a summary for valid data");
         result.Length.Should().BeGreaterThan(50, "Summary should be substantial");
@@ -78,8 +78,8 @@ public class AIFoundrySummaryServiceIntegrationTests
             new SummaryOptions(Type: summaryType));
 
         // Assert
-        _output.WriteLine($"[{summaryType}] Result length: {result?.Length ?? 0}");
-        _output.WriteLine($"[{summaryType}] Preview: {result?[..Math.Min(300, result?.Length ?? 0)]}...");
+        _output.WriteLine($"[{summaryType}] Result length: {result.Length}");
+        _output.WriteLine($"[{summaryType}] Preview: {result[..Math.Min(300, result.Length)]}...");
 
         result.Should().NotBeNullOrEmpty($"{summaryType} summary should not be empty");
 
@@ -164,9 +164,9 @@ public class AIFoundrySummaryServiceIntegrationTests
         return new AIFoundryOptions
         {
             Endpoint = Environment.GetEnvironmentVariable("AIFoundry__Endpoint")
-                ?? "https://cog-vtht5f2batt7q.openai.azure.com/",
+                ?? string.Empty,
             DeploymentName = Environment.GetEnvironmentVariable("AIFoundry__DeploymentName")
-                ?? "gpt-4o",
+                ?? string.Empty,
             ApiKey = Environment.GetEnvironmentVariable("AIFoundry__ApiKey") ?? string.Empty,
             UseAzureIdentity = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIFoundry__ApiKey"))
         };

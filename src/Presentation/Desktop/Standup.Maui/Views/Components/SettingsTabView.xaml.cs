@@ -58,8 +58,8 @@ public partial class SettingsTabView : ContentView
     private (string Endpoint, string Deployment, string ApiKey) OnLoadAISettingsRequested()
     {
         return (
-            Preferences.Get("AIFoundry__Endpoint", "https://cog-vtht5f2batt7q.openai.azure.com/"),
-            Preferences.Get("AIFoundry__DeploymentName", "gpt-4o"),
+            Preferences.Get("AIFoundry__Endpoint", string.Empty),
+            Preferences.Get("AIFoundry__DeploymentName", string.Empty),
             Preferences.Get("AIFoundry__ApiKey", string.Empty));
     }
 
