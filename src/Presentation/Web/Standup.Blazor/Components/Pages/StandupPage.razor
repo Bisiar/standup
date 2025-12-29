@@ -1,0 +1,38 @@
+@page "/standup"
+@inject StandupViewModel ViewModel
+
+<PageTitle>Standup Report - StandBot</PageTitle>
+
+@if (ViewModel.IsLoading && !_initialized)
+{
+    <div class="loading">
+        <TelerikLoader Size="@ThemeConstants.Loader.Size.Large" />
+        <span>Loading...</span>
+    </div>
+}
+else
+{
+    <StandupView ViewModel="ViewModel" />
+}
+
+@code {
+    private bool _initialized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ViewModel.LoadCommand.ExecuteAsync(null);
+        _initialized = true;
+    }
+}
+
+<style>
+    .loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 3rem;
+        color: #94a3b8;
+    }
+</style>

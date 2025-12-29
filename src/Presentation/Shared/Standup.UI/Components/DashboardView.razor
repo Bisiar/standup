@@ -1,0 +1,235 @@
+@* DashboardView - Shared component for displaying dashboard metrics *@
+
+<div class="dashboard-view">
+    @* Metrics Cards Row *@
+    <div class="metrics-row">
+        <div class="metric-card">
+            <div class="metric-value">@ViewModel.TotalCommits</div>
+            <div class="metric-label">Total Commits</div>
+        </div>
+        <div class="metric-card additions">
+            <div class="metric-value">+@ViewModel.TotalAdditions</div>
+            <div class="metric-label">Lines Added</div>
+        </div>
+        <div class="metric-card deletions">
+            <div class="metric-value">-@ViewModel.TotalDeletions</div>
+            <div class="metric-label">Lines Deleted</div>
+        </div>
+        <div class="metric-card net">
+            <div class="metric-value">@(ViewModel.NetChange >= 0 ? "+" : "")@ViewModel.NetChange</div>
+            <div class="metric-label">Net Change</div>
+        </div>
+    </div>
+
+    @* Period Selection *@
+    <div class="period-selector">
+        <TelerikButtonGroup>
+            <TelerikButton OnClick="@(() => ViewModel.SelectYesterdayCommand.Execute(null))"
+                           Selected="@(ViewModel.SelectedPeriodIndex == 0)">Yesterday</TelerikButton>
+            <TelerikButton OnClick="@(() => ViewModel.SelectTodayCommand.Execute(null))"
+                           Selected="@(ViewModel.SelectedPeriodIndex == 1)">Today</TelerikButton>
+            <TelerikButton OnClick="@(() => ViewModel.SelectWeekCommand.Execute(null))"
+                           Selected="@(ViewModel.SelectedPeriodIndex == 2)">Week</TelerikButton>
+        </TelerikButtonGroup>
+        <span class="period-display">@ViewModel.PeriodDisplay</span>
+    </div>
+
+    @* Activity by Project *@
+    <div class="section">
+        <h3>Activity by Project</h3>
+        @if (ViewModel.ClientCodeMetrics.Any())
+        {
+            <div class="project-list">
+                @foreach (var project in ViewModel.ClientCodeMetrics)
+                {
+                    <div class="project-row">
+                        <span class="project-name">@project.ClientCode</span>
+                        <div class="project-bar">
+                            <div class="bar-additions" style="width: @(project.AdditionsPercent)%"></div>
+                            <div class="bar-deletions" style="width: @(project.DeletionsPercent)%"></div>
+                        </div>
+                        <span class="project-stats">+@project.Additions / -@project.Deletions</span>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="no-data">No project activity in this period</p>
+        }
+    </div>
+
+    @* Recent Activity *@
+    <div class="section">
+        <h3>Recent Activity</h3>
+        @if (ViewModel.RecentCommits.Any())
+        {
+            <div class="activity-list">
+                @foreach (var commit in ViewModel.RecentCommits.Take(10))
+                {
+                    <div class="activity-item">
+                        <span class="activity-icon">📝</span>
+                        <div class="activity-details">
+                            <span class="activity-repo">@commit.Repository</span>
+                            <span class="activity-message">@commit.Subject</span>
+                            <span class="activity-meta">@commit.Author • @commit.CommittedAt.ToString("MMM dd, HH:mm")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="no-data">No recent commits</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public DashboardViewModel ViewModel { get; set; } = null!;
+}
+
+<style>
+    .dashboard-view {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .metrics-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    .metric-card {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: white;
+    }
+
+    .metric-card.additions {
+        background: linear-gradient(135deg, #065f46 0%, #10b981 100%);
+    }
+
+    .metric-card.deletions {
+        background: linear-gradient(135deg, #991b1b 0%, #ef4444 100%);
+    }
+
+    .metric-card.net {
+        background: linear-gradient(135deg, #6b21a8 0%, #a855f7 100%);
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .metric-label {
+        font-size: 0.85rem;
+        opacity: 0.9;
+    }
+
+    .period-selector {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .period-display {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .section {
+        background-color: #1e293b;
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .section h3 {
+        color: #e2e8f0;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .project-list, .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .project-row {
+        display: grid;
+        grid-template-columns: 120px 1fr 100px;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .project-name {
+        color: #e2e8f0;
+        font-weight: 500;
+    }
+
+    .project-bar {
+        display: flex;
+        height: 20px;
+        background-color: #334155;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .bar-additions {
+        background-color: #10b981;
+    }
+
+    .bar-deletions {
+        background-color: #ef4444;
+    }
+
+    .project-stats {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        text-align: right;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background-color: #0f172a;
+        border-radius: 8px;
+    }
+
+    .activity-icon {
+        font-size: 1.25rem;
+    }
+
+    .activity-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .activity-repo {
+        color: #3b82f6;
+        font-size: 0.85rem;
+    }
+
+    .activity-message {
+        color: #e2e8f0;
+    }
+
+    .activity-meta {
+        color: #64748b;
+        font-size: 0.8rem;
+    }
+
+    .no-data {
+        color: #64748b;
+        text-align: center;
+        padding: 2rem;
+    }
+</style>

@@ -1,0 +1,7 @@
+<Project>
+  <!-- Suppress warnings that are acceptable in test code -->
+  <PropertyGroup>
+    <!-- CA1861: Prefer static readonly fields - inline arrays improve test readability -->
+    <NoWarn>$(NoWarn);CA1861</NoWarn>
+  </PropertyGroup>
+</Project>

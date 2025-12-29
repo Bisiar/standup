@@ -1,0 +1,101 @@
+<div class="nav-menu">
+    <div class="brand">
+        <span class="brand-icon">📊</span>
+        <span class="brand-text">StandBot</span>
+    </div>
+
+    <nav class="nav-links">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            <span class="nav-icon">📈</span>
+            <span class="nav-text">Dashboard</span>
+        </NavLink>
+
+        <NavLink class="nav-link" href="standup">
+            <span class="nav-icon">📝</span>
+            <span class="nav-text">Standup</span>
+        </NavLink>
+
+        <NavLink class="nav-link" href="groups">
+            <span class="nav-icon">📁</span>
+            <span class="nav-text">Groups</span>
+        </NavLink>
+
+        <NavLink class="nav-link" href="projects">
+            <span class="nav-icon">🏗️</span>
+            <span class="nav-text">Projects</span>
+        </NavLink>
+
+        <NavLink class="nav-link" href="settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">Settings</span>
+        </NavLink>
+
+        <NavLink class="nav-link" href="docs">
+            <span class="nav-icon">📚</span>
+            <span class="nav-text">Docs</span>
+        </NavLink>
+    </nav>
+</div>
+
+<style>
+    .nav-menu {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid #334155;
+    }
+
+    .brand-icon {
+        font-size: 1.5rem;
+    }
+
+    .brand-text {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #e2e8f0;
+    }
+
+    .nav-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .nav-link:hover {
+        background-color: #334155;
+        color: #e2e8f0;
+    }
+
+    .nav-link.active {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .nav-icon {
+        font-size: 1.1rem;
+    }
+
+    .nav-text {
+        font-size: 0.9rem;
+    }
+</style>

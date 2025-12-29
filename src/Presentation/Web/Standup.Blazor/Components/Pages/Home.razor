@@ -1,0 +1,51 @@
+@page "/"
+@inject DashboardViewModel ViewModel
+
+<PageTitle>Dashboard - StandBot</PageTitle>
+
+<h1>Dashboard</h1>
+
+<p class="subtitle">Welcome to StandBot - Your Standup Automation Platform</p>
+
+@if (ViewModel.IsLoading)
+{
+    <div class="loading">
+        <TelerikLoader Size="@ThemeConstants.Loader.Size.Large" />
+        <span>Loading dashboard data...</span>
+    </div>
+}
+else
+{
+    <DashboardView ViewModel="ViewModel" />
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await ViewModel.LoadCommand.ExecuteAsync(null);
+    }
+}
+
+<style>
+    h1 {
+        color: #e2e8f0;
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 3rem;
+        color: #94a3b8;
+    }
+</style>

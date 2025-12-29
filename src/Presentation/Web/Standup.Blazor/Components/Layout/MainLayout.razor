@@ -1,0 +1,82 @@
+@inherits LayoutComponentBase
+
+<TelerikRootComponent>
+    <div class="page">
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+
+        <main>
+            <div class="top-row px-4">
+                <AuthorizeView>
+                    <Authorized>
+                        <span class="user-name">@context.User.Identity?.Name</span>
+                        <a href="MicrosoftIdentity/Account/SignOut">Sign out</a>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="MicrosoftIdentity/Account/SignIn">Sign in</a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    </div>
+</TelerikRootComponent>
+
+<style>
+    .page {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    main {
+        flex: 1;
+        background-color: #0f172a;
+    }
+
+    .sidebar {
+        background-color: #1e293b;
+        width: 250px;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+    }
+
+    .top-row {
+        background-color: #1e293b;
+        border-bottom: 1px solid #334155;
+        justify-content: flex-end;
+        height: 3.5rem;
+        display: flex;
+        align-items: center;
+        margin-left: 250px;
+    }
+
+    .top-row a, .top-row .user-name {
+        color: #e2e8f0;
+        margin-left: 1rem;
+    }
+
+    article.content {
+        margin-left: 250px;
+        padding-top: 1rem;
+        color: #e2e8f0;
+    }
+
+    @@media (max-width: 768px) {
+        .sidebar {
+            width: 100%;
+            position: relative;
+        }
+
+        .top-row, article.content {
+            margin-left: 0;
+        }
+    }
+</style>

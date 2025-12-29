@@ -1,0 +1,749 @@
+@* StandupView - Shared component for standup report generation *@
+@using Standup.Application.ViewModels
+@using Standup.Application.DTOs
+@using Standup.Domain.Entities
+
+<div class="standup-view">
+    <div class="standup-grid">
+        <!-- LEFT SIDEBAR - Configuration -->
+        <div class="sidebar">
+            <div class="sidebar-content">
+                <!-- Header -->
+                <div class="section-header">
+                    <h2>Standup Report</h2>
+                    <p class="subtitle">Generate AI-powered standup summaries</p>
+                </div>
+
+                <!-- Group Selector -->
+                <div class="form-group">
+                    <label class="form-label">SELECT GROUP</label>
+                    <TelerikDropDownList Data="@ViewModel.Groups"
+                                         @bind-Value="@ViewModel.SelectedGroup"
+                                         TextField="Name"
+                                         ValueField="Id"
+                                         Class="form-select" />
+                </div>
+
+                <!-- Period Selector -->
+                <div class="form-group">
+                    <label class="form-label">TIME PERIOD</label>
+                    <TelerikButtonGroup>
+                        <TelerikButton OnClick="@(() => ViewModel.SetPeriodYesterdayCommand.Execute(null))"
+                                       ThemeColor="@(ViewModel.SelectedPeriod == 0 ? ThemeConstants.Button.ThemeColor.Primary : ThemeConstants.Button.ThemeColor.Base)">
+                            Yesterday
+                        </TelerikButton>
+                        <TelerikButton OnClick="@(() => ViewModel.SetPeriodTodayCommand.Execute(null))"
+                                       ThemeColor="@(ViewModel.SelectedPeriod == 1 ? ThemeConstants.Button.ThemeColor.Primary : ThemeConstants.Button.ThemeColor.Base)">
+                            Today
+                        </TelerikButton>
+                        <TelerikButton OnClick="@(() => ViewModel.SetPeriodWeekCommand.Execute(null))"
+                                       ThemeColor="@(ViewModel.SelectedPeriod == 2 ? ThemeConstants.Button.ThemeColor.Primary : ThemeConstants.Button.ThemeColor.Base)">
+                            Week
+                        </TelerikButton>
+                    </TelerikButtonGroup>
+                </div>
+
+                <!-- Section Toggles -->
+                <div class="form-group">
+                    <label class="form-label">INCLUDE SECTIONS</label>
+
+                    <!-- Executive Summary Toggle -->
+                    <div class="toggle-card">
+                        <div class="toggle-info">
+                            <span class="toggle-title">Executive Summary</span>
+                            <span class="toggle-description">Business-focused overview</span>
+                        </div>
+                        <TelerikSwitch @bind-Value="@ViewModel.GenerateExecutive" OnLabel="" OffLabel="" />
+                    </div>
+
+                    <!-- Technical Summary Toggle -->
+                    <div class="toggle-card toggle-technical">
+                        <div class="toggle-info">
+                            <span class="toggle-title">Technical Summary</span>
+                            <span class="toggle-description">Developer-focused details</span>
+                        </div>
+                        <TelerikSwitch @bind-Value="@ViewModel.GenerateTechnical" OnLabel="" OffLabel="" />
+                    </div>
+
+                    <!-- Code Review Toggle -->
+                    <div class="toggle-card toggle-review">
+                        <div class="toggle-info">
+                            <span class="toggle-title">Code Review</span>
+                            <span class="toggle-description">Security and quality analysis</span>
+                        </div>
+                        <TelerikSwitch @bind-Value="@ViewModel.GenerateCodeReview" OnLabel="" OffLabel="" />
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                @if (!ViewModel.IsGenerating)
+                {
+                    <TelerikButton OnClick="@(() => ViewModel.GenerateStandupCommand.Execute(null))"
+                                   ThemeColor="@ThemeConstants.Button.ThemeColor.Warning"
+                                   Class="generate-button">
+                        Generate Standup
+                    </TelerikButton>
+                }
+
+                <!-- Progress During Generation -->
+                @if (ViewModel.IsGenerating)
+                {
+                    <div class="progress-card">
+                        <div class="progress-header">
+                            <TelerikLoader Size="@ThemeConstants.Loader.Size.Small" />
+                            <span class="progress-percent">@ViewModel.GenerationProgress.ToString("P0")</span>
+                        </div>
+                        <TelerikProgressBar Value="@(ViewModel.GenerationProgress * 100)" Max="100" />
+                        <span class="progress-status">@ViewModel.StatusMessage</span>
+                    </div>
+                }
+
+                <!-- History Section -->
+                @if (ViewModel.ReportHistory.Any())
+                {
+                    <div class="form-group">
+                        <div class="history-header">
+                            <label class="form-label">RECENT REPORTS</label>
+                            <TelerikButton OnClick="@(() => ViewModel.ClearAllHistoryCommand.Execute(null))"
+                                           ThemeColor="@ThemeConstants.Button.ThemeColor.Error"
+                                           Size="@ThemeConstants.Button.Size.Small">
+                                Clear
+                            </TelerikButton>
+                        </div>
+                        <div class="history-list">
+                            @foreach (var history in ViewModel.ReportHistory)
+                            {
+                                <div class="history-item" @onclick="@(() => ViewModel.LoadHistoryItemCommand.Execute(history))">
+                                    <div class="history-info">
+                                        <span class="history-group">@history.GroupName</span>
+                                        <span class="history-date">@history.GeneratedAt.ToString("MMM dd, HH:mm")</span>
+                                    </div>
+                                    <span class="history-commits">@history.TotalCommits commits</span>
+                                    <TelerikButton OnClick="@(() => ViewModel.DeleteHistoryItemCommand.Execute(history))"
+                                                   ThemeColor="@ThemeConstants.Button.ThemeColor.Error"
+                                                   FillMode="@ThemeConstants.Button.FillMode.Flat"
+                                                   Size="@ThemeConstants.Button.Size.Small"
+                                                   Class="delete-btn">×</TelerikButton>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Splitter Bar -->
+        <div class="splitter"></div>
+
+        <!-- RIGHT PANEL - Report Content -->
+        <div class="main-panel">
+            @if (!ViewModel.HasReport)
+            {
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <span class="empty-icon">📝</span>
+                    <h3>No Report Generated</h3>
+                    <p>Configure options and click Generate Standup</p>
+                </div>
+            }
+            else
+            {
+                <!-- Report Content -->
+                <div class="report-container">
+                    <!-- Tab Bar -->
+                    <div class="report-header">
+                        <TelerikButtonGroup>
+                            <TelerikButton OnClick="@(() => ViewModel.SwitchViewCommand.Execute(1))"
+                                           ThemeColor="@(ViewModel.CurrentViewMode == 1 ? ThemeConstants.Button.ThemeColor.Primary : ThemeConstants.Button.ThemeColor.Base)">
+                                Report
+                            </TelerikButton>
+                            <TelerikButton OnClick="@(() => ViewModel.SwitchViewCommand.Execute(2))"
+                                           ThemeColor="@(ViewModel.CurrentViewMode == 2 ? ThemeConstants.Button.ThemeColor.Primary : ThemeConstants.Button.ThemeColor.Base)">
+                                Commits (@(ViewModel.GroupedReport?.TotalCommits ?? 0))
+                            </TelerikButton>
+                            <TelerikButton OnClick="@(() => ViewModel.SwitchViewCommand.Execute(3))"
+                                           ThemeColor="@(ViewModel.CurrentViewMode == 3 ? ThemeConstants.Button.ThemeColor.Success : ThemeConstants.Button.ThemeColor.Base)">
+                                PRs (@(ViewModel.GroupedReport?.TotalPullRequests ?? 0))
+                            </TelerikButton>
+                            <TelerikButton OnClick="@(() => ViewModel.SwitchViewCommand.Execute(4))"
+                                           ThemeColor="@(ViewModel.CurrentViewMode == 4 ? ThemeConstants.Button.ThemeColor.Info : ThemeConstants.Button.ThemeColor.Base)">
+                                Tasks (@(ViewModel.GroupedReport?.TotalWorkItems ?? 0))
+                            </TelerikButton>
+                        </TelerikButtonGroup>
+
+                        <div class="report-actions">
+                            <TelerikButton OnClick="@(() => ViewModel.CopyToClipboardCommand.Execute(null))"
+                                           ThemeColor="@ThemeConstants.Button.ThemeColor.Primary">
+                                Copy
+                            </TelerikButton>
+                            <TelerikButton OnClick="@(() => ViewModel.SaveReportCommand.Execute(null))"
+                                           ThemeColor="@ThemeConstants.Button.ThemeColor.Success">
+                                Save
+                            </TelerikButton>
+                        </div>
+                    </div>
+
+                    <!-- Content Views -->
+                    <div class="report-content">
+                        @if (ViewModel.CurrentViewMode == 1)
+                        {
+                            <!-- VIEW 1: Report Summary -->
+                            <div class="report-view">
+                                <div class="report-title">
+                                    <h2>Standup Report - @ViewModel.SelectedGroup?.Name</h2>
+                                    <p class="report-period">
+                                        @ViewModel.GroupedReport?.PeriodStart.ToString("MMM dd") - @ViewModel.GroupedReport?.PeriodEnd.ToString("MMM dd, yyyy")
+                                    </p>
+                                </div>
+
+                                <div class="display-toggle">
+                                    <span class="@(!ViewModel.ShowAsHtml ? "active" : "")">Markdown</span>
+                                    <TelerikSwitch @bind-Value="@ViewModel.ShowAsHtml" OnLabel="" OffLabel="" />
+                                    <span class="@(ViewModel.ShowAsHtml ? "active" : "")">HTML</span>
+                                </div>
+
+                                @if (ViewModel.ShowAsHtml)
+                                {
+                                    <div class="html-content">
+                                        @((MarkupString)ViewModel.HtmlReportContent)
+                                    </div>
+                                }
+                                else
+                                {
+                                    <pre class="markdown-content">@ViewModel.ReportContent</pre>
+                                }
+                            </div>
+                        }
+                        else if (ViewModel.CurrentViewMode == 2)
+                        {
+                            <!-- VIEW 2: Commits -->
+                            <div class="commits-view">
+                                <div class="view-accent commits"></div>
+                                <div class="view-content">
+                                    <h2>Commits (@(ViewModel.GroupedReport?.TotalCommits ?? 0))</h2>
+                                    @if (ViewModel.GroupedReport?.Sections != null)
+                                    {
+                                        @foreach (var codeSection in ViewModel.GroupedReport.Sections)
+                                        {
+                                            <div class="client-card">
+                                                <h3 class="client-title commits">@codeSection.ClientCode</h3>
+                                                <div class="commit-list">
+                                                    @foreach (var commit in codeSection.Commits)
+                                                    {
+                                                        <div class="commit-item">
+                                                            <span class="commit-sha">@commit.Sha[..7]</span>
+                                                            <span class="commit-message">@commit.Message</span>
+                                                            <span class="commit-time">@GetRelativeTime(commit.CommittedAt)</span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else if (ViewModel.CurrentViewMode == 3)
+                        {
+                            <!-- VIEW 3: PRs -->
+                            <div class="prs-view">
+                                <div class="view-accent prs"></div>
+                                <div class="view-content">
+                                    <h2>Pull Requests (@(ViewModel.GroupedReport?.TotalPullRequests ?? 0))</h2>
+                                    @if (ViewModel.GroupedReport?.Sections != null)
+                                    {
+                                        @foreach (var codeSection in ViewModel.GroupedReport.Sections)
+                                        {
+                                            <div class="client-card">
+                                                <h3 class="client-title prs">@codeSection.ClientCode</h3>
+                                                @if (!codeSection.PullRequests.Any())
+                                                {
+                                                    <p class="no-data">No pull requests in this period</p>
+                                                }
+                                                else
+                                                {
+                                                    <div class="pr-list">
+                                                        @foreach (var pr in codeSection.PullRequests)
+                                                        {
+                                                            <div class="pr-item">
+                                                                <span class="pr-status">@pr.Status</span>
+                                                                <span class="pr-title">@pr.Title</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else if (ViewModel.CurrentViewMode == 4)
+                        {
+                            <!-- VIEW 4: Work Items -->
+                            <div class="tasks-view">
+                                <div class="view-accent tasks"></div>
+                                <div class="view-content">
+                                    <h2>Work Items (@(ViewModel.GroupedReport?.TotalWorkItems ?? 0))</h2>
+                                    @if (ViewModel.GroupedReport?.Sections != null)
+                                    {
+                                        @foreach (var codeSection in ViewModel.GroupedReport.Sections)
+                                        {
+                                            <div class="client-card">
+                                                <h3 class="client-title tasks">@codeSection.ClientCode</h3>
+                                                @if (!codeSection.WorkItems.Any())
+                                                {
+                                                    <p class="no-data">No work items in this period</p>
+                                                }
+                                                else
+                                                {
+                                                    <div class="task-list">
+                                                        @foreach (var item in codeSection.WorkItems)
+                                                        {
+                                                            <div class="task-item">
+                                                                <span class="task-status">@item.Status</span>
+                                                                <span class="task-title">@item.Title</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    @if (ViewModel.IsLoading)
+    {
+        <div class="loading-overlay">
+            <TelerikLoader Size="@ThemeConstants.Loader.Size.Large" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public StandupViewModel ViewModel { get; set; } = null!;
+
+    private string GetRelativeTime(DateTimeOffset date)
+    {
+        var diff = DateTimeOffset.Now - date;
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        return date.ToString("MMM dd");
+    }
+}
+
+<style>
+    .standup-view {
+        height: 100%;
+        position: relative;
+    }
+
+    .standup-grid {
+        display: grid;
+        grid-template-columns: 320px 1px 1fr;
+        height: 100%;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        background-color: #1e293b;
+        overflow-y: auto;
+    }
+
+    .sidebar-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .section-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin: 0 0 4px 0;
+    }
+
+    .section-header .subtitle {
+        font-size: 12px;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-label {
+        font-size: 11px;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    /* Toggle Cards */
+    .toggle-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px;
+        background-color: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 12px;
+    }
+
+    .toggle-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .toggle-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #e2e8f0;
+    }
+
+    .toggle-description {
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    /* Generate Button */
+    .generate-button {
+        width: 100%;
+        padding: 16px;
+        font-size: 15px;
+        font-weight: 700;
+        border-radius: 12px;
+    }
+
+    /* Progress Card */
+    .progress-card {
+        padding: 16px;
+        background-color: #0f172a;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .progress-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .progress-percent {
+        font-size: 16px;
+        font-weight: 700;
+        color: #e2e8f0;
+    }
+
+    .progress-status {
+        font-size: 11px;
+        color: #64748b;
+        text-align: center;
+    }
+
+    /* History */
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 160px;
+        overflow-y: auto;
+    }
+
+    .history-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 8px;
+        background-color: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .history-item:hover {
+        background-color: #1e293b;
+    }
+
+    .history-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .history-group {
+        font-size: 13px;
+        font-weight: 700;
+        color: #e2e8f0;
+    }
+
+    .history-date {
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    .history-commits {
+        font-size: 10px;
+        color: #94a3b8;
+    }
+
+    /* Splitter */
+    .splitter {
+        background-color: #334155;
+    }
+
+    /* Main Panel */
+    .main-panel {
+        background-color: #0f172a;
+        overflow-y: auto;
+    }
+
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #94a3b8;
+    }
+
+    .empty-icon {
+        font-size: 64px;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        font-size: 18px;
+        margin: 16px 0 0;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+        color: #64748b;
+        margin: 8px 0 0;
+    }
+
+    /* Report Container */
+    .report-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background-color: #1e293b;
+        border-bottom: 1px solid #334155;
+    }
+
+    .report-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .report-content {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    /* Report View */
+    .report-view {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .report-title h2 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin: 0;
+    }
+
+    .report-period {
+        font-size: 14px;
+        color: #64748b;
+        margin: 4px 0 0;
+    }
+
+    .display-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .display-toggle .active {
+        color: #10b981;
+    }
+
+    .html-content {
+        background-color: #1e293b;
+        border-radius: 12px;
+        padding: 16px;
+        min-height: 400px;
+    }
+
+    .markdown-content {
+        background-color: #1e293b;
+        border-radius: 12px;
+        padding: 16px;
+        font-family: 'Menlo', monospace;
+        font-size: 13px;
+        color: #e2e8f0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        margin: 0;
+    }
+
+    /* View Accent Bars */
+    .view-accent {
+        height: 4px;
+    }
+
+    .view-accent.commits { background-color: #3b82f6; }
+    .view-accent.prs { background-color: #10b981; }
+    .view-accent.tasks { background-color: #8b5cf6; }
+
+    .view-content {
+        padding: 24px;
+    }
+
+    .view-content h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin: 0 0 16px;
+    }
+
+    /* Client Cards */
+    .client-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .client-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 12px;
+    }
+
+    .client-title.commits { color: #f59e0b; }
+    .client-title.prs { color: #10b981; }
+    .client-title.tasks { color: #8b5cf6; }
+
+    /* Commit Items */
+    .commit-list, .pr-list, .task-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .commit-item {
+        display: grid;
+        grid-template-columns: 70px 1fr auto;
+        padding: 8px 6px;
+        background-color: #0f172a;
+    }
+
+    .commit-sha {
+        font-size: 11px;
+        font-family: 'Menlo', monospace;
+        color: #64748b;
+    }
+
+    .commit-message {
+        font-size: 13px;
+        color: #e2e8f0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .commit-time {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    /* PR Items */
+    .pr-item, .task-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 6px;
+        background-color: #0f172a;
+    }
+
+    .pr-status {
+        background-color: #10b981;
+        color: white;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .pr-title, .task-title {
+        font-size: 13px;
+        color: #e2e8f0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .task-status {
+        background-color: #8b5cf6;
+        color: white;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .no-data {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+</style>
