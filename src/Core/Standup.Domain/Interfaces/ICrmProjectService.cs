@@ -39,6 +39,14 @@ public interface ICrmProjectService
     Task<List<CrmMilestone>> GetUpcomingMilestonesAsync(string projectId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets in-progress tasks for a project (tasks that are not 100% complete).
+    /// </summary>
+    /// <param name="projectId">The CRM project ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of in-progress tasks.</returns>
+    Task<List<CrmTask>> GetInProgressTasksAsync(string projectId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Validates the CRM connection and credentials.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>

@@ -24,7 +24,14 @@ public partial class ProjectDashboardViewModel : ObservableObject
     private readonly ISourceProviderFactory _sourceProviderFactory;
     private readonly IEncryptionService _encryptionService;
     private readonly ILocalStandupService _localStandupService;
-    private readonly ICrmProjectService _crmProjectService;
+    private readonly ICrmTenantConfigService? _crmTenantConfigService;
+    private List<CrmTask> _pendingCrmTasks = new();
+
+    /// <summary>
+    /// Event for loading CRM data from a specific tenant.
+    /// The MAUI layer subscribes to create a tenant-specific CRM service.
+    /// </summary>
+    public event Func<CrmTenantConfig, string, Task<CrmDataResult>>? OnLoadCrmDataFromTenant;
 
     [ObservableProperty]
     private ProjectInstance? project;
@@ -55,6 +62,9 @@ public partial class ProjectDashboardViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isLoading;
+
+    [ObservableProperty]
+    private string loadingStatus = string.Empty;
 
     // Metrics
     [ObservableProperty]
@@ -209,17 +219,17 @@ public partial class ProjectDashboardViewModel : ObservableObject
     /// <param name="sourceProviderFactory">The source provider factory for remote API access.</param>
     /// <param name="encryptionService">The encryption service for PAT handling.</param>
     /// <param name="localStandupService">The local standup service for local git access.</param>
-    /// <param name="crmProjectService">The CRM project service for Dynamics 365 data.</param>
+    /// <param name="crmTenantConfigService">The CRM tenant config service for multi-tenant CRM access.</param>
     public ProjectDashboardViewModel(
         ISourceProviderFactory sourceProviderFactory,
         IEncryptionService encryptionService,
         ILocalStandupService localStandupService,
-        ICrmProjectService crmProjectService)
+        ICrmTenantConfigService? crmTenantConfigService = null)
     {
         _sourceProviderFactory = sourceProviderFactory;
         _encryptionService = encryptionService;
         _localStandupService = localStandupService;
-        _crmProjectService = crmProjectService;
+        _crmTenantConfigService = crmTenantConfigService;
     }
 
     /// <summary>
@@ -254,6 +264,18 @@ public partial class ProjectDashboardViewModel : ObservableObject
 
     private async Task LoadProjectDataAsync(ProjectInstance projectInstance)
     {
+        // Try to discover local path if not explicitly set
+        var localPath = projectInstance.LocalPath;
+        if (string.IsNullOrEmpty(localPath))
+        {
+            localPath = TryDiscoverLocalPath(projectInstance);
+            if (!string.IsNullOrEmpty(localPath))
+            {
+                Log.Information("ProjectDashboard: Discovered local path {LocalPath} for {ProjectName}", localPath, projectInstance.Name);
+                projectInstance = projectInstance with { LocalPath = localPath };
+            }
+        }
+
         // Check data sources: LocalPath for commits (no PAT), PAT for PRs/work items, CRM for project management
         bool hasLocalPath = !string.IsNullOrEmpty(projectInstance.LocalPath);
         bool hasPat = !string.IsNullOrEmpty(projectInstance.SourcePat);
@@ -267,6 +289,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
         }
 
         IsLoading = true;
+        LoadingStatus = "Loading project data...";
 
         try
         {
@@ -278,6 +301,11 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 hasCrmProject);
 
             // Fetch CRM project data for timeline, milestones, budget, progress
+            if (hasCrmProject)
+            {
+                LoadingStatus = "Loading CRM project data...";
+            }
+
             await LoadCrmDataAsync(projectInstance);
 
             var since30d = DateTimeOffset.UtcNow.AddDays(-30);
@@ -291,6 +319,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
             // Fetch commits from local git (no PAT required)
             if (hasLocalPath && _localStandupService != null)
             {
+                LoadingStatus = "Loading commits from local git...";
                 Log.Information("ProjectDashboard: Fetching commits from local path {LocalPath}", projectInstance.LocalPath);
 
                 var groupedRepo = new GroupedRepository
@@ -315,6 +344,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
             // Each fetch is wrapped in try-catch so failures don't affect other data
             if (hasPat && _sourceProviderFactory != null && _encryptionService != null)
             {
+                LoadingStatus = "Loading Azure DevOps data...";
                 Log.Information("ProjectDashboard: Fetching PRs and work items from remote API");
                 bool apiCallFailed = false;
 
@@ -400,7 +430,12 @@ public partial class ProjectDashboardViewModel : ObservableObject
             TasksCompleted = completed.Count;
             TotalTasks = completed.Count + inProgress.Count;
             TaskCompletionPercent = TotalTasks > 0 ? (TasksCompleted * 100) / TotalTasks : 0;
-            OverallProgressPercent = commits.Count > 0 ? Math.Min(100, commits.Count * 2) : TaskCompletionPercent;
+
+            // Only calculate progress from commits/tasks if CRM didn't provide the progress
+            if (!HasCrmData)
+            {
+                OverallProgressPercent = commits.Count > 0 ? Math.Min(100, commits.Count * 2) : TaskCompletionPercent;
+            }
 
             // Sprint/work item counts
             SprintDoneCount = completed.Count;
@@ -430,6 +465,28 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 InProgressTasks.Add(task);
             }
 
+            // Add CRM tasks (stored earlier from LoadCrmDataAsync)
+            foreach (var crmTask in _pendingCrmTasks)
+            {
+                var dueDate = crmTask.ScheduledEnd.HasValue
+                    ? new DateTimeOffset(DateTime.SpecifyKind(crmTask.ScheduledEnd.Value, DateTimeKind.Utc))
+                    : DateTimeOffset.UtcNow.AddDays(7);
+
+                var initials = !string.IsNullOrEmpty(crmTask.AssignedTo)
+                    ? string.Concat(crmTask.AssignedTo.Split(' ').Where(s => !string.IsNullOrEmpty(s)).Select(n => n[0]))
+                    : "?";
+
+                InProgressTasks.Add(new ProjectTask(
+                    crmTask.TaskId,
+                    crmTask.Name,
+                    initials,
+                    crmTask.AssignedTo ?? "Unassigned",
+                    TaskPriority.Medium,
+                    dueDate));
+            }
+
+            _pendingCrmTasks.Clear();
+
             InReviewTasks.Clear();
             foreach (var task in ProjectDashboardMapper.MapInReviewTasks(prs))
             {
@@ -456,6 +513,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
         finally
         {
             IsLoading = false;
+            LoadingStatus = string.Empty;
         }
     }
 
@@ -473,17 +531,16 @@ public partial class ProjectDashboardViewModel : ObservableObject
             ConnectedServices.Add(new ConnectedService("Local Git", "📁", ServiceStatus.Connected));
         }
 
-        // Remote source connection - show actual status
-        if (hasPat)
+        // Remote source connection - only show if connected successfully (don't show error)
+        if (hasPat && !AzureDevOpsConnectionFailed)
         {
-            var adoStatus = AzureDevOpsConnectionFailed ? ServiceStatus.Error : ServiceStatus.Connected;
             if (projectSourceType == Domain.Enums.SourceType.AzureDevOps)
             {
-                ConnectedServices.Add(new ConnectedService("Azure DevOps", "🔷", adoStatus));
+                ConnectedServices.Add(new ConnectedService("Azure DevOps", "🔷", ServiceStatus.Connected));
             }
             else
             {
-                ConnectedServices.Add(new ConnectedService("GitHub", "🐙", adoStatus));
+                ConnectedServices.Add(new ConnectedService("GitHub", "🐙", ServiceStatus.Connected));
             }
         }
 
@@ -497,25 +554,53 @@ public partial class ProjectDashboardViewModel : ObservableObject
 
     private async Task LoadCrmDataAsync(ProjectInstance projectInstance)
     {
-        if (_crmProjectService == null)
-        {
-            Log.Debug("ProjectDashboard: CRM service not available, skipping CRM data fetch");
-            CrmConnectionFailed = !string.IsNullOrEmpty(projectInstance.CrmProjectId);
-            return;
-        }
-
         if (string.IsNullOrEmpty(projectInstance.CrmProjectId))
         {
             Log.Debug("ProjectDashboard: No CRM project ID configured for {ProjectName}", projectInstance.Name);
             return;
         }
 
+        if (!projectInstance.CrmTenantConfigId.HasValue)
+        {
+            Log.Warning("ProjectDashboard: Project has CrmProjectId but no CrmTenantConfigId for {ProjectName}", projectInstance.Name);
+            CrmConnectionFailed = true;
+            return;
+        }
+
+        if (_crmTenantConfigService == null)
+        {
+            Log.Warning("ProjectDashboard: CRM tenant config service not available");
+            CrmConnectionFailed = true;
+            return;
+        }
+
         try
         {
-            Log.Information("ProjectDashboard: Fetching CRM data for project ID {CrmProjectId}", projectInstance.CrmProjectId);
+            // Get the tenant configuration for this project
+            var tenantConfig = await _crmTenantConfigService.GetByIdAsync(projectInstance.CrmTenantConfigId.Value);
+            if (tenantConfig == null)
+            {
+                Log.Warning("ProjectDashboard: CRM tenant config {TenantId} not found", projectInstance.CrmTenantConfigId);
+                CrmConnectionFailed = true;
+                return;
+            }
 
-            // Fetch project details from CRM
-            var crmProject = await _crmProjectService.GetProjectByIdAsync(projectInstance.CrmProjectId);
+            Log.Information(
+                "ProjectDashboard: Loading CRM data from tenant {TenantName} for project {CrmProjectId}",
+                tenantConfig.Name,
+                projectInstance.CrmProjectId);
+
+            // Use the event to load CRM data from the specific tenant
+            if (OnLoadCrmDataFromTenant == null)
+            {
+                Log.Warning("ProjectDashboard: No handler for OnLoadCrmDataFromTenant event");
+                CrmConnectionFailed = true;
+                return;
+            }
+
+            var crmData = await OnLoadCrmDataFromTenant.Invoke(tenantConfig, projectInstance.CrmProjectId);
+            var crmProject = crmData.Project;
+            var milestones = crmData.Milestones;
 
             if (crmProject != null)
             {
@@ -528,12 +613,14 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 // Map CRM project data to dashboard properties
                 if (crmProject.StartDate.HasValue)
                 {
-                    StartDate = new DateTimeOffset(crmProject.StartDate.Value, TimeSpan.Zero);
+                    var dt = DateTime.SpecifyKind(crmProject.StartDate.Value, DateTimeKind.Utc);
+                    StartDate = new DateTimeOffset(dt);
                 }
 
                 if (crmProject.EndDate.HasValue)
                 {
-                    TargetDate = new DateTimeOffset(crmProject.EndDate.Value, TimeSpan.Zero);
+                    var dt = DateTime.SpecifyKind(crmProject.EndDate.Value, DateTimeKind.Utc);
+                    TargetDate = new DateTimeOffset(dt);
                 }
 
                 if (crmProject.PercentComplete.HasValue)
@@ -566,9 +653,7 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 CrmConnectionFailed = true;
             }
 
-            // Fetch milestones from CRM for project timeline/phases
-            var milestones = await _crmProjectService.GetUpcomingMilestonesAsync(projectInstance.CrmProjectId);
-
+            // Map milestones to phases
             if (milestones.Count > 0)
             {
                 Log.Information("ProjectDashboard: Retrieved {Count} milestones from CRM", milestones.Count);
@@ -594,6 +679,10 @@ public partial class ProjectDashboardViewModel : ObservableObject
                     });
                 }
             }
+
+            // Store CRM tasks for later - they'll be added in LoadProjectDataAsync after Clear()
+            _pendingCrmTasks = crmData.Tasks.ToList();
+            Log.Information("ProjectDashboard: Retrieved {Count} in-progress tasks from CRM", _pendingCrmTasks.Count);
         }
         catch (Exception ex)
         {
@@ -619,4 +708,63 @@ public partial class ProjectDashboardViewModel : ObservableObject
     /// </summary>
     [RelayCommand]
     private void ViewBoard() => Log.Debug("ViewBoard requested for project {ProjectName}", ProjectName);
+
+    /// <summary>
+    /// Tries to discover the local path for a project based on common conventions.
+    /// Checks patterns like ~/Source/{org}.visualstudio.com/{project} for Azure DevOps
+    /// and ~/Source/github.com.{user}/{repo} for GitHub.
+    /// </summary>
+    /// <param name="project">The project instance.</param>
+    /// <returns>The discovered local path, or null if not found.</returns>
+    private static string? TryDiscoverLocalPath(ProjectInstance project)
+    {
+        if (string.IsNullOrEmpty(project.SourceOrganization))
+        {
+            return null;
+        }
+
+        var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var sourceDir = Path.Combine(homeDir, "Source");
+
+        if (!Directory.Exists(sourceDir))
+        {
+            return null;
+        }
+
+        // Try common path patterns based on source type
+        var pathsToTry = new List<string>();
+
+        if (project.SourceType == Domain.Enums.SourceType.AzureDevOps)
+        {
+            // Azure DevOps patterns: {org}.visualstudio.com/{project}, dev.azure.com.{org}/{project}
+            var org = project.SourceOrganization;
+            var proj = project.SourceProject ?? project.SourceRepository ?? string.Empty;
+
+            pathsToTry.Add(Path.Combine(sourceDir, $"{org.ToLowerInvariant()}.visualstudio.com", proj));
+            pathsToTry.Add(Path.Combine(sourceDir, $"dev.azure.com.{org.ToLowerInvariant()}", proj));
+            pathsToTry.Add(Path.Combine(sourceDir, org, proj));
+        }
+        else if (project.SourceType == Domain.Enums.SourceType.GitHub)
+        {
+            // GitHub patterns: github.com.{user}/{repo}, github.com/{user}/{repo}
+            var org = project.SourceOrganization;
+            var repo = project.SourceRepository ?? string.Empty;
+
+            pathsToTry.Add(Path.Combine(sourceDir, $"github.com.{org.ToLowerInvariant()}", repo));
+            pathsToTry.Add(Path.Combine(sourceDir, "github.com", org, repo));
+            pathsToTry.Add(Path.Combine(sourceDir, org, repo));
+        }
+
+        foreach (var path in pathsToTry)
+        {
+            // Check if path exists and contains a .git directory
+            if (Directory.Exists(path) && Directory.Exists(Path.Combine(path, ".git")))
+            {
+                Log.Debug("ProjectDashboard: Found local repo at {Path}", path);
+                return path;
+            }
+        }
+
+        return null;
+    }
 }

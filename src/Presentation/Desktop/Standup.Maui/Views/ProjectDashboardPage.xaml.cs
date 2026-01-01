@@ -2,9 +2,13 @@
 // Copyright (c) Standup. All rights reserved.
 // </copyright>
 
+using Microsoft.Extensions.Options;
 using Serilog;
 using Standup.Application.Models;
 using Standup.Application.ViewModels;
+using Standup.Domain.Entities;
+using Standup.Infrastructure.Configuration;
+using Standup.Infrastructure.Integrations;
 
 namespace Standup.Maui.Views;
 
@@ -24,6 +28,7 @@ public partial class ProjectDashboardPage : ContentPage
         Log.Information("ProjectDashboardPage constructor starting");
 
         _viewModel = viewModel;
+        _viewModel.OnLoadCrmDataFromTenant += OnLoadCrmDataFromTenantAsync;
         BindingContext = _viewModel;
 
         InitializeComponent();
@@ -38,6 +43,58 @@ public partial class ProjectDashboardPage : ContentPage
     public void LoadProject(ProjectInstance projectInstance)
     {
         _viewModel.LoadProject(projectInstance);
+    }
+
+    /// <summary>
+    /// Handles loading CRM data from a specific tenant.
+    /// Creates a temporary DynamicsCrmService configured for the tenant.
+    /// </summary>
+    /// <param name="tenant">The CRM tenant configuration.</param>
+    /// <param name="crmProjectId">The CRM project ID to load.</param>
+    /// <returns>The CRM data result containing project and milestones.</returns>
+    private async Task<CrmDataResult> OnLoadCrmDataFromTenantAsync(CrmTenantConfig tenant, string crmProjectId)
+    {
+        try
+        {
+            // Create options for this tenant
+            var options = Options.Create(new DynamicsCrmOptions
+            {
+                InstanceUrl = tenant.InstanceUrl,
+                TenantId = tenant.TenantId ?? string.Empty,
+                ClientId = tenant.ClientId ?? string.Empty,
+                ClientSecret = tenant.ClientSecret ?? string.Empty,
+                Enabled = true,
+            });
+
+            // Create a temporary CRM service for this tenant
+            using var httpClient = new HttpClient();
+            var crmService = new DynamicsCrmService(options, httpClient);
+
+            // Fetch project, milestones, and tasks in parallel
+            var projectTask = crmService.GetProjectByIdAsync(crmProjectId);
+            var milestonesTask = crmService.GetUpcomingMilestonesAsync(crmProjectId);
+            var tasksTask = crmService.GetInProgressTasksAsync(crmProjectId);
+
+            await Task.WhenAll(projectTask, milestonesTask, tasksTask);
+
+            var project = await projectTask;
+            var milestones = await milestonesTask;
+            var tasks = await tasksTask;
+
+            Log.Information(
+                "Loaded CRM data from tenant {TenantName}: Project={ProjectName}, Milestones={Count}, Tasks={TaskCount}",
+                tenant.Name,
+                project?.ProjectName ?? "null",
+                milestones.Count,
+                tasks.Count);
+
+            return new CrmDataResult(project, milestones, tasks);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load CRM data from tenant {TenantName}: {Message}", tenant.Name, ex.Message);
+            return new CrmDataResult(null, Array.Empty<CrmMilestone>(), Array.Empty<CrmTask>());
+        }
     }
 
     /// <summary>
