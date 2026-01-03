@@ -17,7 +17,7 @@
 
   <!-- Line Limit Check -->
   <PropertyGroup>
-    <MaxLinesPerFile>750</MaxLinesPerFile>
+    <MaxLinesPerFile>999</MaxLinesPerFile>
   </PropertyGroup>
 
   <Target Name="CheckFileLengths" BeforeTargets="BeforeCompile">

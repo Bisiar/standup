@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.Options;
+using Standup.Common.Tests.Configuration;
 using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
@@ -22,6 +23,7 @@ public class AIFoundrySummaryServiceIntegrationTests
     public AIFoundrySummaryServiceIntegrationTests(ITestOutputHelper output)
     {
         _output = output;
+        TestEnvironmentLoader.LoadEnvironmentVariables();
     }
 
     /// <summary>
@@ -158,17 +160,29 @@ public class AIFoundrySummaryServiceIntegrationTests
 
     /// <summary>
     /// Gets AI options from environment or uses test defaults.
+    /// Supports both .NET config format (AIFoundry__*) and .env format (AI_FOUNDRY_*).
     /// </summary>
     private static AIFoundryOptions GetTestOptions()
     {
+        // Support both naming conventions: AIFoundry__Endpoint (.NET config) and AI_FOUNDRY_ENDPOINT (.env)
+        var endpoint = Environment.GetEnvironmentVariable("AIFoundry__Endpoint")
+            ?? Environment.GetEnvironmentVariable("AI_FOUNDRY_ENDPOINT")
+            ?? string.Empty;
+
+        var deploymentName = Environment.GetEnvironmentVariable("AIFoundry__DeploymentName")
+            ?? Environment.GetEnvironmentVariable("AI_FOUNDRY_DEPLOYMENT_NAME")
+            ?? string.Empty;
+
+        var apiKey = Environment.GetEnvironmentVariable("AIFoundry__ApiKey")
+            ?? Environment.GetEnvironmentVariable("AI_FOUNDRY_API_KEY")
+            ?? string.Empty;
+
         return new AIFoundryOptions
         {
-            Endpoint = Environment.GetEnvironmentVariable("AIFoundry__Endpoint")
-                ?? string.Empty,
-            DeploymentName = Environment.GetEnvironmentVariable("AIFoundry__DeploymentName")
-                ?? string.Empty,
-            ApiKey = Environment.GetEnvironmentVariable("AIFoundry__ApiKey") ?? string.Empty,
-            UseAzureIdentity = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AIFoundry__ApiKey"))
+            Endpoint = endpoint,
+            DeploymentName = deploymentName,
+            ApiKey = apiKey,
+            UseAzureIdentity = string.IsNullOrEmpty(apiKey)
         };
     }
 

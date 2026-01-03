@@ -37,13 +37,8 @@ public static class DependencyInjection
         // AI services
         services.AddScoped<IAISummaryService, AIFoundrySummaryService>();
 
-        // CRM integration
-        services.AddScoped<ICrmProjectService>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<DynamicsCrmOptions>>();
-            var httpClient = new HttpClient();
-            return new DynamicsCrmService(options, httpClient);
-        });
+        // CRM integration - use typed HttpClient to prevent socket exhaustion
+        services.AddHttpClient<ICrmProjectService, DynamicsCrmService>();
 
         // Microsoft Graph client
         services.AddScoped<GraphServiceClient>(sp =>

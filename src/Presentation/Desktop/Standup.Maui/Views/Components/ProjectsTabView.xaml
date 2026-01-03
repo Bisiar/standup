@@ -435,13 +435,18 @@
                     </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="5">
-                        <Label Text="Link to CRM Project (optional)" FontSize="12" TextColor="Gray" />
+                        <Label Text="Link to CRM (optional)" FontSize="12" TextColor="Gray" />
+                        <Picker ItemsSource="{Binding AvailableCrmTenants}"
+                                SelectedItem="{Binding SelectedCrmTenant}"
+                                ItemDisplayBinding="{Binding Name}"
+                                Title="Select CRM Tenant..." />
                         <Grid ColumnDefinitions="*,Auto">
                             <Picker Grid.Column="0"
                                     ItemsSource="{Binding AvailableCrmProjects}"
                                     SelectedItem="{Binding SelectedCrmProject}"
                                     ItemDisplayBinding="{Binding ProjectName}"
-                                    Title="Select CRM Project..." />
+                                    Title="Select CRM Project..."
+                                    IsEnabled="{Binding SelectedCrmTenant, Converter={StaticResource IsNotNullConverter}}" />
                             <ActivityIndicator Grid.Column="1" IsRunning="{Binding IsLoadingCrmProjects}"
                                               IsVisible="{Binding IsLoadingCrmProjects}"
                                               WidthRequest="20" HeightRequest="20" Margin="10,0,0,0" />

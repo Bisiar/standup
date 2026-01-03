@@ -10,6 +10,7 @@ using Standup.Domain.Entities;
 using Standup.Domain.Enums;
 using Standup.Domain.Interfaces;
 using CrmProject = Standup.Domain.Entities.CrmProject;
+using CrmTenantConfig = Standup.Application.Models.CrmTenantConfig;
 
 namespace Standup.Application.ViewModels;
 
@@ -21,6 +22,7 @@ public partial class ProjectListViewModel : ObservableObject
     private readonly ISourceProviderFactory? _sourceProviderFactory;
     private readonly IEncryptionService? _encryptionService;
     private readonly ICrmProjectService? _crmProjectService;
+    private readonly ICrmTenantConfigService? _crmTenantConfigService;
 
     /// <summary>
     /// Event raised when a report is generated for a project.
@@ -32,6 +34,13 @@ public partial class ProjectListViewModel : ObservableObject
     /// Event raised when viewing a saved report for a project.
     /// </summary>
     public event Func<ReportHistory, ProjectInstance, Task>? OnViewProjectReport;
+
+    /// <summary>
+    /// Event raised when CRM projects should be loaded from a specific tenant.
+    /// The MAUI layer handles this to create a CRM service for the tenant.
+    /// Returns the list of CRM projects from that tenant.
+    /// </summary>
+    public event Func<CrmTenantConfig, Task<List<CrmProject>>>? OnLoadCrmProjectsFromTenant;
 
     [ObservableProperty]
     private ObservableCollection<ProjectInstance> _projects = new();
@@ -113,6 +122,12 @@ public partial class ProjectListViewModel : ObservableObject
     private string _editCrmProjectId = string.Empty;
 
     [ObservableProperty]
+    private ObservableCollection<CrmTenantConfig> _availableCrmTenants = new();
+
+    [ObservableProperty]
+    private CrmTenantConfig? _selectedCrmTenant;
+
+    [ObservableProperty]
     private ObservableCollection<CrmProject> _availableCrmProjects = new();
 
     [ObservableProperty]
@@ -127,7 +142,8 @@ public partial class ProjectListViewModel : ObservableObject
         ReportHistoryService reportHistoryService,
         ISourceProviderFactory? sourceProviderFactory = null,
         IEncryptionService? encryptionService = null,
-        ICrmProjectService? crmProjectService = null)
+        ICrmProjectService? crmProjectService = null,
+        ICrmTenantConfigService? crmTenantConfigService = null)
     {
         _projectService = projectService;
         _localStandupService = localStandupService;
@@ -135,6 +151,7 @@ public partial class ProjectListViewModel : ObservableObject
         _sourceProviderFactory = sourceProviderFactory;
         _encryptionService = encryptionService;
         _crmProjectService = crmProjectService;
+        _crmTenantConfigService = crmTenantConfigService;
     }
 
     [RelayCommand]
@@ -253,17 +270,104 @@ public partial class ProjectListViewModel : ObservableObject
         EditCrmProjectId = project.CrmProjectId ?? string.Empty;
         IsEditingProject = true;
 
-        // Load CRM projects for dropdown
-        await LoadCrmProjectsAsync();
+        // Load available CRM tenants
+        await LoadCrmTenantsAsync();
 
-        // Select the current CRM project if set
-        if (!string.IsNullOrEmpty(project.CrmProjectId))
+        // If project has a CRM tenant linked, select it and load its projects
+        if (project.CrmTenantConfigId.HasValue)
         {
-            SelectedCrmProject = AvailableCrmProjects.FirstOrDefault(p => p.CrmProjectId == project.CrmProjectId);
+            SelectedCrmTenant = AvailableCrmTenants.FirstOrDefault(t => t.Id == project.CrmTenantConfigId.Value);
+        }
+        else if (AvailableCrmTenants.Count == 1)
+        {
+            // Auto-select if only one tenant configured
+            SelectedCrmTenant = AvailableCrmTenants.First();
+        }
+    }
+
+    /// <summary>
+    /// Loads available CRM tenants for the dropdown.
+    /// </summary>
+    private async Task LoadCrmTenantsAsync()
+    {
+        if (_crmTenantConfigService == null)
+        {
+            Log.Debug("CRM tenant config service not available");
+            return;
+        }
+
+        try
+        {
+            var tenants = await _crmTenantConfigService.GetAllAsync();
+            AvailableCrmTenants.Clear();
+            foreach (var tenant in tenants)
+            {
+                AvailableCrmTenants.Add(tenant);
+            }
+
+            Log.Information("Loaded {Count} CRM tenants for dropdown", tenants.Count);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load CRM tenants");
+        }
+    }
+
+    /// <summary>
+    /// Called when SelectedCrmTenant changes. Loads CRM projects from the selected tenant.
+    /// </summary>
+    partial void OnSelectedCrmTenantChanged(CrmTenantConfig? value)
+    {
+        if (value != null)
+        {
+            _ = LoadCrmProjectsFromTenantAsync(value);
         }
         else
         {
+            AvailableCrmProjects.Clear();
             SelectedCrmProject = null;
+        }
+    }
+
+    /// <summary>
+    /// Loads CRM projects from a specific tenant.
+    /// </summary>
+    private async Task LoadCrmProjectsFromTenantAsync(CrmTenantConfig tenant)
+    {
+        IsLoadingCrmProjects = true;
+        AvailableCrmProjects.Clear();
+        SelectedCrmProject = null;
+
+        try
+        {
+            if (OnLoadCrmProjectsFromTenant != null)
+            {
+                var projects = await OnLoadCrmProjectsFromTenant.Invoke(tenant);
+                foreach (var project in projects)
+                {
+                    AvailableCrmProjects.Add(project);
+                }
+
+                Log.Information("Loaded {Count} CRM projects from tenant {TenantName}", projects.Count, tenant.Name);
+
+                // Select current project if it matches
+                if (!string.IsNullOrEmpty(EditCrmProjectId))
+                {
+                    SelectedCrmProject = AvailableCrmProjects.FirstOrDefault(p => p.CrmProjectId == EditCrmProjectId);
+                }
+            }
+            else
+            {
+                Log.Warning("OnLoadCrmProjectsFromTenant event not subscribed");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load CRM projects from tenant {TenantName}", tenant.Name);
+        }
+        finally
+        {
+            IsLoadingCrmProjects = false;
         }
     }
 
@@ -313,6 +417,7 @@ public partial class ProjectListViewModel : ObservableObject
             TenantName = EditTenantName,
             SourcePat = string.IsNullOrWhiteSpace(EditSourcePat) ? null : EditSourcePat,
             AuthorIdentifier = string.IsNullOrWhiteSpace(EditAuthorIdentifier) ? null : EditAuthorIdentifier,
+            CrmTenantConfigId = SelectedCrmTenant?.Id,
             CrmProjectId = SelectedCrmProject?.CrmProjectId,
             CrmProjectName = SelectedCrmProject?.ProjectName
         };
@@ -331,7 +436,9 @@ public partial class ProjectListViewModel : ObservableObject
 
         IsEditingProject = false;
         EditingProject = null;
+        SelectedCrmTenant = null;
         SelectedCrmProject = null;
+        AvailableCrmTenants.Clear();
         AvailableCrmProjects.Clear();
     }
 
@@ -345,7 +452,9 @@ public partial class ProjectListViewModel : ObservableObject
         EditSourcePat = string.Empty;
         EditAuthorIdentifier = string.Empty;
         EditCrmProjectId = string.Empty;
+        SelectedCrmTenant = null;
         SelectedCrmProject = null;
+        AvailableCrmTenants.Clear();
         AvailableCrmProjects.Clear();
     }
 

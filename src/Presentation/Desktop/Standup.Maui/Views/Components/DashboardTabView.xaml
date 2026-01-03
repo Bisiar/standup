@@ -321,17 +321,29 @@
                             <telerik:DateTimeContinuousAxis LabelFitMode="Rotate"
                                                             MajorStepUnit="Day"
                                                             MajorStep="1"
-                                                            LabelFormat="MMM dd" />
+                                                            LabelFormat="MMM dd"
+                                                            LabelTextColor="#94A3B8"
+                                                            LineColor="#334155"
+                                                            MajorTickBackgroundColor="#334155" />
                         </telerik:RadCartesianChart.HorizontalAxis>
 
                         <telerik:RadCartesianChart.VerticalAxis>
-                            <telerik:NumericalAxis />
+                            <telerik:NumericalAxis LabelTextColor="#94A3B8"
+                                                   LineColor="#334155"
+                                                   MajorTickBackgroundColor="#334155"
+                                                   LabelFormat="{}{0:N0}" />
                         </telerik:RadCartesianChart.VerticalAxis>
+
+                        <telerik:RadCartesianChart.Grid>
+                            <telerik:CartesianChartGrid MajorLinesVisibility="Y"
+                                                        MajorLineThickness="1"
+                                                        MajorLineColor="#1F2937" />
+                        </telerik:RadCartesianChart.Grid>
 
                         <!-- Series are added dynamically in code-behind based on ProjectDailyActivities -->
 
                         <telerik:RadCartesianChart.ChartBehaviors>
-                            <telerik:ChartTooltipBehavior TriggerMode="Tap" />
+                            <telerik:ChartTrackBallBehavior ShowTrackInfo="True" />
                         </telerik:RadCartesianChart.ChartBehaviors>
                     </telerik:RadCartesianChart>
 

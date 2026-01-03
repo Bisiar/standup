@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 using Microsoft.Extensions.Logging;
 
@@ -8,13 +9,45 @@ namespace Standup.Infrastructure.Git;
 /// Service for reading git information directly from local repositories.
 /// No PAT required - uses local git commands.
 /// </summary>
-public class LocalGitService
+public partial class LocalGitService
 {
     private readonly ILogger<LocalGitService>? _logger;
 
+    /// <summary>
+    /// Regex pattern for validating git command arguments to prevent command injection.
+    /// Allows alphanumeric characters, spaces, hyphens, underscores, dots, at signs, and forward slashes.
+    /// </summary>
+    [GeneratedRegex(@"^[\w\s\-_.@/]+$", RegexOptions.Compiled)]
+    private static partial Regex SafeGitArgumentRegex();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LocalGitService"/> class.
+    /// </summary>
+    /// <param name="logger">Optional logger instance.</param>
     public LocalGitService(ILogger<LocalGitService>? logger = null)
     {
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Validates that a string is safe to use in git command arguments.
+    /// </summary>
+    /// <param name="value">The value to validate.</param>
+    /// <param name="parameterName">The name of the parameter for error messages.</param>
+    /// <exception cref="ArgumentException">Thrown if the value contains unsafe characters.</exception>
+    private static void ValidateGitArgument(string value, string parameterName)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        if (!SafeGitArgumentRegex().IsMatch(value))
+        {
+            throw new ArgumentException(
+                $"The {parameterName} contains invalid characters. Only alphanumeric characters, spaces, hyphens, underscores, dots, at signs, and forward slashes are allowed.",
+                parameterName);
+        }
     }
 
     /// <summary>
@@ -54,6 +87,9 @@ public class LocalGitService
             _logger?.LogWarning("Local path does not exist: {Path}", localPath);
             return commits;
         }
+
+        // Validate author identifier to prevent command injection
+        ValidateGitArgument(authorIdentifier ?? string.Empty, nameof(authorIdentifier));
 
         try
         {
@@ -202,6 +238,9 @@ public class LocalGitService
     /// <returns>True if local is at same commit as remote, false otherwise.</returns>
     public async Task<bool> IsInSyncWithRemoteAsync(string localPath, string remoteName = "origin")
     {
+        // Validate remote name to prevent command injection
+        ValidateGitArgument(remoteName, nameof(remoteName));
+
         try
         {
             // Fetch remote refs without changing local state
