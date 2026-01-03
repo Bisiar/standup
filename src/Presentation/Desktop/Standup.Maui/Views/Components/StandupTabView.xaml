@@ -339,54 +339,54 @@
                 <!-- Content Views -->
                 <Grid Grid.Row="1">
                     <!-- VIEW 1: Report Summary -->
-                    <ScrollView IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}">
-                        <VerticalStackLayout Padding="24" Spacing="20">
-                            <!-- Header -->
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="{Binding SelectedGroup.Name, StringFormat='Standup Report - {0}'}"
-                                       FontSize="24" FontAttributes="Bold"
-                                       TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
-                                <Label FontSize="14" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}">
-                                    <Label.FormattedText>
-                                        <FormattedString>
-                                            <Span Text="{Binding GroupedReport.PeriodStart, StringFormat='{0:MMM dd}'}" />
-                                            <Span Text=" - " />
-                                            <Span Text="{Binding GroupedReport.PeriodEnd, StringFormat='{0:MMM dd, yyyy}'}" />
-                                        </FormattedString>
-                                    </Label.FormattedText>
-                                </Label>
-                            </VerticalStackLayout>
+                    <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1}"
+                          RowDefinitions="Auto,Auto,*" Padding="24" RowSpacing="20">
+                        <!-- Header -->
+                        <VerticalStackLayout Grid.Row="0" Spacing="4">
+                            <Label Text="{Binding SelectedGroup.Name, StringFormat='Standup Report - {0}'}"
+                                   FontSize="24" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
+                            <Label FontSize="14" TextColor="{AppThemeBinding Light=#64748B, Dark=#64748b}">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="{Binding GroupedReport.PeriodStart, StringFormat='{0:MMM dd}'}" />
+                                        <Span Text=" - " />
+                                        <Span Text="{Binding GroupedReport.PeriodEnd, StringFormat='{0:MMM dd, yyyy}'}" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </VerticalStackLayout>
 
-                            <!-- Display Toggle -->
-                            <HorizontalStackLayout Spacing="10">
-                                <Label Text="Markdown" VerticalOptions="Center" FontSize="13"
-                                       TextColor="{Binding ShowAsHtml, Converter={StaticResource BoolToTextConverter}, ConverterParameter=Gray|#10B981}" />
-                                <Switch IsToggled="{Binding ShowAsHtml}" OnColor="#3B82F6" ThumbColor="White" />
-                                <Label Text="HTML" VerticalOptions="Center" FontSize="13"
-                                       TextColor="{Binding ShowAsHtml, Converter={StaticResource BoolToTextConverter}, ConverterParameter=#10B981|Gray}" />
-                            </HorizontalStackLayout>
+                        <!-- Display Toggle -->
+                        <HorizontalStackLayout Grid.Row="1" Spacing="10">
+                            <Label Text="Markdown" VerticalOptions="Center" FontSize="13"
+                                   TextColor="{Binding ShowAsHtml, Converter={StaticResource BoolToTextConverter}, ConverterParameter=Gray|#10B981}" />
+                            <Switch IsToggled="{Binding ShowAsHtml}" OnColor="#3B82F6" ThumbColor="White" />
+                            <Label Text="HTML" VerticalOptions="Center" FontSize="13"
+                                   TextColor="{Binding ShowAsHtml, Converter={StaticResource BoolToTextConverter}, ConverterParameter=#10B981|Gray}" />
+                        </HorizontalStackLayout>
 
-                            <!-- HTML View -->
-                            <Border StrokeShape="RoundRectangle 12" Padding="0"
-                                    BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                                    IsVisible="{Binding ShowAsHtml}" MinimumHeightRequest="400">
-                                <WebView>
-                                    <WebView.Source>
-                                        <HtmlWebViewSource Html="{Binding HtmlReportContent}" />
-                                    </WebView.Source>
-                                </WebView>
-                            </Border>
+                        <!-- HTML View - fills remaining space -->
+                        <Border Grid.Row="2" StrokeShape="RoundRectangle 12" Padding="0"
+                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+                                IsVisible="{Binding ShowAsHtml}">
+                            <WebView>
+                                <WebView.Source>
+                                    <HtmlWebViewSource Html="{Binding HtmlReportContent}" />
+                                </WebView.Source>
+                            </WebView>
+                        </Border>
 
-                            <!-- Markdown View -->
+                        <!-- Markdown View - scrollable -->
+                        <ScrollView Grid.Row="2" IsVisible="{Binding ShowAsHtml, Converter={StaticResource InvertedBoolConverter}}">
                             <Border StrokeShape="RoundRectangle 12" Padding="16"
-                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#2D2D2D}"
-                                    IsVisible="{Binding ShowAsHtml, Converter={StaticResource InvertedBoolConverter}}">
+                                    BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#2D2D2D}">
                                 <Label Text="{Binding ReportContent}" FontSize="13" FontFamily="Menlo"
                                        LineBreakMode="WordWrap"
                                        TextColor="{AppThemeBinding Light=#1E293B, Dark=#E2E8F0}" />
                             </Border>
-                        </VerticalStackLayout>
-                    </ScrollView>
+                        </ScrollView>
+                    </Grid>
 
                     <!-- VIEW 2: Commits -->
                     <Grid IsVisible="{Binding CurrentViewMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2}"

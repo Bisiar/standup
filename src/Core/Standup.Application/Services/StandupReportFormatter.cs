@@ -59,7 +59,10 @@ public static class StandupReportFormatter
         // Section 2: Technical Details per Project
         StandupHtmlBuilder.AppendTechnicalDetails(sb, report);
 
-        // Section 3: Executive Summaries (client-shareable)
+        // Section 3: Code Review (security & quality)
+        StandupHtmlBuilder.AppendCodeReviewSummaries(sb, report);
+
+        // Section 4: Executive Summaries (client-shareable)
         StandupHtmlBuilder.AppendExecutiveSummaries(sb, report);
 
         StandupHtmlBuilder.AppendFooter(sb, report);

@@ -231,6 +231,34 @@ public static class StandupHtmlBuilder
     }
 
     /// <summary>
+    /// Appends code review section in HTML format.
+    /// </summary>
+    /// <param name="sb">The string builder.</param>
+    /// <param name="report">The report data.</param>
+    public static void AppendCodeReviewSummaries(StringBuilder sb, GroupedStandupReportDto report)
+    {
+        var hasCodeReview = report.Sections.Any(s =>
+            s.AllSummaries?.ContainsKey(SummaryType.CodeReview) == true);
+
+        if (!hasCodeReview)
+        {
+            return;
+        }
+
+        sb.AppendLine("<hr style=\"margin: 30px 0;\">");
+        sb.AppendLine("<h2 style=\"color: #8B5CF6;\">🔍 Code Review <span style=\"font-size: 0.7em; color: #666; font-weight: normal;\">(Security & Quality Analysis)</span></h2>");
+
+        foreach (var section in report.Sections)
+        {
+            if (section.AllSummaries?.TryGetValue(SummaryType.CodeReview, out var codeReview) == true)
+            {
+                sb.AppendLine($"<h3>{StandupReportFormatter.HtmlEncode(StandupReportFormatter.GetDisplayClientCode(section.ClientCode))}</h3>");
+                sb.AppendLine($"<div class=\"summary\" style=\"border-left: 4px solid #8B5CF6; background: #faf5ff;\">{StandupReportFormatter.ConvertMarkdownToHtml(codeReview)}</div>");
+            }
+        }
+    }
+
+    /// <summary>
     /// Gets the HTML indicator for data source status.
     /// </summary>
     /// <param name="status">The data source status.</param>
