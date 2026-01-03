@@ -23,13 +23,13 @@
 
     @* Period Selection *@
     <div class="period-selector">
-        <TelerikButtonGroup>
-            <TelerikButton OnClick="@(() => ViewModel.SelectYesterdayCommand.Execute(null))"
-                           Selected="@(ViewModel.SelectedPeriodIndex == 0)">Yesterday</TelerikButton>
-            <TelerikButton OnClick="@(() => ViewModel.SelectTodayCommand.Execute(null))"
-                           Selected="@(ViewModel.SelectedPeriodIndex == 1)">Today</TelerikButton>
-            <TelerikButton OnClick="@(() => ViewModel.SelectWeekCommand.Execute(null))"
-                           Selected="@(ViewModel.SelectedPeriodIndex == 2)">Week</TelerikButton>
+        <TelerikButtonGroup SelectionMode="@ButtonGroupSelectionMode.Single">
+            <TelerikToggleButton OnClick="@(() => ViewModel.SelectYesterdayCommand.Execute(null))"
+                                 Selected="@(ViewModel.SelectedPeriodIndex == 0)">Yesterday</TelerikToggleButton>
+            <TelerikToggleButton OnClick="@(() => ViewModel.SelectTodayCommand.Execute(null))"
+                                 Selected="@(ViewModel.SelectedPeriodIndex == 1)">Today</TelerikToggleButton>
+            <TelerikToggleButton OnClick="@(() => ViewModel.SelectWeekCommand.Execute(null))"
+                                 Selected="@(ViewModel.SelectedPeriodIndex == 2)">Week</TelerikToggleButton>
         </TelerikButtonGroup>
         <span class="period-display">@ViewModel.PeriodDisplay</span>
     </div>

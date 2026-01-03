@@ -37,17 +37,29 @@ try
     // Add Data Protection for encryption
     builder.Services.AddDataProtection();
 
-    // Add Azure AD authentication
-    builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-        .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+    // Only add Azure AD authentication if configured
+    var azureTenantId = builder.Configuration["AzureAd:TenantId"];
+    var isAuthConfigured = !string.IsNullOrEmpty(azureTenantId) && azureTenantId != "your-tenant-id";
 
-    builder.Services.AddControllersWithViews()
-        .AddMicrosoftIdentityUI();
-
-    builder.Services.AddAuthorization(options =>
+    if (isAuthConfigured)
     {
-        options.FallbackPolicy = options.DefaultPolicy;
-    });
+        builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+            .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+
+        builder.Services.AddControllersWithViews()
+            .AddMicrosoftIdentityUI();
+
+        builder.Services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = options.DefaultPolicy;
+        });
+    }
+    else
+    {
+        // Development mode - no auth required
+        Log.Warning("Azure AD not configured - running without authentication");
+        builder.Services.AddAuthorization();
+    }
 
     // Add Razor components
     builder.Services.AddRazorComponents()
@@ -97,14 +109,16 @@ try
         app.UseHsts();
     }
 
-    app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseAntiforgery();
 
-    app.UseAuthentication();
-    app.UseAuthorization();
+    if (isAuthConfigured)
+    {
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapControllers();
+    }
 
-    app.MapControllers();
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode();
 
