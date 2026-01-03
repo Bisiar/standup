@@ -15,6 +15,7 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly IProjectService _projectService;
     private readonly ILocalStandupService _localStandupService;
+    private readonly ICrmTenantConfigService _crmTenantConfigService;
     private readonly string _appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
     private IReportCacheService? _cacheService;
 
@@ -144,6 +145,71 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _crmValidationSuccess;
 
+    // Multi-tenant CRM Configuration
+    [ObservableProperty]
+    private ObservableCollection<CrmTenantConfig> _crmTenants = new();
+
+    [ObservableProperty]
+    private CrmTenantConfig? _selectedCrmTenant;
+
+    [ObservableProperty]
+    private CrmTenantConfig? _editingCrmTenant;
+
+    [ObservableProperty]
+    private bool _isEditingCrmTenant;
+
+    [ObservableProperty]
+    private string _editCrmTenantName = string.Empty;
+
+    [ObservableProperty]
+    private string _editCrmTenantInstanceUrl = string.Empty;
+
+    [ObservableProperty]
+    private string _editCrmTenantTenantId = string.Empty;
+
+    [ObservableProperty]
+    private string _editCrmTenantClientId = string.Empty;
+
+    [ObservableProperty]
+    private string _editCrmTenantClientSecret = string.Empty;
+
+    /// <summary>
+    /// Gets a value indicating whether any CRM tenants are configured.
+    /// </summary>
+    public bool HasCrmTenants => CrmTenants.Count > 0;
+
+    /// <summary>
+    /// Gets the CRM connection status text for the integration badge.
+    /// </summary>
+    public string CrmConnectionStatus => CrmTenants.Count > 0 ? "Connected" : "Not Configured";
+
+    /// <summary>
+    /// Gets a value indicating whether CRM is connected (has at least one tenant).
+    /// </summary>
+    public bool IsCrmConnected => CrmTenants.Count > 0;
+
+    /// <summary>
+    /// Gets a value indicating whether Azure DevOps is configured (any project has ADO PAT).
+    /// </summary>
+    public bool IsAzureDevOpsConnected => Projects.Any(p =>
+        p.SourceType == SourceType.AzureDevOps && !string.IsNullOrEmpty(p.SourcePat));
+
+    /// <summary>
+    /// Gets the Azure DevOps connection status text.
+    /// </summary>
+    public string AzureDevOpsConnectionStatus => IsAzureDevOpsConnected ? "Connected" : "Not Configured";
+
+    /// <summary>
+    /// Gets a value indicating whether GitHub is configured (any project has GitHub PAT).
+    /// </summary>
+    public bool IsGitHubConnected => Projects.Any(p =>
+        p.SourceType == SourceType.GitHub && !string.IsNullOrEmpty(p.SourcePat));
+
+    /// <summary>
+    /// Gets the GitHub connection status text.
+    /// </summary>
+    public string GitHubConnectionStatus => IsGitHubConnected ? "Connected" : "Not Configured";
+
     /// <summary>
     /// Gets the display text for the current authentication method.
     /// </summary>
@@ -193,10 +259,14 @@ public partial class SettingsViewModel : ObservableObject
     /// </summary>
     public event Func<Task<(bool Success, string Message)>>? ValidateCrmConnectionRequested;
 
-    public SettingsViewModel(IProjectService projectService, ILocalStandupService localStandupService)
+    public SettingsViewModel(
+        IProjectService projectService,
+        ILocalStandupService localStandupService,
+        ICrmTenantConfigService crmTenantConfigService)
     {
         _projectService = projectService;
         _localStandupService = localStandupService;
+        _crmTenantConfigService = crmTenantConfigService;
     }
 
     /// <summary>
@@ -261,12 +331,21 @@ public partial class SettingsViewModel : ObservableObject
             // Load AI settings from MAUI Preferences
             LoadAISettings();
 
-            // Load CRM settings from MAUI Preferences
+            // Load CRM settings from MAUI Preferences (legacy single-tenant)
             LoadCrmSettings();
+
+            // Load multi-tenant CRM configurations
+            await LoadCrmTenantsAsync();
 
             // Update auth method display after loading
             OnPropertyChanged(nameof(AuthMethodDisplay));
             OnPropertyChanged(nameof(AuthMethodColor));
+
+            // Update integration status properties
+            OnPropertyChanged(nameof(IsAzureDevOpsConnected));
+            OnPropertyChanged(nameof(AzureDevOpsConnectionStatus));
+            OnPropertyChanged(nameof(IsGitHubConnected));
+            OnPropertyChanged(nameof(GitHubConnectionStatus));
 
             // Load cache statistics
             RefreshCacheStats();
@@ -476,6 +555,7 @@ public partial class SettingsViewModel : ObservableObject
 
     /// <summary>
     /// Validate CRM connection with current settings.
+    /// Uses DefaultAzureCredential if ClientSecret is not provided.
     /// </summary>
     [RelayCommand]
     private async Task ValidateCrmConnectionAsync()
@@ -487,10 +567,9 @@ public partial class SettingsViewModel : ObservableObject
             return;
         }
 
-        if (string.IsNullOrEmpty(CrmInstanceUrl) || string.IsNullOrEmpty(CrmTenantId) ||
-            string.IsNullOrEmpty(CrmClientId) || string.IsNullOrEmpty(CrmClientSecret))
+        if (string.IsNullOrEmpty(CrmInstanceUrl))
         {
-            CrmValidationResult = "Please enter all CRM connection details.";
+            CrmValidationResult = "Please enter the CRM Instance URL.";
             CrmValidationSuccess = false;
             return;
         }
@@ -554,5 +633,144 @@ public partial class SettingsViewModel : ObservableObject
     {
         SelectedTheme = "System";
         StatusMessage = "System theme selected. Restart app to apply.";
+    }
+
+    /// <summary>
+    /// Loads all CRM tenant configurations.
+    /// </summary>
+    [RelayCommand]
+    private async Task LoadCrmTenantsAsync()
+    {
+        var tenants = await _crmTenantConfigService.GetAllAsync();
+        CrmTenants.Clear();
+        foreach (var tenant in tenants)
+        {
+            CrmTenants.Add(tenant);
+        }
+
+        OnPropertyChanged(nameof(HasCrmTenants));
+        OnPropertyChanged(nameof(CrmConnectionStatus));
+        OnPropertyChanged(nameof(IsCrmConnected));
+    }
+
+    /// <summary>
+    /// Starts adding a new CRM tenant.
+    /// </summary>
+    [RelayCommand]
+    private void StartAddCrmTenant()
+    {
+        EditingCrmTenant = null;
+        EditCrmTenantName = string.Empty;
+        EditCrmTenantInstanceUrl = string.Empty;
+        EditCrmTenantTenantId = string.Empty;
+        EditCrmTenantClientId = string.Empty;
+        EditCrmTenantClientSecret = string.Empty;
+        IsEditingCrmTenant = true;
+    }
+
+    /// <summary>
+    /// Starts editing an existing CRM tenant.
+    /// </summary>
+    [RelayCommand]
+    private void StartEditCrmTenant(CrmTenantConfig? tenant)
+    {
+        if (tenant == null)
+        {
+            return;
+        }
+
+        EditingCrmTenant = tenant;
+        EditCrmTenantName = tenant.Name;
+        EditCrmTenantInstanceUrl = tenant.InstanceUrl;
+        EditCrmTenantTenantId = tenant.TenantId ?? string.Empty;
+        EditCrmTenantClientId = tenant.ClientId ?? string.Empty;
+        EditCrmTenantClientSecret = tenant.ClientSecret ?? string.Empty;
+        IsEditingCrmTenant = true;
+    }
+
+    /// <summary>
+    /// Saves the CRM tenant being edited (add or update).
+    /// </summary>
+    [RelayCommand]
+    private async Task SaveCrmTenantAsync()
+    {
+        if (string.IsNullOrWhiteSpace(EditCrmTenantName) || string.IsNullOrWhiteSpace(EditCrmTenantInstanceUrl))
+        {
+            StatusMessage = "Name and Instance URL are required.";
+            return;
+        }
+
+        if (EditingCrmTenant == null)
+        {
+            // Adding new tenant
+            var newTenant = CrmTenantConfig.Create(EditCrmTenantName, EditCrmTenantInstanceUrl) with
+            {
+                TenantId = string.IsNullOrWhiteSpace(EditCrmTenantTenantId) ? null : EditCrmTenantTenantId,
+                ClientId = string.IsNullOrWhiteSpace(EditCrmTenantClientId) ? null : EditCrmTenantClientId,
+                ClientSecret = string.IsNullOrWhiteSpace(EditCrmTenantClientSecret) ? null : EditCrmTenantClientSecret
+            };
+            await _crmTenantConfigService.AddAsync(newTenant);
+            StatusMessage = $"CRM tenant '{newTenant.Name}' added.";
+        }
+        else
+        {
+            // Updating existing tenant
+            var updatedTenant = EditingCrmTenant with
+            {
+                Name = EditCrmTenantName,
+                InstanceUrl = EditCrmTenantInstanceUrl,
+                TenantId = string.IsNullOrWhiteSpace(EditCrmTenantTenantId) ? null : EditCrmTenantTenantId,
+                ClientId = string.IsNullOrWhiteSpace(EditCrmTenantClientId) ? null : EditCrmTenantClientId,
+                ClientSecret = string.IsNullOrWhiteSpace(EditCrmTenantClientSecret) ? null : EditCrmTenantClientSecret
+            };
+            await _crmTenantConfigService.UpdateAsync(updatedTenant);
+            StatusMessage = $"CRM tenant '{updatedTenant.Name}' updated.";
+        }
+
+        IsEditingCrmTenant = false;
+        await LoadCrmTenantsAsync();
+    }
+
+    /// <summary>
+    /// Cancels editing a CRM tenant.
+    /// </summary>
+    [RelayCommand]
+    private void CancelEditCrmTenant()
+    {
+        IsEditingCrmTenant = false;
+        EditingCrmTenant = null;
+    }
+
+    /// <summary>
+    /// Deletes a CRM tenant.
+    /// </summary>
+    [RelayCommand]
+    private async Task DeleteCrmTenantAsync(CrmTenantConfig? tenant)
+    {
+        if (tenant == null)
+        {
+            return;
+        }
+
+        await _crmTenantConfigService.DeleteAsync(tenant.Id);
+        StatusMessage = $"CRM tenant '{tenant.Name}' deleted.";
+        await LoadCrmTenantsAsync();
+    }
+
+    /// <summary>
+    /// Tests the connection for a CRM tenant.
+    /// </summary>
+    [RelayCommand]
+    private async Task TestCrmTenantConnectionAsync(CrmTenantConfig? tenant)
+    {
+        if (tenant == null)
+        {
+            return;
+        }
+
+        var result = await _crmTenantConfigService.TestConnectionAsync(tenant);
+        StatusMessage = result.Success
+            ? $"CRM tenant '{tenant.Name}': {result.Message}"
+            : $"CRM tenant '{tenant.Name}' connection failed: {result.Message}";
     }
 }

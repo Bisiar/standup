@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:global="http://schemas.microsoft.com/dotnet/maui/global"
              xmlns:viewModels="clr-namespace:Standup.Application.ViewModels;assembly=Standup.Application"
+             xmlns:models="clr-namespace:Standup.Application.Models;assembly=Standup.Application"
              x:Class="Standup.Maui.Views.Components.SettingsTabView"
              x:DataType="viewModels:SettingsViewModel">
 
@@ -33,7 +34,7 @@
                         </DataTrigger>
                     </Border.Triggers>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="0" />
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="{x:Int32 0}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="6">
                         <Label Text="AI Config" FontSize="13" VerticalOptions="Center">
@@ -55,7 +56,7 @@
                         </DataTrigger>
                     </Border.Triggers>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="1" />
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="{x:Int32 1}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="6">
                         <Label Text="Integrations" FontSize="13" VerticalOptions="Center">
@@ -77,7 +78,7 @@
                         </DataTrigger>
                     </Border.Triggers>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="2" />
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="{x:Int32 2}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="6">
                         <Label Text="Cache" FontSize="13" VerticalOptions="Center">
@@ -99,7 +100,7 @@
                         </DataTrigger>
                     </Border.Triggers>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="3" />
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="{x:Int32 3}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="6">
                         <Label Text="Appearance" FontSize="13" VerticalOptions="Center">
@@ -121,7 +122,7 @@
                         </DataTrigger>
                     </Border.Triggers>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="4" />
+                        <TapGestureRecognizer Command="{Binding SelectSettingsTabCommand}" CommandParameter="{x:Int32 4}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="6">
                         <Label Text="About" FontSize="13" VerticalOptions="Center">
@@ -269,40 +270,48 @@
                             <!-- Azure DevOps Card -->
                             <Border Grid.Row="0" Grid.Column="0" Padding="20" StrokeShape="RoundRectangle 12"
                                     BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
-                                    Stroke="#22C55E" StrokeThickness="1">
+                                    Stroke="{Binding IsAzureDevOpsConnected, Converter={StaticResource BoolToColorConverter}}" StrokeThickness="1">
                                 <VerticalStackLayout Spacing="12">
                                     <HorizontalStackLayout>
                                         <Label Text="ADO" FontSize="24" TextColor="#0078D4" />
                                         <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
-                                                BackgroundColor="#065F46" HorizontalOptions="EndAndExpand">
-                                            <Label Text="Connected" FontSize="11" TextColor="#34D399" />
+                                                BackgroundColor="{Binding IsAzureDevOpsConnected, Converter={StaticResource BoolToFilterBackgroundConverter}}"
+                                                HorizontalOptions="EndAndExpand">
+                                            <Label Text="{Binding AzureDevOpsConnectionStatus}" FontSize="11"
+                                                   TextColor="{Binding IsAzureDevOpsConnected, Converter={StaticResource BoolToFilterTextConverter}}" />
                                         </Border>
                                     </HorizontalStackLayout>
                                     <Label Text="Azure DevOps" FontSize="16" FontAttributes="Bold" />
                                     <Label Text="Pull commits, PRs, and work items from Azure DevOps repositories"
                                            FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
-                                    <Button Text="Disconnect" BackgroundColor="Transparent" TextColor="#EF4444"
-                                            BorderColor="#EF4444" BorderWidth="1" Padding="10,8" />
+                                    <Button Text="Configure in Projects" BackgroundColor="#3B82F6" TextColor="White"
+                                            Padding="10,8" IsVisible="{Binding IsAzureDevOpsConnected, Converter={StaticResource InvertedBoolConverter}}" />
+                                    <Label Text="Configured via project settings" FontSize="11" TextColor="Gray"
+                                           IsVisible="{Binding IsAzureDevOpsConnected}" />
                                 </VerticalStackLayout>
                             </Border>
 
                             <!-- GitHub Card -->
                             <Border Grid.Row="0" Grid.Column="1" Padding="20" StrokeShape="RoundRectangle 12"
                                     BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
-                                    Stroke="#22C55E" StrokeThickness="1">
+                                    Stroke="{Binding IsGitHubConnected, Converter={StaticResource BoolToColorConverter}}" StrokeThickness="1">
                                 <VerticalStackLayout Spacing="12">
                                     <HorizontalStackLayout>
                                         <Label Text="GH" FontSize="24" TextColor="#6E5494" />
                                         <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
-                                                BackgroundColor="#065F46" HorizontalOptions="EndAndExpand">
-                                            <Label Text="Connected" FontSize="11" TextColor="#34D399" />
+                                                BackgroundColor="{Binding IsGitHubConnected, Converter={StaticResource BoolToFilterBackgroundConverter}}"
+                                                HorizontalOptions="EndAndExpand">
+                                            <Label Text="{Binding GitHubConnectionStatus}" FontSize="11"
+                                                   TextColor="{Binding IsGitHubConnected, Converter={StaticResource BoolToFilterTextConverter}}" />
                                         </Border>
                                     </HorizontalStackLayout>
                                     <Label Text="GitHub" FontSize="16" FontAttributes="Bold" />
                                     <Label Text="Pull commits and PRs from GitHub repositories"
                                            FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
-                                    <Button Text="Disconnect" BackgroundColor="Transparent" TextColor="#EF4444"
-                                            BorderColor="#EF4444" BorderWidth="1" Padding="10,8" />
+                                    <Button Text="Configure in Projects" BackgroundColor="#3B82F6" TextColor="White"
+                                            Padding="10,8" IsVisible="{Binding IsGitHubConnected, Converter={StaticResource InvertedBoolConverter}}" />
+                                    <Label Text="Configured via project settings" FontSize="11" TextColor="Gray"
+                                           IsVisible="{Binding IsGitHubConnected}" />
                                 </VerticalStackLayout>
                             </Border>
 
@@ -364,23 +373,116 @@
                                 </VerticalStackLayout>
                             </Border>
 
-                            <!-- Dynamics 365 CRM Card -->
+                            <!-- Dynamics 365 CRM Card - Multi-Tenant -->
                             <Border Grid.Row="2" Grid.Column="1" Padding="20" StrokeShape="RoundRectangle 12"
                                     BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}"
-                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#333333}">
+                                    Stroke="{Binding IsCrmConnected, Converter={StaticResource BoolToColorConverter}}" StrokeThickness="1">
                                 <VerticalStackLayout Spacing="12">
                                     <HorizontalStackLayout>
                                         <Label Text="CRM" FontSize="20" TextColor="#002050" />
                                         <Border Padding="4,2" StrokeShape="RoundRectangle 10" Stroke="Transparent"
-                                                BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#404040}" HorizontalOptions="EndAndExpand">
-                                            <Label Text="Coming Soon" FontSize="11" TextColor="Gray" />
+                                                BackgroundColor="{Binding IsCrmConnected, Converter={StaticResource BoolToFilterBackgroundConverter}}"
+                                                HorizontalOptions="EndAndExpand">
+                                            <Label Text="{Binding CrmConnectionStatus}" FontSize="11"
+                                                   TextColor="{Binding IsCrmConnected, Converter={StaticResource BoolToFilterTextConverter}}" />
                                         </Border>
                                     </HorizontalStackLayout>
                                     <Label Text="Dynamics 365 CRM" FontSize="16" FontAttributes="Bold" />
-                                    <Label Text="Include project timelines and client context from CRM"
+                                    <Label Text="Configure CRM tenants for project timelines and client context"
                                            FontSize="12" TextColor="Gray" LineBreakMode="WordWrap" />
-                                    <Button Text="Coming Soon" BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#333333}"
-                                            TextColor="Gray" Padding="10,8" IsEnabled="False" />
+
+                                    <!-- Tenant List -->
+                                    <CollectionView ItemsSource="{Binding CrmTenants}" SelectionMode="None"
+                                                    HeightRequest="120" IsVisible="{Binding HasCrmTenants}">
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate x:DataType="models:CrmTenantConfig">
+                                                <Border Padding="10" Margin="0,4" StrokeShape="RoundRectangle 8"
+                                                        BackgroundColor="{AppThemeBinding Light=#EFEFEF, Dark=#2A2A2A}"
+                                                        Stroke="Transparent">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                                            <Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold" />
+                                                            <Label Text="{Binding InstanceUrl}" FontSize="11" TextColor="Gray"
+                                                                   LineBreakMode="TailTruncation" />
+                                                            <Label Text="{Binding AuthMethodDisplay}" FontSize="10" TextColor="#3B82F6" />
+                                                        </VerticalStackLayout>
+                                                        <Button Grid.Column="1" Text="Edit" FontSize="11" Padding="8,4"
+                                                                BackgroundColor="Transparent" TextColor="#3B82F6"
+                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:SettingsViewModel}}, Path=StartEditCrmTenantCommand}"
+                                                                CommandParameter="{Binding .}" />
+                                                        <Button Grid.Column="2" Text="Delete" FontSize="11" Padding="8,4"
+                                                                BackgroundColor="Transparent" TextColor="#EF4444"
+                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:SettingsViewModel}}, Path=DeleteCrmTenantCommand}"
+                                                                CommandParameter="{Binding .}" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                        <CollectionView.EmptyView>
+                                            <Label Text="No CRM tenants configured" FontSize="12" TextColor="Gray"
+                                                   HorizontalOptions="Center" Padding="20" />
+                                        </CollectionView.EmptyView>
+                                    </CollectionView>
+
+                                    <!-- Add Tenant Button -->
+                                    <Button Text="+ Add CRM Tenant" BackgroundColor="#3B82F6" TextColor="White"
+                                            Padding="10,8" Command="{Binding StartAddCrmTenantCommand}"
+                                            IsVisible="{Binding IsEditingCrmTenant, Converter={StaticResource InvertedBoolConverter}}" />
+
+                                    <!-- Edit Form (shown when editing) -->
+                                    <Border Padding="16" StrokeShape="RoundRectangle 8" Stroke="#3B82F6"
+                                            BackgroundColor="{AppThemeBinding Light=#F0F8FF, Dark=#1A2A3A}"
+                                            IsVisible="{Binding IsEditingCrmTenant}">
+                                        <VerticalStackLayout Spacing="12">
+                                            <Label FontSize="14" FontAttributes="Bold">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding EditingCrmTenant, Converter={StaticResource IsNullConverter}}" Value="True">
+                                                        <Setter Property="Text" Value="Add CRM Tenant" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding EditingCrmTenant, Converter={StaticResource IsNullConverter}}" Value="False">
+                                                        <Setter Property="Text" Value="Edit CRM Tenant" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+
+                                            <VerticalStackLayout Spacing="4">
+                                                <Label Text="Name *" FontSize="11" TextColor="Gray" />
+                                                <Entry Text="{Binding EditCrmTenantName}" Placeholder="e.g., JourneyTeam CRM" />
+                                            </VerticalStackLayout>
+
+                                            <VerticalStackLayout Spacing="4">
+                                                <Label Text="Instance URL *" FontSize="11" TextColor="Gray" />
+                                                <Entry Text="{Binding EditCrmTenantInstanceUrl}"
+                                                       Placeholder="https://org.crm.dynamics.com" Keyboard="Url" />
+                                            </VerticalStackLayout>
+
+                                            <Label Text="Optional: Client Credentials (leave blank for Azure Identity)"
+                                                   FontSize="11" TextColor="Gray" FontAttributes="Italic" />
+
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                                    <Label Text="Tenant ID" FontSize="11" TextColor="Gray" />
+                                                    <Entry Text="{Binding EditCrmTenantTenantId}" Placeholder="(optional)" />
+                                                </VerticalStackLayout>
+                                                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                                    <Label Text="Client ID" FontSize="11" TextColor="Gray" />
+                                                    <Entry Text="{Binding EditCrmTenantClientId}" Placeholder="(optional)" />
+                                                </VerticalStackLayout>
+                                            </Grid>
+
+                                            <VerticalStackLayout Spacing="4">
+                                                <Label Text="Client Secret" FontSize="11" TextColor="Gray" />
+                                                <Entry Text="{Binding EditCrmTenantClientSecret}" Placeholder="(optional)" IsPassword="True" />
+                                            </VerticalStackLayout>
+
+                                            <HorizontalStackLayout Spacing="12" HorizontalOptions="End">
+                                                <Button Text="Cancel" BackgroundColor="Transparent" TextColor="Gray"
+                                                        Padding="12,8" Command="{Binding CancelEditCrmTenantCommand}" />
+                                                <Button Text="Save" BackgroundColor="#22C55E" TextColor="White"
+                                                        Padding="12,8" Command="{Binding SaveCrmTenantCommand}" />
+                                            </HorizontalStackLayout>
+                                        </VerticalStackLayout>
+                                    </Border>
                                 </VerticalStackLayout>
                             </Border>
                         </Grid>

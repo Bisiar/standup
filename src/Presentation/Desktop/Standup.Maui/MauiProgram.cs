@@ -66,6 +66,7 @@ public static class MauiProgram
             // Services
             Log.Debug("Registering services");
             builder.Services.AddSingleton<IProjectService, ProjectService>();
+            builder.Services.AddSingleton<ICrmTenantConfigService, CrmTenantConfigService>();
             builder.Services.AddSingleton<IStandupApiClient, StandupApiClient>();
             builder.Services.AddSingleton<IDocumentService, DocumentService>();
             builder.Services.AddSingleton<IEncryptionService, MauiEncryptionService>();
@@ -90,7 +91,7 @@ public static class MauiProgram
             });
             builder.Services.AddSingleton<IAISummaryService, AIFoundrySummaryService>();
 
-            // Dynamics 365 CRM Integration - credentials must be configured in Settings
+            // Dynamics 365 CRM Integration - uses DefaultAzureCredential if ClientSecret not provided
             builder.Services.Configure<DynamicsCrmOptions>(options =>
             {
                 options.InstanceUrl = Preferences.Get("DynamicsCrm__InstanceUrl", string.Empty);
@@ -99,12 +100,14 @@ public static class MauiProgram
                 options.ClientSecret = Preferences.Get("DynamicsCrm__ClientSecret", string.Empty);
                 options.Enabled = Preferences.Get("DynamicsCrm__Enabled", false);
 
-                var isConfigured = !string.IsNullOrEmpty(options.InstanceUrl) &&
-                                   !string.IsNullOrEmpty(options.ClientSecret);
+                // Only InstanceUrl is required - uses DefaultAzureCredential when ClientSecret is empty
+                var isConfigured = !string.IsNullOrEmpty(options.InstanceUrl);
+                var authMethod = string.IsNullOrEmpty(options.ClientSecret) ? "DefaultAzureCredential" : "ClientSecret";
                 Log.Information(
-                    "Dynamics CRM: Configured={IsConfigured}, InstanceUrl={InstanceUrl}",
+                    "Dynamics CRM: Configured={IsConfigured}, InstanceUrl={InstanceUrl}, Auth={AuthMethod}",
                     isConfigured,
-                    string.IsNullOrEmpty(options.InstanceUrl) ? "(not set)" : options.InstanceUrl);
+                    string.IsNullOrEmpty(options.InstanceUrl) ? "(not set)" : options.InstanceUrl,
+                    authMethod);
             });
             builder.Services.AddHttpClient<ICrmProjectService, DynamicsCrmService>();
 

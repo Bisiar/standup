@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Standup.Application.ViewModels;
 using Standup.Domain.Interfaces;
 
@@ -39,6 +40,9 @@ public partial class SettingsTabView : ContentView
             _currentViewModel.LoadAISettingsRequested -= OnLoadAISettingsRequested;
             _currentViewModel.SaveAISettingsRequested -= OnSaveAISettingsRequested;
             _currentViewModel.ValidateAIConnectionRequested -= OnValidateAIConnectionRequested;
+            _currentViewModel.LoadCrmSettingsRequested -= OnLoadCrmSettingsRequested;
+            _currentViewModel.SaveCrmSettingsRequested -= OnSaveCrmSettingsRequested;
+            _currentViewModel.ValidateCrmConnectionRequested -= OnValidateCrmConnectionRequested;
         }
 
         // Subscribe to new view model
@@ -48,6 +52,9 @@ public partial class SettingsTabView : ContentView
             viewModel.LoadAISettingsRequested += OnLoadAISettingsRequested;
             viewModel.SaveAISettingsRequested += OnSaveAISettingsRequested;
             viewModel.ValidateAIConnectionRequested += OnValidateAIConnectionRequested;
+            viewModel.LoadCrmSettingsRequested += OnLoadCrmSettingsRequested;
+            viewModel.SaveCrmSettingsRequested += OnSaveCrmSettingsRequested;
+            viewModel.ValidateCrmConnectionRequested += OnValidateCrmConnectionRequested;
         }
         else
         {
@@ -107,6 +114,58 @@ public partial class SettingsTabView : ContentView
             }
 
             return (false, "Connection succeeded but no response received.");
+        }
+        catch (Azure.Identity.CredentialUnavailableException ex)
+        {
+            if (ex.Message.Contains("AzureCliCredential"))
+            {
+                return (false, "Azure CLI not found. Run: brew install azure-cli && az login");
+            }
+
+            return (false, $"Authentication failed: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Connection failed: {ex.Message}");
+        }
+    }
+
+    private (bool Enabled, string InstanceUrl, string TenantId, string ClientId, string ClientSecret) OnLoadCrmSettingsRequested()
+    {
+        return (
+            Preferences.Get("DynamicsCrm__Enabled", false),
+            Preferences.Get("DynamicsCrm__InstanceUrl", string.Empty),
+            Preferences.Get("DynamicsCrm__TenantId", string.Empty),
+            Preferences.Get("DynamicsCrm__ClientId", string.Empty),
+            Preferences.Get("DynamicsCrm__ClientSecret", string.Empty));
+    }
+
+    private void OnSaveCrmSettingsRequested(bool enabled, string instanceUrl, string tenantId, string clientId, string clientSecret)
+    {
+        Preferences.Set("DynamicsCrm__Enabled", enabled);
+        Preferences.Set("DynamicsCrm__InstanceUrl", instanceUrl);
+        Preferences.Set("DynamicsCrm__TenantId", tenantId);
+        Preferences.Set("DynamicsCrm__ClientId", clientId);
+        Preferences.Set("DynamicsCrm__ClientSecret", clientSecret);
+    }
+
+    private async Task<(bool Success, string Message)> OnValidateCrmConnectionRequested()
+    {
+        var crmService = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services.GetService<ICrmProjectService>();
+        if (crmService == null)
+        {
+            return (false, "CRM service not available. Restart app after saving settings.");
+        }
+
+        try
+        {
+            var isValid = await crmService.ValidateConnectionAsync();
+            if (isValid)
+            {
+                return (true, "✓ CRM connection successful!");
+            }
+
+            return (false, "CRM connection failed. Check your settings.");
         }
         catch (Azure.Identity.CredentialUnavailableException ex)
         {

@@ -23,6 +23,7 @@ public record ProjectInstance(
     bool UseLocalGeneration = true,
     string? ApiEndpointOverride = null,
     bool IncludeInGeneration = true,
+    Guid? CrmTenantConfigId = null,
     string? CrmProjectId = null,
     string? CrmProjectName = null)
 {

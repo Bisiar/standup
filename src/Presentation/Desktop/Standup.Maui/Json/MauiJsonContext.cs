@@ -12,10 +12,12 @@ namespace Standup.Maui.Json;
 [JsonSerializable(typeof(List<RepositoryGroup>))]
 [JsonSerializable(typeof(List<ReportHistory>))]
 [JsonSerializable(typeof(List<ProjectInstance>))]
+[JsonSerializable(typeof(List<CrmTenantConfig>))]
 [JsonSerializable(typeof(OrgCredential))]
 [JsonSerializable(typeof(RepositoryGroup))]
 [JsonSerializable(typeof(ReportHistory))]
 [JsonSerializable(typeof(ProjectInstance))]
+[JsonSerializable(typeof(CrmTenantConfig))]
 [JsonSourceGenerationOptions(WriteIndented = false)]
 public partial class MauiJsonContext : JsonSerializerContext
 {
