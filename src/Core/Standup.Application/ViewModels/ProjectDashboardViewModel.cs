@@ -151,6 +151,94 @@ public partial class ProjectDashboardViewModel : ObservableObject
     [ObservableProperty]
     private bool hasSprintData;
 
+    // Project Card - JTP Fields
+
+    /// <summary>
+    /// Gets or sets the practice area (e.g., "Dynamics 365", "Power Platform").
+    /// </summary>
+    [ObservableProperty]
+    private string practice = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the project type (e.g., "Implementation", "Support").
+    /// </summary>
+    [ObservableProperty]
+    private string projectType = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the practice director name.
+    /// </summary>
+    [ObservableProperty]
+    private string practiceDirector = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the account manager name.
+    /// </summary>
+    [ObservableProperty]
+    private string accountManager = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the scheduling engine type (e.g., "Sprints", "Fixed Schedule").
+    /// </summary>
+    [ObservableProperty]
+    private string schedulingEngine = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the sprint commitments description.
+    /// </summary>
+    [ObservableProperty]
+    private string sprintCommitments = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the next milestone name.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NextMilestoneDisplay))]
+    private string nextMilestone = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the next milestone due date.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NextMilestoneDisplay))]
+    private DateTime? nextMilestoneDate;
+
+    /// <summary>
+    /// Gets or sets the estimated labor cost.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EstimatedLaborDisplay))]
+    private decimal estimatedLabor;
+
+    /// <summary>
+    /// Gets or sets the cost percentage used.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CostPercentDisplay))]
+    private decimal costPercent;
+
+    /// <summary>
+    /// Gets or sets the SOW document URL.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSowDocument))]
+    [NotifyPropertyChangedFor(nameof(SowDocumentName))]
+    private string sowDocumentUrl = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the customer name.
+    /// </summary>
+    [ObservableProperty]
+    private string customerName = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the project status color (Green, Yellow, Red).
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StatusBackgroundColor))]
+    [NotifyPropertyChangedFor(nameof(StatusDotColor))]
+    private string projectStatusColor = "Green";
+
     /// <summary>
     /// Gets the budget display text.
     /// </summary>
@@ -170,6 +258,75 @@ public partial class ProjectDashboardViewModel : ObservableObject
     /// Gets the sprint display text.
     /// </summary>
     public string SprintDisplay => TotalSprints > 0 ? $"{CurrentSprintNumber}/{TotalSprints}" : "—";
+
+    /// <summary>
+    /// Gets the estimated labor display text.
+    /// </summary>
+    public string EstimatedLaborDisplay => EstimatedLabor > 0 ? $"${EstimatedLabor:N0}" : "—";
+
+    /// <summary>
+    /// Gets the cost percent display text.
+    /// </summary>
+    public string CostPercentDisplay => CostPercent > 0 ? $"{CostPercent:N0}%" : "—";
+
+    /// <summary>
+    /// Gets a value indicating whether a SOW document is available.
+    /// </summary>
+    public bool HasSowDocument => !string.IsNullOrEmpty(SowDocumentUrl);
+
+    /// <summary>
+    /// Gets the SOW document file name.
+    /// </summary>
+    public string SowDocumentName
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(SowDocumentUrl))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return Path.GetFileName(new Uri(SowDocumentUrl).LocalPath);
+            }
+            catch
+            {
+                return SowDocumentUrl;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the next milestone display text with date.
+    /// </summary>
+    public string NextMilestoneDisplay => string.IsNullOrEmpty(NextMilestone)
+        ? "—"
+        : NextMilestoneDate.HasValue
+            ? $"{NextMilestone} - {NextMilestoneDate:MMM dd, yyyy}"
+            : NextMilestone;
+
+    /// <summary>
+    /// Gets the status background color hex value based on project status.
+    /// </summary>
+    public string StatusBackgroundColor => ProjectStatusColor switch
+    {
+        "Green" => "#22C55E33",
+        "Yellow" => "#EAB30833",
+        "Red" => "#EF444433",
+        _ => "#22C55E33",
+    };
+
+    /// <summary>
+    /// Gets the status dot color hex value based on project status.
+    /// </summary>
+    public string StatusDotColor => ProjectStatusColor switch
+    {
+        "Green" => "#22C55E",
+        "Yellow" => "#EAB308",
+        "Red" => "#EF4444",
+        _ => "#22C55E",
+    };
 
     /// <summary>
     /// Gets or sets a value indicating whether Azure DevOps connection failed.
@@ -647,6 +804,22 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 // Map status to health
                 HealthStatus = crmProject.Status == "Active" ? "On Track" : crmProject.Status;
                 IsOnTrack = crmProject.Status == "Active";
+
+                // Map customer name from CRM
+                CustomerName = crmProject.ClientName;
+
+                // TODO: Map these JTP-specific fields when CrmProject entity is extended
+                // These are placeholders - actual field names will be discovered from CRM schema
+                // Practice = crmProject.Practice;
+                // ProjectType = crmProject.ProjectType;
+                // PracticeDirector = crmProject.PracticeDirector;
+                // AccountManager = crmProject.AccountManager;
+                // SchedulingEngine = crmProject.SchedulingEngine;
+                // SprintCommitments = crmProject.SprintCommitments;
+                // EstimatedLabor = crmProject.EstimatedLabor ?? 0;
+                // CostPercent = crmProject.CostPercent ?? 0;
+                // SowDocumentUrl = crmProject.SowDocumentUrl;
+                // ProjectStatusColor = crmProject.StatusColor ?? "Green";
             }
             else
             {
@@ -661,6 +834,18 @@ public partial class ProjectDashboardViewModel : ObservableObject
                 Phases.Clear();
                 TotalMilestones = milestones.Count;
                 MilestonesCompleted = milestones.Count(m => m.PercentComplete >= 100);
+
+                // Find the next upcoming milestone (first incomplete milestone)
+                var nextUpcomingMilestone = milestones
+                    .Where(m => (m.PercentComplete ?? 0) < 100)
+                    .OrderBy(m => m.DueDate)
+                    .FirstOrDefault();
+
+                if (nextUpcomingMilestone != null)
+                {
+                    NextMilestone = nextUpcomingMilestone.Name;
+                    NextMilestoneDate = nextUpcomingMilestone.DueDate;
+                }
 
                 foreach (var milestone in milestones)
                 {
@@ -708,6 +893,41 @@ public partial class ProjectDashboardViewModel : ObservableObject
     /// </summary>
     [RelayCommand]
     private void ViewBoard() => Log.Debug("ViewBoard requested for project {ProjectName}", ProjectName);
+
+    /// <summary>
+    /// Event raised when a URL should be opened in the default browser.
+    /// The MAUI layer subscribes to this to handle the platform-specific launch.
+    /// </summary>
+    public event Func<string, Task>? OnOpenUrl;
+
+    /// <summary>
+    /// Opens the SOW document in the default browser.
+    /// </summary>
+    /// <returns>A task representing the async operation.</returns>
+    [RelayCommand]
+    private async Task OpenSowDocumentAsync()
+    {
+        if (!string.IsNullOrEmpty(SowDocumentUrl))
+        {
+            Log.Debug("Opening SOW document URL: {Url}", SowDocumentUrl);
+            if (OnOpenUrl != null)
+            {
+                await OnOpenUrl.Invoke(SowDocumentUrl);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Opens the project in Dynamics 365.
+    /// </summary>
+    /// <returns>A task representing the async operation.</returns>
+    [RelayCommand]
+    private async Task OpenInD365Async()
+    {
+        // TODO: Implement when we have CRM instance URL from tenant config
+        Log.Debug("OpenInD365 requested for project {ProjectName}", ProjectName);
+        await Task.CompletedTask;
+    }
 
     /// <summary>
     /// Tries to discover the local path for a project based on common conventions.

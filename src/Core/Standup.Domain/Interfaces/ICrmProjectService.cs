@@ -52,4 +52,13 @@ public interface ICrmProjectService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if connection is valid, otherwise false.</returns>
     Task<bool> ValidateConnectionAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets entity metadata for the msdyn_project entity to discover available field names.
+    /// This is a diagnostic method to help identify custom and standard fields.
+    /// </summary>
+    /// <param name="entityLogicalName">The logical name of the entity (default: msdyn_project).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of attribute metadata containing field names, display names, and types.</returns>
+    Task<List<CrmAttributeMetadata>> GetEntityMetadataAsync(string entityLogicalName = "msdyn_project", CancellationToken cancellationToken = default);
 }

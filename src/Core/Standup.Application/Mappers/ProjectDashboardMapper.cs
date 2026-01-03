@@ -184,17 +184,6 @@ public static class ProjectDashboardMapper
             .Take(5)
             .ToList();
 
-        if (members.Count == 0)
-        {
-            members.Add(new TeamMember(
-                "No recent contributors",
-                "—",
-                "Connect a data source to see team activity",
-                TeamRole.Developer,
-                0,
-                MemberStatus.Active));
-        }
-
         return members;
     }
 }

@@ -351,6 +351,233 @@ public class DynamicsCrmService : ICrmProjectService
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<List<CrmAttributeMetadata>> GetEntityMetadataAsync(
+        string entityLogicalName = "msdyn_project",
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsConfigured())
+        {
+            Log.Warning("CRM service not configured, cannot retrieve metadata");
+            return new List<CrmAttributeMetadata>();
+        }
+
+        try
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+
+            // Query entity metadata using the Dataverse Web API
+            var apiUrl = $"{_options.InstanceUrl}/api/data/v9.2/EntityDefinitions(LogicalName='{entityLogicalName}')/Attributes?$select=LogicalName,DisplayName,AttributeType,AttributeTypeName,SchemaName,Description,IsCustomAttribute";
+
+            Log.Information("Fetching entity metadata for: {EntityName}", entityLogicalName);
+
+            var response = await _httpClient.GetAsync(apiUrl, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                Log.Warning(
+                    "CRM metadata API request failed: {StatusCode} - {ReasonPhrase}. Response: {Response}",
+                    response.StatusCode,
+                    response.ReasonPhrase,
+                    errorContent);
+                return new List<CrmAttributeMetadata>();
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<MetadataQueryResult>(cancellationToken);
+
+            if (result?.Value == null || result.Value.Count == 0)
+            {
+                Log.Warning("No attributes found for entity: {EntityName}", entityLogicalName);
+                return new List<CrmAttributeMetadata>();
+            }
+
+            var attributes = result.Value
+                .Select(MapToAttributeMetadata)
+                .OrderBy(a => a.LogicalName)
+                .ToList();
+
+            // Log all discovered fields for analysis
+            Log.Information("========================================");
+            Log.Information("ENTITY METADATA FOR: {EntityName}", entityLogicalName);
+            Log.Information("Total attributes found: {Count}", attributes.Count);
+            Log.Information("========================================");
+
+            // Log custom fields (likely what we're looking for)
+            var customFields = attributes.Where(a => a.IsCustomAttribute).ToList();
+            Log.Information("--- CUSTOM FIELDS ({Count}) ---", customFields.Count);
+            foreach (var attr in customFields)
+            {
+                Log.Information(
+                    "  {LogicalName} | {DisplayName} | Type: {Type} ({TypeName})",
+                    attr.LogicalName,
+                    attr.DisplayName,
+                    attr.AttributeType,
+                    attr.AttributeTypeName);
+            }
+
+            // Log fields that might match what we're looking for
+            Log.Information("--- FIELDS MATCHING SEARCH CRITERIA ---");
+
+            // Practice fields
+            var practiceFields = attributes.Where(a =>
+                a.LogicalName.Contains("practice", StringComparison.OrdinalIgnoreCase) ||
+                a.DisplayName.Contains("practice", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (practiceFields.Count > 0)
+            {
+                Log.Information("Practice-related fields:");
+                foreach (var attr in practiceFields)
+                {
+                    Log.Information("  {LogicalName} | {DisplayName} | {Type}", attr.LogicalName, attr.DisplayName, attr.AttributeType);
+                }
+            }
+
+            // Director/Manager fields (lookups to systemuser)
+            var personFields = attributes.Where(a =>
+                a.LogicalName.Contains("director", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("manager", StringComparison.OrdinalIgnoreCase) ||
+                a.DisplayName.Contains("director", StringComparison.OrdinalIgnoreCase) ||
+                a.DisplayName.Contains("manager", StringComparison.OrdinalIgnoreCase) ||
+                a.DisplayName.Contains("account", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (personFields.Count > 0)
+            {
+                Log.Information("Director/Manager/Account fields:");
+                foreach (var attr in personFields)
+                {
+                    Log.Information("  {LogicalName} | {DisplayName} | {Type}", attr.LogicalName, attr.DisplayName, attr.AttributeType);
+                }
+            }
+
+            // SOW/Document URL fields
+            var sowFields = attributes.Where(a =>
+                a.LogicalName.Contains("sow", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("document", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("url", StringComparison.OrdinalIgnoreCase) ||
+                a.DisplayName.Contains("sow", StringComparison.OrdinalIgnoreCase) ||
+                a.DisplayName.Contains("statement", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (sowFields.Count > 0)
+            {
+                Log.Information("SOW/Document URL fields:");
+                foreach (var attr in sowFields)
+                {
+                    Log.Information("  {LogicalName} | {DisplayName} | {Type}", attr.LogicalName, attr.DisplayName, attr.AttributeType);
+                }
+            }
+
+            // Status fields (optionsets for green/yellow/red)
+            var statusFields = attributes.Where(a =>
+                a.AttributeType == "Picklist" || a.AttributeType == "Status" || a.AttributeType == "State" ||
+                a.LogicalName.Contains("status", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("health", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("color", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (statusFields.Count > 0)
+            {
+                Log.Information("Status/Health fields (optionsets):");
+                foreach (var attr in statusFields)
+                {
+                    Log.Information("  {LogicalName} | {DisplayName} | {Type}", attr.LogicalName, attr.DisplayName, attr.AttributeType);
+                }
+            }
+
+            // Sprint/Commitment fields
+            var sprintFields = attributes.Where(a =>
+                a.LogicalName.Contains("sprint", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("commitment", StringComparison.OrdinalIgnoreCase) ||
+                a.DisplayName.Contains("sprint", StringComparison.OrdinalIgnoreCase) ||
+                a.DisplayName.Contains("commitment", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (sprintFields.Count > 0)
+            {
+                Log.Information("Sprint/Commitment fields:");
+                foreach (var attr in sprintFields)
+                {
+                    Log.Information("  {LogicalName} | {DisplayName} | {Type}", attr.LogicalName, attr.DisplayName, attr.AttributeType);
+                }
+            }
+
+            // Cost/Labor/Budget fields
+            var costFields = attributes.Where(a =>
+                a.AttributeType == "Money" || a.AttributeType == "Decimal" || a.AttributeType == "Double" ||
+                a.LogicalName.Contains("cost", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("labor", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("budget", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("estimated", StringComparison.OrdinalIgnoreCase) ||
+                a.LogicalName.Contains("percent", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (costFields.Count > 0)
+            {
+                Log.Information("Cost/Labor/Budget fields:");
+                foreach (var attr in costFields)
+                {
+                    Log.Information("  {LogicalName} | {DisplayName} | {Type}", attr.LogicalName, attr.DisplayName, attr.AttributeType);
+                }
+            }
+
+            Log.Information("========================================");
+            Log.Information("END ENTITY METADATA");
+            Log.Information("========================================");
+
+            return attributes;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error fetching entity metadata for {EntityName}: {ErrorMessage}", entityLogicalName, ex.Message);
+            return new List<CrmAttributeMetadata>();
+        }
+    }
+
+    private static CrmAttributeMetadata MapToAttributeMetadata(JsonElement data)
+    {
+        var logicalName = GetStringProperty(data, "LogicalName");
+        var attributeType = GetStringProperty(data, "AttributeType");
+        var attributeTypeName = string.Empty;
+        var displayName = string.Empty;
+        var description = string.Empty;
+        var schemaName = GetStringProperty(data, "SchemaName");
+        var isCustom = false;
+
+        // AttributeTypeName is nested object with Value property
+        if (data.TryGetProperty("AttributeTypeName", out var typeNameElement) &&
+            typeNameElement.TryGetProperty("Value", out var typeNameValue))
+        {
+            attributeTypeName = typeNameValue.GetString() ?? string.Empty;
+        }
+
+        // DisplayName is a LocalizedLabel structure
+        if (data.TryGetProperty("DisplayName", out var displayNameElement) &&
+            displayNameElement.TryGetProperty("UserLocalizedLabel", out var userLabel) &&
+            userLabel.ValueKind != JsonValueKind.Null &&
+            userLabel.TryGetProperty("Label", out var labelValue))
+        {
+            displayName = labelValue.GetString() ?? string.Empty;
+        }
+
+        // Description is also a LocalizedLabel structure
+        if (data.TryGetProperty("Description", out var descElement) &&
+            descElement.TryGetProperty("UserLocalizedLabel", out var descUserLabel) &&
+            descUserLabel.ValueKind != JsonValueKind.Null &&
+            descUserLabel.TryGetProperty("Label", out var descLabelValue))
+        {
+            description = descLabelValue.GetString() ?? string.Empty;
+        }
+
+        // IsCustomAttribute
+        if (data.TryGetProperty("IsCustomAttribute", out var isCustomElement) &&
+            isCustomElement.ValueKind == JsonValueKind.True)
+        {
+            isCustom = true;
+        }
+
+        return new CrmAttributeMetadata(
+            LogicalName: logicalName,
+            DisplayName: displayName,
+            AttributeType: attributeType,
+            AttributeTypeName: attributeTypeName)
+        {
+            Description = string.IsNullOrEmpty(description) ? null : description,
+            SchemaName = string.IsNullOrEmpty(schemaName) ? null : schemaName,
+            IsCustomAttribute = isCustom
+        };
+    }
+
     private static CrmProject MapToCrmProject(JsonElement data, string clientCode)
     {
         // Map D365 Project Operations statecode to readable status
@@ -557,6 +784,11 @@ public class DynamicsCrmService : ICrmProjectService
     }
 
     private class CrmQueryResult
+    {
+        public List<JsonElement> Value { get; set; } = new();
+    }
+
+    private class MetadataQueryResult
     {
         public List<JsonElement> Value { get; set; } = new();
     }

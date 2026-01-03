@@ -1,18 +1,15 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Standup.Application.Interfaces;
 using Standup.Application.Models;
 using Standup.Application.ViewModels;
 using Standup.Common.Tests.Configuration;
 using Standup.Domain.Enums;
-using Standup.Domain.Interfaces;
-using Standup.Infrastructure.Configuration;
 using Standup.Infrastructure.Git;
-using Standup.Infrastructure.Integrations;
 using Standup.Infrastructure.Services;
 using Standup.Infrastructure.SourceProviders;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Standup.Infrastructure.Tests.ViewModels;
 
@@ -20,23 +17,23 @@ namespace Standup.Infrastructure.Tests.ViewModels;
 /// Integration tests for ProjectDashboardViewModel with real source providers.
 /// Tests both local git (no PAT) and remote API (with PAT) scenarios.
 /// </summary>
-public class ProjectDashboardViewModelTests : IDisposable
+public class ProjectDashboardViewModelTests
 {
     /// <summary>
     /// Path to this repository for local git testing (no PAT required).
     /// </summary>
     private const string LocalRepoPath = "/Users/james/Source/github.com.bisiar/standup";
 
+    private readonly ITestOutputHelper _output;
     private readonly TestEncryptionService _encryptionService;
     private readonly ISourceProviderFactory _sourceProviderFactory;
     private readonly ILocalStandupService _localStandupService;
-    private readonly ICrmProjectService _crmProjectService;
-    private readonly HttpClient _httpClient;
     private readonly string _pat;
-    private readonly bool _crmIsConfigured;
 
-    public ProjectDashboardViewModelTests()
+    public ProjectDashboardViewModelTests(ITestOutputHelper output)
     {
+        _output = output;
+
         // Load environment variables from .env file (PAT is optional for local tests)
         TestEnvironmentLoader.LoadEnvironmentVariables();
         _pat = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT") ?? string.Empty;
@@ -54,29 +51,6 @@ public class ProjectDashboardViewModelTests : IDisposable
 
         _sourceProviderFactory = new SourceProviderFactory(serviceProvider);
         _localStandupService = serviceProvider.GetRequiredService<ILocalStandupService>();
-
-        // Set up CRM service directly
-        var crmOptions = new DynamicsCrmOptions
-        {
-            InstanceUrl = Environment.GetEnvironmentVariable("CRM_INSTANCE_URL") ?? string.Empty,
-            TenantId = Environment.GetEnvironmentVariable("CRM_TENANT_ID") ?? string.Empty,
-            ClientId = Environment.GetEnvironmentVariable("CRM_CLIENT_ID") ?? string.Empty,
-            ClientSecret = Environment.GetEnvironmentVariable("CRM_CLIENT_SECRET") ?? string.Empty,
-            Enabled = true,
-        };
-
-        _crmIsConfigured = !string.IsNullOrEmpty(crmOptions.InstanceUrl) &&
-                           !string.IsNullOrEmpty(crmOptions.ClientSecret);
-
-        _httpClient = new HttpClient();
-        _crmProjectService = new DynamicsCrmService(Options.Create(crmOptions), _httpClient);
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
-        _httpClient.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     /// <summary>
@@ -91,8 +65,7 @@ public class ProjectDashboardViewModelTests : IDisposable
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService,
-            _crmProjectService);
+            _localStandupService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -112,16 +85,16 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // HEADER SECTION
         // ========================================
-        Console.WriteLine("=== HEADER SECTION ===");
-        Console.WriteLine($"Project Name: {viewModel.ProjectName} (from ProjectInstance.Name)");
-        Console.WriteLine($"Organization: {viewModel.Organization} (from ProjectInstance.SourceOrganization)");
-        Console.WriteLine($"Source Type: {viewModel.SourceType} (from ProjectInstance.SourceType)");
-        Console.WriteLine($"Start Date: {viewModel.StartDate:MMM dd, yyyy} (HARDCODED)");
-        Console.WriteLine($"Target Date: {viewModel.TargetDate:MMM dd, yyyy} (HARDCODED)");
-        Console.WriteLine($"Health Status: {viewModel.HealthStatus} (HARDCODED)");
-        Console.WriteLine($"Is On Track: {viewModel.IsOnTrack} (HARDCODED)");
-        Console.WriteLine($"Last Sync: {viewModel.LastSyncText} (set after load)");
-        Console.WriteLine();
+        _output.WriteLine("=== HEADER SECTION ===");
+        _output.WriteLine($"Project Name: {viewModel.ProjectName} (from ProjectInstance.Name)");
+        _output.WriteLine($"Organization: {viewModel.Organization} (from ProjectInstance.SourceOrganization)");
+        _output.WriteLine($"Source Type: {viewModel.SourceType} (from ProjectInstance.SourceType)");
+        _output.WriteLine($"Start Date: {viewModel.StartDate:MMM dd, yyyy} (HARDCODED)");
+        _output.WriteLine($"Target Date: {viewModel.TargetDate:MMM dd, yyyy} (HARDCODED)");
+        _output.WriteLine($"Health Status: {viewModel.HealthStatus} (HARDCODED)");
+        _output.WriteLine($"Is On Track: {viewModel.IsOnTrack} (HARDCODED)");
+        _output.WriteLine($"Last Sync: {viewModel.LastSyncText} (set after load)");
+        _output.WriteLine(string.Empty);
 
         viewModel.ProjectName.Should().Be("Standup Dashboard Test");
         viewModel.LastSyncText.Should().Be("Just now");
@@ -129,15 +102,15 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // METRICS CARDS (Top row)
         // ========================================
-        Console.WriteLine("=== METRICS CARDS ===");
-        Console.WriteLine($"Overall Progress: {viewModel.OverallProgressPercent}% (calculated from commits or tasks)");
-        Console.WriteLine($"Milestones: {viewModel.MilestonesCompleted}/{viewModel.TotalMilestones} (HARDCODED)");
-        Console.WriteLine($"Current Sprint: {viewModel.CurrentSprintNumber}/{viewModel.TotalSprints} (HARDCODED)");
-        Console.WriteLine($"Sprint Days Remaining: {viewModel.SprintDaysRemaining} (HARDCODED)");
-        Console.WriteLine($"Tasks Complete: {viewModel.TasksCompleted}/{viewModel.TotalTasks} ({viewModel.TaskCompletionPercent}%) (from work items)");
-        Console.WriteLine($"Budget: ${viewModel.BudgetUsed}K / ${viewModel.BudgetTotal}K ({viewModel.BudgetPercent}%) (HARDCODED)");
-        Console.WriteLine($"Days Remaining: {viewModel.DaysRemaining} (HARDCODED)");
-        Console.WriteLine();
+        _output.WriteLine("=== METRICS CARDS ===");
+        _output.WriteLine($"Overall Progress: {viewModel.OverallProgressPercent}% (calculated from commits or tasks)");
+        _output.WriteLine($"Milestones: {viewModel.MilestonesCompleted}/{viewModel.TotalMilestones} (HARDCODED)");
+        _output.WriteLine($"Current Sprint: {viewModel.CurrentSprintNumber}/{viewModel.TotalSprints} (HARDCODED)");
+        _output.WriteLine($"Sprint Days Remaining: {viewModel.SprintDaysRemaining} (HARDCODED)");
+        _output.WriteLine($"Tasks Complete: {viewModel.TasksCompleted}/{viewModel.TotalTasks} ({viewModel.TaskCompletionPercent}%) (from work items)");
+        _output.WriteLine($"Budget: ${viewModel.BudgetUsed}K / ${viewModel.BudgetTotal}K ({viewModel.BudgetPercent}%) (HARDCODED)");
+        _output.WriteLine($"Days Remaining: {viewModel.DaysRemaining} (HARDCODED)");
+        _output.WriteLine(string.Empty);
 
         // With no PAT, tasks come from hardcoded sample data
         // OverallProgress is calculated from commits when available
@@ -146,13 +119,13 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // SPRINT PROGRESS BAR
         // ========================================
-        Console.WriteLine("=== SPRINT PROGRESS ===");
-        Console.WriteLine($"Sprint Dates: {viewModel.SprintDates} (HARDCODED)");
-        Console.WriteLine($"Done: {viewModel.SprintDoneCount} ({viewModel.SprintDonePercent:F1}%) (from completed work items)");
-        Console.WriteLine($"In Review: {viewModel.SprintReviewCount} ({viewModel.SprintReviewPercent:F1}%) (from PRs)");
-        Console.WriteLine($"In Progress: {viewModel.SprintProgressCount} ({viewModel.SprintProgressPercent:F1}%) (from in-progress work items)");
-        Console.WriteLine($"To Do: {viewModel.SprintTodoCount} (HARDCODED - needs 'New' work items)");
-        Console.WriteLine();
+        _output.WriteLine("=== SPRINT PROGRESS ===");
+        _output.WriteLine($"Sprint Dates: {viewModel.SprintDates} (HARDCODED)");
+        _output.WriteLine($"Done: {viewModel.SprintDoneCount} ({viewModel.SprintDonePercent:F1}%) (from completed work items)");
+        _output.WriteLine($"In Review: {viewModel.SprintReviewCount} ({viewModel.SprintReviewPercent:F1}%) (from PRs)");
+        _output.WriteLine($"In Progress: {viewModel.SprintProgressCount} ({viewModel.SprintProgressPercent:F1}%) (from in-progress work items)");
+        _output.WriteLine($"To Do: {viewModel.SprintTodoCount} (HARDCODED - needs 'New' work items)");
+        _output.WriteLine(string.Empty);
 
         // Without PAT, sprint counts are 0 (no work items/PRs)
         // This is expected behavior for local-only mode
@@ -160,13 +133,13 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // PROJECT TIMELINE / PHASES
         // ========================================
-        Console.WriteLine($"=== PROJECT TIMELINE ({viewModel.Phases.Count} phases) ===");
+        _output.WriteLine($"=== PROJECT TIMELINE ({viewModel.Phases.Count} phases) ===");
         foreach (var phase in viewModel.Phases)
         {
-            Console.WriteLine($"  {phase.Name}: {phase.Dates} [{phase.StatusText}] (HARDCODED)");
+            _output.WriteLine($"  {phase.Name}: {phase.Dates} [{phase.StatusText}] (HARDCODED)");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
         // Phases are hardcoded sample data
         // TODO: Could be derived from milestones/iterations in Azure DevOps
@@ -174,13 +147,13 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // TEAM SECTION
         // ========================================
-        Console.WriteLine($"=== TEAM ({viewModel.TeamMembers.Count} members) ===");
+        _output.WriteLine($"=== TEAM ({viewModel.TeamMembers.Count} members) ===");
         foreach (var member in viewModel.TeamMembers)
         {
-            Console.WriteLine($"  {member.Initials} {member.Name} - {member.TaskCount} commits, {member.Status} (from git commits)");
+            _output.WriteLine($"  {member.Initials} {member.Name} - {member.TaskCount} commits, {member.Status} (from git commits)");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
         viewModel.TeamMembers.Should().NotBeEmpty("should have authors from local git commits");
         viewModel.TeamMembers.Should().AllSatisfy(m =>
@@ -193,16 +166,16 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // CURRENT TASKS - IN PROGRESS
         // ========================================
-        Console.WriteLine($"=== IN PROGRESS TASKS ({viewModel.InProgressTasks.Count} items) ===");
+        _output.WriteLine($"=== IN PROGRESS TASKS ({viewModel.InProgressTasks.Count} items) ===");
         foreach (var task in viewModel.InProgressTasks)
         {
-            Console.WriteLine($"  [{task.Id}] {task.Title}");
-            Console.WriteLine($"    Assignee: {task.AssigneeName} ({task.AssigneeInitials})");
-            Console.WriteLine($"    Priority: {task.PriorityText}, Due: {task.DueDate:MMM dd}");
-            Console.WriteLine($"    Source: Work Items API (requires PAT)");
+            _output.WriteLine($"  [{task.Id}] {task.Title}");
+            _output.WriteLine($"    Assignee: {task.AssigneeName} ({task.AssigneeInitials})");
+            _output.WriteLine($"    Priority: {task.PriorityText}, Due: {task.DueDate:MMM dd}");
+            _output.WriteLine($"    Source: Work Items API (requires PAT)");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
         // Without PAT, InProgressTasks should be empty (no API access)
         viewModel.InProgressTasks.Should().BeEmpty("no PAT means no work items from API");
@@ -210,14 +183,14 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // CURRENT TASKS - IN REVIEW (PRs)
         // ========================================
-        Console.WriteLine($"=== IN REVIEW / PRs ({viewModel.InReviewTasks.Count} items) ===");
+        _output.WriteLine($"=== IN REVIEW / PRs ({viewModel.InReviewTasks.Count} items) ===");
         foreach (var task in viewModel.InReviewTasks)
         {
-            Console.WriteLine($"  [{task.Id}] {task.Title}");
-            Console.WriteLine($"    Source: Pull Requests API (requires PAT)");
+            _output.WriteLine($"  [{task.Id}] {task.Title}");
+            _output.WriteLine($"    Source: Pull Requests API (requires PAT)");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
         // Without PAT, InReviewTasks should be empty (no API access)
         viewModel.InReviewTasks.Should().BeEmpty("no PAT means no PRs from API");
@@ -225,13 +198,13 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // RECENT ACTIVITY
         // ========================================
-        Console.WriteLine($"=== RECENT ACTIVITY ({viewModel.RecentActivity.Count} items) ===");
+        _output.WriteLine($"=== RECENT ACTIVITY ({viewModel.RecentActivity.Count} items) ===");
         foreach (var activity in viewModel.RecentActivity.Take(10))
         {
-            Console.WriteLine($"  [{activity.Type}] {activity.Author}: {activity.Description} ({activity.TimeAgo})");
+            _output.WriteLine($"  [{activity.Type}] {activity.Author}: {activity.Description} ({activity.TimeAgo})");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
         viewModel.RecentActivity.Should().NotBeEmpty("should have commits from local git");
         viewModel.RecentActivity.Should().AllSatisfy(a =>
@@ -244,13 +217,13 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // CONNECTED SERVICES
         // ========================================
-        Console.WriteLine($"=== CONNECTED SERVICES ({viewModel.ConnectedServices.Count} services) ===");
+        _output.WriteLine($"=== CONNECTED SERVICES ({viewModel.ConnectedServices.Count} services) ===");
         foreach (var service in viewModel.ConnectedServices)
         {
-            Console.WriteLine($"  {service.Icon} {service.Name} - {service.StatusText}");
+            _output.WriteLine($"  {service.Icon} {service.Name} - {service.StatusText}");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
         viewModel.ConnectedServices.Should().ContainSingle(s => s.Name == "Local Git");
         viewModel.ConnectedServices.Should().NotContain(s => s.Name == "GitHub", "no PAT means GitHub not connected");
@@ -258,26 +231,26 @@ public class ProjectDashboardViewModelTests : IDisposable
         // ========================================
         // SUMMARY: DATA SOURCE MAPPING
         // ========================================
-        Console.WriteLine("=== DATA SOURCE SUMMARY ===");
-        Console.WriteLine("✅ FROM LOCAL GIT (no PAT required):");
-        Console.WriteLine("   - Recent Activity (commits)");
-        Console.WriteLine("   - Team Members (from commit authors)");
-        Console.WriteLine("   - Overall Progress (calculated from commit count)");
-        Console.WriteLine();
-        Console.WriteLine("⚠️ REQUIRES PAT (empty in this test):");
-        Console.WriteLine("   - In Progress Tasks (work items)");
-        Console.WriteLine("   - In Review Tasks (PRs)");
-        Console.WriteLine("   - Sprint Done/Review/Progress counts");
-        Console.WriteLine("   - Tasks Completed count");
-        Console.WriteLine();
-        Console.WriteLine("📋 HARDCODED (needs future implementation):");
-        Console.WriteLine("   - Start Date / Target Date");
-        Console.WriteLine("   - Milestones");
-        Console.WriteLine("   - Sprint Number / Sprint Dates");
-        Console.WriteLine("   - Budget");
-        Console.WriteLine("   - Days Remaining");
-        Console.WriteLine("   - Project Phases/Timeline");
-        Console.WriteLine("   - Health Status");
+        _output.WriteLine("=== DATA SOURCE SUMMARY ===");
+        _output.WriteLine("✅ FROM LOCAL GIT (no PAT required):");
+        _output.WriteLine("   - Recent Activity (commits)");
+        _output.WriteLine("   - Team Members (from commit authors)");
+        _output.WriteLine("   - Overall Progress (calculated from commit count)");
+        _output.WriteLine(string.Empty);
+        _output.WriteLine("⚠️ REQUIRES PAT (empty in this test):");
+        _output.WriteLine("   - In Progress Tasks (work items)");
+        _output.WriteLine("   - In Review Tasks (PRs)");
+        _output.WriteLine("   - Sprint Done/Review/Progress counts");
+        _output.WriteLine("   - Tasks Completed count");
+        _output.WriteLine(string.Empty);
+        _output.WriteLine("📋 HARDCODED (needs future implementation):");
+        _output.WriteLine("   - Start Date / Target Date");
+        _output.WriteLine("   - Milestones");
+        _output.WriteLine("   - Sprint Number / Sprint Dates");
+        _output.WriteLine("   - Budget");
+        _output.WriteLine("   - Days Remaining");
+        _output.WriteLine("   - Project Phases/Timeline");
+        _output.WriteLine("   - Health Status");
     }
 
     /// <summary>
@@ -290,20 +263,20 @@ public class ProjectDashboardViewModelTests : IDisposable
         // Skip if no PAT configured
         if (string.IsNullOrEmpty(_pat))
         {
-            Console.WriteLine("SKIPPED: No AZURE_DEVOPS_PAT configured");
+            _output.WriteLine("SKIPPED: No AZURE_DEVOPS_PAT configured");
             return;
         }
 
         // Diagnostic: verify services are available
-        Console.WriteLine("=== SERVICE DIAGNOSTICS ===");
-        Console.WriteLine($"_localStandupService: {(_localStandupService != null ? "Available" : "NULL")}");
-        Console.WriteLine($"_sourceProviderFactory: {(_sourceProviderFactory != null ? "Available" : "NULL")}");
-        Console.WriteLine($"_encryptionService: {(_encryptionService != null ? "Available" : "NULL")}");
-        Console.WriteLine($"PAT length: {_pat.Length}");
-        Console.WriteLine();
+        _output.WriteLine("=== SERVICE DIAGNOSTICS ===");
+        _output.WriteLine($"_localStandupService: Available");
+        _output.WriteLine($"_sourceProviderFactory: Available");
+        _output.WriteLine($"_encryptionService: Available");
+        _output.WriteLine($"PAT length: {_pat.Length}");
+        _output.WriteLine(string.Empty);
 
         // Test LocalStandupService directly first
-        Console.WriteLine("=== TESTING LOCAL GIT SERVICE DIRECTLY ===");
+        _output.WriteLine("=== TESTING LOCAL GIT SERVICE DIRECTLY ===");
         try
         {
             var testRepo = new Standup.Domain.Entities.GroupedRepository
@@ -311,29 +284,28 @@ public class ProjectDashboardViewModelTests : IDisposable
                 LocalPath = LocalRepoPath,
                 SourceType = SourceType.GitHub,
             };
-            var commits = await _localStandupService!.GetLocalCommitsAsync(
+            var commits = await _localStandupService.GetLocalCommitsAsync(
                 new[] { testRepo },
                 DateTimeOffset.UtcNow.AddDays(-30),
                 DateTimeOffset.UtcNow);
-            Console.WriteLine($"Direct LocalStandupService test: {commits.Count} commits fetched");
+            _output.WriteLine($"Direct LocalStandupService test: {commits.Count} commits fetched");
             foreach (var c in commits.Take(3))
             {
-                Console.WriteLine($"  {c.Author}: {c.Subject}");
+                _output.WriteLine($"  {c.Author}: {c.Subject}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Direct test FAILED: {ex.GetType().Name}: {ex.Message}");
+            _output.WriteLine($"Direct test FAILED: {ex.GetType().Name}: {ex.Message}");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
         // Arrange - Use BOTH local path AND PAT
         var viewModel = new ProjectDashboardViewModel(
-            _sourceProviderFactory!,
-            _encryptionService!,
-            _localStandupService!,
-            _crmProjectService!);
+            _sourceProviderFactory,
+            _encryptionService,
+            _localStandupService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -351,56 +323,56 @@ public class ProjectDashboardViewModelTests : IDisposable
         await viewModel.LoadProjectAsync(project);
 
         // Assert - All data should be populated
-        Console.WriteLine("=== FULL INTEGRATION TEST (Local Git + PAT) ===");
-        Console.WriteLine();
+        _output.WriteLine("=== FULL INTEGRATION TEST (Local Git + PAT) ===");
+        _output.WriteLine(string.Empty);
 
-        Console.WriteLine("=== METRICS ===");
-        Console.WriteLine($"Overall Progress: {viewModel.OverallProgressPercent}%");
-        Console.WriteLine($"Tasks Complete: {viewModel.TasksCompleted}/{viewModel.TotalTasks} ({viewModel.TaskCompletionPercent}%)");
-        Console.WriteLine();
+        _output.WriteLine("=== METRICS ===");
+        _output.WriteLine($"Overall Progress: {viewModel.OverallProgressPercent}%");
+        _output.WriteLine($"Tasks Complete: {viewModel.TasksCompleted}/{viewModel.TotalTasks} ({viewModel.TaskCompletionPercent}%)");
+        _output.WriteLine(string.Empty);
 
-        Console.WriteLine("=== SPRINT PROGRESS ===");
-        Console.WriteLine($"Done: {viewModel.SprintDoneCount}");
-        Console.WriteLine($"In Review: {viewModel.SprintReviewCount}");
-        Console.WriteLine($"In Progress: {viewModel.SprintProgressCount}");
-        Console.WriteLine();
+        _output.WriteLine("=== SPRINT PROGRESS ===");
+        _output.WriteLine($"Done: {viewModel.SprintDoneCount}");
+        _output.WriteLine($"In Review: {viewModel.SprintReviewCount}");
+        _output.WriteLine($"In Progress: {viewModel.SprintProgressCount}");
+        _output.WriteLine(string.Empty);
 
-        Console.WriteLine($"=== TEAM ({viewModel.TeamMembers.Count} members) ===");
+        _output.WriteLine($"=== TEAM ({viewModel.TeamMembers.Count} members) ===");
         foreach (var member in viewModel.TeamMembers)
         {
-            Console.WriteLine($"  {member.Initials} {member.Name} - {member.TaskCount} commits");
+            _output.WriteLine($"  {member.Initials} {member.Name} - {member.TaskCount} commits");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
-        Console.WriteLine($"=== IN PROGRESS TASKS ({viewModel.InProgressTasks.Count} items) ===");
+        _output.WriteLine($"=== IN PROGRESS TASKS ({viewModel.InProgressTasks.Count} items) ===");
         foreach (var task in viewModel.InProgressTasks)
         {
-            Console.WriteLine($"  [{task.Id}] {task.Title} - {task.AssigneeName}");
+            _output.WriteLine($"  [{task.Id}] {task.Title} - {task.AssigneeName}");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
-        Console.WriteLine($"=== IN REVIEW / PRs ({viewModel.InReviewTasks.Count} items) ===");
+        _output.WriteLine($"=== IN REVIEW / PRs ({viewModel.InReviewTasks.Count} items) ===");
         foreach (var task in viewModel.InReviewTasks)
         {
-            Console.WriteLine($"  [{task.Id}] {task.Title}");
+            _output.WriteLine($"  [{task.Id}] {task.Title}");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
-        Console.WriteLine($"=== RECENT ACTIVITY ({viewModel.RecentActivity.Count} items) ===");
+        _output.WriteLine($"=== RECENT ACTIVITY ({viewModel.RecentActivity.Count} items) ===");
         foreach (var activity in viewModel.RecentActivity.Take(10))
         {
-            Console.WriteLine($"  [{activity.Type}] {activity.Author}: {activity.Description}");
+            _output.WriteLine($"  [{activity.Type}] {activity.Author}: {activity.Description}");
         }
 
-        Console.WriteLine();
+        _output.WriteLine(string.Empty);
 
-        Console.WriteLine($"=== CONNECTED SERVICES ({viewModel.ConnectedServices.Count}) ===");
+        _output.WriteLine($"=== CONNECTED SERVICES ({viewModel.ConnectedServices.Count}) ===");
         foreach (var service in viewModel.ConnectedServices)
         {
-            Console.WriteLine($"  {service.Icon} {service.Name} - {service.StatusText}");
+            _output.WriteLine($"  {service.Icon} {service.Name} - {service.StatusText}");
         }
 
         // Assertions - verify we got REAL data, not sample data
@@ -412,15 +384,15 @@ public class ProjectDashboardViewModelTests : IDisposable
         var hasRealLocalData = viewModel.TeamMembers.Any(m => m.Name.Contains("Bisiar"));
         var hasSampleData = viewModel.TeamMembers.Any(m => m.Name == "James Mitchell");
 
-        Console.WriteLine();
-        Console.WriteLine("=== DATA SOURCE DETECTION ===");
-        Console.WriteLine($"Has Real Local Git Data: {hasRealLocalData}");
-        Console.WriteLine($"Has Sample Data: {hasSampleData}");
+        _output.WriteLine(string.Empty);
+        _output.WriteLine("=== DATA SOURCE DETECTION ===");
+        _output.WriteLine($"Has Real Local Git Data: {hasRealLocalData}");
+        _output.WriteLine($"Has Sample Data: {hasSampleData}");
 
         if (hasSampleData)
         {
-            Console.WriteLine("⚠️ WARNING: Sample data was loaded instead of real data!");
-            Console.WriteLine("   This could indicate an issue with the LocalStandupService or API fetch");
+            _output.WriteLine("⚠️ WARNING: Sample data was loaded instead of real data!");
+            _output.WriteLine("   This could indicate an issue with the LocalStandupService or API fetch");
         }
 
         // For now, just verify data was loaded - we'll fix the real data issue separately
@@ -439,8 +411,7 @@ public class ProjectDashboardViewModelTests : IDisposable
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService,
-            _crmProjectService);
+            _localStandupService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -458,10 +429,10 @@ public class ProjectDashboardViewModelTests : IDisposable
         await viewModel.LoadProjectAsync(project);
 
         // Assert - No sample data fallback, collections should be empty
-        Console.WriteLine("=== NO DATA SOURCES TEST ===");
-        Console.WriteLine($"LastSyncText: {viewModel.LastSyncText}");
-        Console.WriteLine($"Recent Activity: {viewModel.RecentActivity.Count} items");
-        Console.WriteLine($"Team Members: {viewModel.TeamMembers.Count} members");
+        _output.WriteLine("=== NO DATA SOURCES TEST ===");
+        _output.WriteLine($"LastSyncText: {viewModel.LastSyncText}");
+        _output.WriteLine($"Recent Activity: {viewModel.RecentActivity.Count} items");
+        _output.WriteLine($"Team Members: {viewModel.TeamMembers.Count} members");
 
         // Without data sources, LastSyncText should indicate no configuration
         viewModel.LastSyncText.Should().Be("No data sources configured");
@@ -480,8 +451,7 @@ public class ProjectDashboardViewModelTests : IDisposable
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService,
-            _crmProjectService);
+            _localStandupService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -497,7 +467,7 @@ public class ProjectDashboardViewModelTests : IDisposable
         stopwatch.Stop();
 
         // Assert - Local git should be fast (no network calls)
-        Console.WriteLine($"Local git load completed in {stopwatch.ElapsedMilliseconds}ms");
+        _output.WriteLine($"Local git load completed in {stopwatch.ElapsedMilliseconds}ms");
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(5000, "local git should be fast");
     }
 
@@ -512,8 +482,7 @@ public class ProjectDashboardViewModelTests : IDisposable
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService,
-            _crmProjectService);
+            _localStandupService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -527,10 +496,10 @@ public class ProjectDashboardViewModelTests : IDisposable
         await viewModel.LoadProjectAsync(project);
 
         // Assert - Team members should be derived from commit authors
-        Console.WriteLine("=== Team Members from Commits ===");
+        _output.WriteLine("=== Team Members from Commits ===");
         foreach (var member in viewModel.TeamMembers)
         {
-            Console.WriteLine($"  {member.Name} ({member.Initials}) - {member.TaskCount} commits");
+            _output.WriteLine($"  {member.Name} ({member.Initials}) - {member.TaskCount} commits");
         }
 
         viewModel.TeamMembers.Should().NotBeEmpty();
@@ -554,8 +523,7 @@ public class ProjectDashboardViewModelTests : IDisposable
         var viewModel = new ProjectDashboardViewModel(
             _sourceProviderFactory,
             _encryptionService,
-            _localStandupService,
-            _crmProjectService);
+            _localStandupService);
 
         var project = new ProjectInstance(
             Id: Guid.NewGuid().ToString(),
@@ -570,10 +538,10 @@ public class ProjectDashboardViewModelTests : IDisposable
         await viewModel.LoadProjectAsync(project);
 
         // Assert - Should show Local Git connected, but no GitHub (no PAT)
-        Console.WriteLine("=== Connected Services ===");
+        _output.WriteLine("=== Connected Services ===");
         foreach (var service in viewModel.ConnectedServices)
         {
-            Console.WriteLine($"  {service.Icon} {service.Name} - {service.StatusText}");
+            _output.WriteLine($"  {service.Icon} {service.Name} - {service.StatusText}");
         }
 
         viewModel.ConnectedServices.Should().ContainSingle(s => s.Name == "Local Git");
